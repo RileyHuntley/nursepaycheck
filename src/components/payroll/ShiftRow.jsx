@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 
 const TYPE_LABELS = {
   regular:         'Regular (×1.0)',
@@ -132,9 +132,6 @@ export default function ShiftRow({ shift, premiums, settings, onEdit, onDelete, 
 
         {!readOnly && (
           <div className="flex items-center gap-1 flex-shrink-0">
-            <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); onEdit(shift); }} className="h-7 w-7">
-              <Pencil className="w-3.5 h-3.5" />
-            </Button>
             <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); onDelete(shift); }} className="h-7 w-7 text-destructive hover:text-destructive">
               <Trash2 className="w-3.5 h-3.5" />
             </Button>
