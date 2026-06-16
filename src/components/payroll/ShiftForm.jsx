@@ -78,7 +78,7 @@ const emptyShift = {
   notes: '',
 };
 
-export default function ShiftForm({ onSubmit, onCancel, initial, settings }) {
+export default function ShiftForm({ onSubmit, onCancel, initial, settings, minDate, maxDate }) {
   const [shift, setShift] = useState(() => {
     if (initial) return initial;
     return {
@@ -169,7 +169,7 @@ export default function ShiftForm({ onSubmit, onCancel, initial, settings }) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">Date</Label>
-          <Input type="date" value={shift.date} onChange={(e) => handleDateChange(e.target.value)} className="h-9 text-sm" />
+          <Input type="date" value={shift.date} onChange={(e) => handleDateChange(e.target.value)} min={minDate} max={maxDate} className="h-9 text-sm" />
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">Start Time</Label>

@@ -264,6 +264,8 @@ export default function PayPeriodDetail() {
               onSubmit={bulkAddShifts}
               onCancel={() => setShowBulkForm(false)}
               settings={settings}
+              minDate={period.start_date}
+              maxDate={period.end_date}
             />
           </div>
         )}
@@ -274,6 +276,8 @@ export default function PayPeriodDetail() {
               onSubmit={addShift}
               onCancel={() => setShowForm(false)}
               settings={settings}
+              minDate={period.start_date}
+              maxDate={period.end_date}
             />
           </div>
         )}
@@ -285,6 +289,8 @@ export default function PayPeriodDetail() {
               onSubmit={updateShift}
               onCancel={() => setEditingShift(null)}
               settings={settings}
+              minDate={period.start_date}
+              maxDate={period.end_date}
             />
           </div>
         )}
