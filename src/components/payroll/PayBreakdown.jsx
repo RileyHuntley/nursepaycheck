@@ -29,7 +29,20 @@ export default function PayBreakdown({ breakdown, wage }) {
 
       <SectionHeader title="Base Pay" />
       <LineItem label="Straight-Time Pay" amount={breakdown.straight_time_pay} sublabel={`${breakdown.regular_hours || 0}h @ $${(wage || breakdown.straight_time_pay / (breakdown.regular_hours || 1)).toFixed(2)}/hr`} />
-      <LineItem label="Overtime / Stat Pay" amount={breakdown.overtime_pay} />
+      <LineItem
+        label="Overtime/Stat Pay"
+        amount={breakdown.overtime_pay}
+        sublabel={(() => {
+          const det = breakdown.overtime_detail;
+          if (!det) return null;
+          const parts = [];
+          const labels = { 1.5: '1.5× (OT)', 2: '2× (Day Off/Stat)', 2.5: '2.5× (Super Stat)', 3: '3× (OT on Stat)' };
+          for (const [mul, hrs] of Object.entries(det)) {
+            if (hrs > 0) parts.push(`${hrs}h @ ${labels[mul] || mul + '×'}`);
+          }
+          return parts.length > 0 ? parts.join(', ') : null;
+        })()}
+      />
 
       <SectionHeader title="Hourly Premiums" />
       <LineItem label="Regular Premium" amount={breakdown.regular_premium_total} sublabel="$2.15/hr on straight time" />
