@@ -4,7 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Save, Loader2 } from 'lucide-react';
+import { Save, Loader2, Plus, X } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 const QUALIFICATION_OPTIONS = [
   { key: 'special_clinical_prep', label: 'Special Clinical Prep', rate: 50 },
@@ -30,6 +37,10 @@ const defaultSettings = {
     special_clinical_prep: 50, bsn: 100, masters: 125,
     rpn_dual: 50, cha_bcit: 25, university_prep: 25,
   },
+  hospitals: [],
+  units: [],
+  default_hospital: '',
+  default_unit: '',
 };
 
 export default function Settings() {
@@ -74,6 +85,31 @@ export default function Settings() {
       const next = current.includes(key) ? current.filter(k => k !== key) : [...current, key];
       return { ...s, active_qualifications: next };
     });
+  };
+
+  const [newHospital, setNewHospital] = useState('');
+  const [newUnit, setNewUnit] = useState('');
+
+  const addHospital = () => {
+    const name = newHospital.trim();
+    if (!name || (settings.hospitals || []).includes(name)) return;
+    setSettings(s => ({ ...s, hospitals: [...(s.hospitals || []), name] }));
+    setNewHospital('');
+  };
+
+  const removeHospital = (name) => {
+    setSettings(s => ({ ...s, hospitals: (s.hospitals || []).filter(h => h !== name), default_hospital: s.default_hospital === name ? '' : s.default_hospital }));
+  };
+
+  const addUnit = () => {
+    const name = newUnit.trim();
+    if (!name || (settings.units || []).includes(name)) return;
+    setSettings(s => ({ ...s, units: [...(s.units || []), name] }));
+    setNewUnit('');
+  };
+
+  const removeUnit = (name) => {
+    setSettings(s => ({ ...s, units: (s.units || []).filter(u => u !== name), default_unit: s.default_unit === name ? '' : s.default_unit }));
   };
 
   const handleSave = async () => {
@@ -228,6 +264,106 @@ export default function Settings() {
             </div>
           </div>
         ))}
+      </section>
+
+      {/* Hospitals & Units */}
+      <section className="bg-card border border-border rounded-xl p-5 space-y-5">
+        <h3 className="text-sm font-semibold text-foreground">Hospitals & Units</h3>
+        <p className="text-xs text-muted-foreground">Add the hospitals and units you work at. Set defaults to pre-fill new shifts.</p>
+
+        {/* Hospitals */}
+        <div className="space-y-3">
+          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Hospitals</h4>
+          <div className="flex gap-2">
+            <Input
+              value={newHospital}
+              onChange={e => setNewHospital(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addHospital())}
+              placeholder="e.g. VGH, St. Paul's"
+              className="h-9 text-sm flex-1"
+            />
+            <Button size="sm" variant="outline" onClick={addHospital} disabled={!newHospital.trim()} className="flex-shrink-0">
+              <Plus className="w-4 h-4 mr-1" /> Add
+            </Button>
+          </div>
+          {(settings.hospitals || []).length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {(settings.hospitals || []).map(h => (
+                <span key={h} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-muted text-xs font-medium text-foreground">
+                  {h}
+                  <button onClick={() => removeHospital(h)} className="ml-1 text-muted-foreground hover:text-destructive">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground italic">No hospitals added yet.</p>
+          )}
+        </div>
+
+        {/* Units */}
+        <div className="space-y-3">
+          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Units</h4>
+          <div className="flex gap-2">
+            <Input
+              value={newUnit}
+              onChange={e => setNewUnit(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addUnit())}
+              placeholder="e.g. ICU, Emergency, Med-Surg"
+              className="h-9 text-sm flex-1"
+            />
+            <Button size="sm" variant="outline" onClick={addUnit} disabled={!newUnit.trim()} className="flex-shrink-0">
+              <Plus className="w-4 h-4 mr-1" /> Add
+            </Button>
+          </div>
+          {(settings.units || []).length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {(settings.units || []).map(u => (
+                <span key={u} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-muted text-xs font-medium text-foreground">
+                  {u}
+                  <button onClick={() => removeUnit(u)} className="ml-1 text-muted-foreground hover:text-destructive">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground italic">No units added yet.</p>
+          )}
+        </div>
+
+        {/* Defaults */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Default Hospital</Label>
+            <Select value={settings.default_hospital || ''} onValueChange={v => set('default_hospital', v === '_none' ? '' : v)}>
+              <SelectTrigger className="h-9 text-sm">
+                <SelectValue placeholder="None" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_none">— None —</SelectItem>
+                {(settings.hospitals || []).map(h => (
+                  <SelectItem key={h} value={h}>{h}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Default Unit</Label>
+            <Select value={settings.default_unit || ''} onValueChange={v => set('default_unit', v === '_none' ? '' : v)}>
+              <SelectTrigger className="h-9 text-sm">
+                <SelectValue placeholder="None" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_none">— None —</SelectItem>
+                {(settings.units || []).map(u => (
+                  <SelectItem key={u} value={u}>{u}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
       </section>
     </div>
   );

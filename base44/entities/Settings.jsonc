@@ -146,6 +146,27 @@
           "default": 25
         }
       }
+    },
+    "hospitals": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "units": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "default_hospital": {
+      "type": "string"
+    },
+    "default_unit": {
+      "type": "string"
     }
-  }
+  },
+  "required": []
 }

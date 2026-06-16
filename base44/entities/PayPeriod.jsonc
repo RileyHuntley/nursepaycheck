@@ -67,6 +67,12 @@
             "minimum": 0,
             "default": 0
           },
+          "hospital": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
           "short_notice": {
             "type": "boolean",
             "default": false

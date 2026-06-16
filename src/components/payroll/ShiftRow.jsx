@@ -62,6 +62,12 @@ export default function ShiftRow({ shift, premiums, onEdit, onDelete }) {
           {TYPE_LABELS[shift.shift_type] || shift.shift_type}
         </span>
 
+        {(shift.hospital || shift.unit) && (
+          <span className="text-xs text-muted-foreground truncate max-w-[180px] flex-shrink-0">
+            {[shift.hospital, shift.unit].filter(Boolean).join(' — ')}
+          </span>
+        )}
+
         <div className="text-sm text-foreground font-mono flex-shrink-0">
           {shift.paid_hours}h
         </div>

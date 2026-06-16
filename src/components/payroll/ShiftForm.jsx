@@ -68,6 +68,8 @@ const emptyShift = {
   paid_hours: 11,
   unpaid_break: 1,
   paid_break: 0.75,
+  hospital: '',
+  unit: '',
   short_notice: false,
   responsibility_pay: 'none',
   preceptor: false,
@@ -77,7 +79,14 @@ const emptyShift = {
 };
 
 export default function ShiftForm({ onSubmit, onCancel, initial, settings }) {
-  const [shift, setShift] = useState(initial || { ...emptyShift });
+  const [shift, setShift] = useState(() => {
+    if (initial) return initial;
+    return {
+      ...emptyShift,
+      hospital: settings?.default_hospital || '',
+      unit: settings?.default_unit || '',
+    };
+  });
   const [showOverrides, setShowOverrides] = useState(false);
 
   const set = (field, value) => setShift((s) => ({ ...s, [field]: value }));
@@ -207,6 +216,37 @@ export default function ShiftForm({ onSubmit, onCancel, initial, settings }) {
             <SelectContent>
               {RESPONSIBILITY_OPTIONS.map((o) => (
                 <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">Hospital</Label>
+          <Select value={shift.hospital || ''} onValueChange={(v) => set('hospital', v === '_none' ? '' : v)}>
+            <SelectTrigger className="h-9 text-sm">
+              <SelectValue placeholder="Select hospital" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="_none">— None —</SelectItem>
+              {(settings?.hospitals || []).map(h => (
+                <SelectItem key={h} value={h}>{h}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">Unit</Label>
+          <Select value={shift.unit || ''} onValueChange={(v) => set('unit', v === '_none' ? '' : v)}>
+            <SelectTrigger className="h-9 text-sm">
+              <SelectValue placeholder="Select unit" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="_none">— None —</SelectItem>
+              {(settings?.units || []).map(u => (
+                <SelectItem key={u} value={u}>{u}</SelectItem>
               ))}
             </SelectContent>
           </Select>
