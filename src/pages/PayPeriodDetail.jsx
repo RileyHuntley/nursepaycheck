@@ -6,6 +6,7 @@ import ShiftRow from '@/components/payroll/ShiftRow';
 import PayBreakdown from '@/components/payroll/PayBreakdown';
 import { calculatePeriodBreakdown, calculateShiftPremiums, getCurrentPayPeriodDates, getPayPeriodName } from '@/lib/premiumCalculator';
 import { Plus, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { getVCHPeriodNumber } from '@/lib/statHolidays';
 
 export default function PayPeriodDetail() {
   const [settings, setSettings] = useState(null);
@@ -167,10 +168,16 @@ export default function PayPeriodDetail() {
         <div>
           <h2 className="text-2xl font-display font-bold text-foreground tracking-tight">Pay Period</h2>
           {period && (
-            <p className="text-sm text-muted-foreground mt-1">
-              {period.name} · {period.shifts?.length || 0} shifts ·{' '}
-              <span className={period.status === 'calculated' ? 'text-primary font-medium' : 'text-chart-2'}>
-                {period.status === 'calculated' ? 'Calculated' : 'Draft'}
+            <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
+              {getVCHPeriodNumber(period.start_date) && (
+                <span className="text-[11px] font-mono font-bold bg-muted text-muted-foreground px-1.5 py-0.5 rounded">
+                  PP {getVCHPeriodNumber(period.start_date)}
+                </span>
+              )}
+              <span>{period.name} · {period.shifts?.length || 0} shifts ·{' '}
+                <span className={period.status === 'calculated' ? 'text-primary font-medium' : 'text-chart-2'}>
+                  {period.status === 'calculated' ? 'Calculated' : 'Draft'}
+                </span>
               </span>
             </p>
           )}

@@ -91,6 +91,14 @@ export function getPayDate(dateStr) {
   return VCH_PAY_PERIODS_2026.find(p => p.pay_date === dateStr) || null;
 }
 
+/**
+ * Get the VCH pay period number (e.g. "2613") for a pay period by matching its start date
+ */
+export function getVCHPeriodNumber(startDate) {
+  const match = VCH_PAY_PERIODS_2026.find(p => p.start === startDate);
+  return match ? match.id : null;
+}
+
 // VCH 2026 pay periods (from official calendar)
 export const VCH_PAY_PERIODS_2026 = [
   { id: '2601', start: '2025-12-19', end: '2026-01-01', pay_date: '2026-01-09' },

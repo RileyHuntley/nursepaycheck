@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Trash2, Eye, Loader2, CalendarPlus } from 'lucide-react';
+import { getVCHPeriodNumber } from '@/lib/statHolidays';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -82,7 +83,14 @@ export default function PayPeriodHistory() {
                 className="flex items-center gap-4 px-5 py-4 hover:bg-muted/30 transition-colors duration-150"
               >
                 <div className="flex-1 min-w-0">
-                  <h4 className="text-sm font-medium text-foreground truncate">{period.name}</h4>
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-sm font-medium text-foreground truncate">{period.name}</h4>
+                    {getVCHPeriodNumber(period.start_date) && (
+                      <span className="text-[10px] font-mono font-bold bg-muted text-muted-foreground px-1.5 py-0.5 rounded flex-shrink-0">
+                        PP {getVCHPeriodNumber(period.start_date)}
+                      </span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-3 mt-1">
                     <span className="text-xs text-muted-foreground">{period.start_date} – {period.end_date}</span>
                     <span className="text-xs text-muted-foreground">{period.shifts?.length || 0} shifts</span>
