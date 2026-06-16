@@ -3,9 +3,10 @@ import { base44 } from '@/api/base44Client';
 import ShiftRow from '@/components/payroll/ShiftRow';
 import ShiftForm from '@/components/payroll/ShiftForm';
 import PayBreakdown from '@/components/payroll/PayBreakdown';
-import { calculatePeriodBreakdown, calculateShiftPremiums } from '@/lib/premiumCalculator';
+import { calculatePeriodBreakdown, calculateShiftPremiums, getCurrentPayPeriodDates, getPayPeriodName } from '@/lib/premiumCalculator';
 import { Button } from '@/components/ui/button';
-import { Loader2, ArrowUpDown } from 'lucide-react';
+import { Loader2, ArrowUpDown, Plus, CalendarPlus } from 'lucide-react';
+import BulkAddShift from '@/components/payroll/BulkAddShift';
 
 export default function ShiftLog() {
   const [settings, setSettings] = useState(null);
@@ -14,6 +15,8 @@ export default function ShiftLog() {
   const [loading, setLoading] = useState(true);
   const [sortAsc, setSortAsc] = useState(true);
   const [editingShift, setEditingShift] = useState(null); // { data, _periodId, _shiftIdx }
+  const [showForm, setShowForm] = useState(false);
+  const [showBulkForm, setShowBulkForm] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -75,6 +78,45 @@ export default function ShiftLog() {
     loadData();
   };
 
+  const getOrCreateCurrentPeriod = async () => {
+    const { start_date, end_date } = getCurrentPayPeriodDates();
+    const existing = Object.values(periodMap).find(p => p.start_date === start_date && p.end_date === end_date);
+    if (existing) return existing;
+    const created = await base44.entities.PayPeriod.create({
+      name: getPayPeriodName(start_date, end_date),
+      start_date,
+      end_date,
+      shifts: [],
+      status: 'draft',
+    });
+    setPeriodMap(prev => ({ ...prev, [created.id]: created }));
+    return created;
+  };
+
+  const addShift = async (shiftData) => {
+    const period = await getOrCreateCurrentPeriod();
+    const updatedShifts = [...(period.shifts || []), { ...shiftData }];
+    const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings) : null;
+    await base44.entities.PayPeriod.update(period.id, {
+      shifts: updatedShifts,
+      ...(breakdown ? { breakdown, status: 'calculated' } : {}),
+    });
+    setShowForm(false);
+    loadData();
+  };
+
+  const bulkAddShifts = async (shifts) => {
+    const period = await getOrCreateCurrentPeriod();
+    const updatedShifts = [...(period.shifts || []), ...shifts];
+    const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings) : null;
+    await base44.entities.PayPeriod.update(period.id, {
+      shifts: updatedShifts,
+      ...(breakdown ? { breakdown, status: 'calculated' } : {}),
+    });
+    setShowBulkForm(false);
+    loadData();
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -121,9 +163,47 @@ export default function ShiftLog() {
       )}
 
       <div className="bg-card border border-border rounded-xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-border">
+        <div className="px-5 py-4 border-b border-border flex items-center justify-between">
           <h3 className="text-sm font-semibold text-foreground">All Shifts</h3>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => { setShowBulkForm(true); setShowForm(false); setEditingShift(null); }}
+              disabled={showBulkForm}
+            >
+              <CalendarPlus className="w-4 h-4 mr-1.5" /> Bulk Add
+            </Button>
+            <Button
+              size="sm"
+              className="bg-primary text-primary-foreground"
+              onClick={() => { setShowForm(true); setShowBulkForm(false); setEditingShift(null); }}
+              disabled={showForm}
+            >
+              <Plus className="w-4 h-4 mr-1.5" /> Add Shift
+            </Button>
+          </div>
         </div>
+
+        {showBulkForm && (
+          <div className="px-5 py-4 border-b border-border bg-muted/30">
+            <BulkAddShift
+              onSubmit={bulkAddShifts}
+              onCancel={() => setShowBulkForm(false)}
+              settings={settings}
+            />
+          </div>
+        )}
+
+        {showForm && (
+          <div className="px-5 py-4 border-b border-border bg-muted/30">
+            <ShiftForm
+              onSubmit={addShift}
+              onCancel={() => setShowForm(false)}
+              settings={settings}
+            />
+          </div>
+        )}
 
         <div className="divide-y divide-border">
           {allShifts.length === 0 && (
