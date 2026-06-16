@@ -5,7 +5,7 @@ import ShiftForm from '@/components/payroll/ShiftForm';
 import ShiftRow from '@/components/payroll/ShiftRow';
 import PayBreakdown from '@/components/payroll/PayBreakdown';
 import { calculatePeriodBreakdown, calculateShiftPremiums, getCurrentPayPeriodDates, getPayPeriodName } from '@/lib/premiumCalculator';
-import { Plus, Loader2, ChevronLeft, ChevronRight, CalendarPlus } from 'lucide-react';
+import { Plus, Loader2, ChevronLeft, ChevronRight, CalendarPlus, ArrowUpDown } from 'lucide-react';
 import BulkAddShift from '@/components/payroll/BulkAddShift';
 import { getVCHPeriodNumber } from '@/lib/statHolidays';
 
@@ -18,6 +18,7 @@ export default function PayPeriodDetail() {
   const [showBulkForm, setShowBulkForm] = useState(false);
   const [editingShift, setEditingShift] = useState(null);
   const [currentPeriodIdx, setCurrentPeriodIdx] = useState(0);
+  const [sortAsc, setSortAsc] = useState(true);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -175,6 +176,13 @@ export default function PayPeriodDetail() {
 
   const breakdown = settings && period.shifts?.length ? calculatePeriodBreakdown(period.shifts, settings) : null;
 
+  // Sorted shifts with original indices
+  const sortedShifts = (period.shifts || []).map((s, i) => ({ ...s, _origIdx: i }));
+  sortedShifts.sort((a, b) => {
+    const diff = (a.date || '').localeCompare(b.date || '');
+    return sortAsc ? diff : -diff;
+  });
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -221,6 +229,16 @@ export default function PayPeriodDetail() {
         <div className="px-5 py-4 border-b border-border flex items-center justify-between">
           <h3 className="text-sm font-semibold text-foreground">Shift Log</h3>
           <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setSortAsc(s => !s)}
+              className="h-8 px-2 text-xs text-muted-foreground"
+              title={sortAsc ? 'Sorted chronologically — click to reverse' : 'Sorted reverse — click for chronological'}
+            >
+              <ArrowUpDown className="w-3.5 h-3.5 mr-1" />
+              {sortAsc ? 'Oldest first' : 'Newest first'}
+            </Button>
             <Button
               size="sm"
               variant="outline"
@@ -285,14 +303,14 @@ export default function PayPeriodDetail() {
               </div>
             </div>
           )}
-          {period.shifts?.map((shift, idx) => (
+          {sortedShifts.map((shift) => (
             <ShiftRow
-              key={idx}
+              key={shift._origIdx}
               shift={shift}
               premiums={settings ? calculateShiftPremiums(shift, settings) : null}
               settings={settings}
-              onEdit={(s) => setEditingShift({ data: s, index: idx })}
-              onDelete={() => deleteShift(shift, idx)}
+              onEdit={(s) => setEditingShift({ data: s, index: shift._origIdx })}
+              onDelete={() => deleteShift(shift, shift._origIdx)}
             />
           ))}
         </div>
