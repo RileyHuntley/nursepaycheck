@@ -28,7 +28,7 @@ export default function PayBreakdown({ breakdown, wage }) {
       </div>
 
       <SectionHeader title="Base Pay" />
-      <LineItem label="Straight-Time Pay" amount={breakdown.straight_time_pay} sublabel={`${breakdown.regular_hours || 0}h @ 1x`} />
+      <LineItem label="Straight-Time Pay" amount={breakdown.straight_time_pay} sublabel={`${breakdown.regular_hours || 0}h @ $${(wage || breakdown.straight_time_pay / (breakdown.regular_hours || 1)).toFixed(2)}/hr`} />
       <LineItem label="Overtime / Stat Pay" amount={breakdown.overtime_pay} />
 
       <SectionHeader title="Hourly Premiums" />
