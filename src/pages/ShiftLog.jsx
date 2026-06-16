@@ -140,9 +140,57 @@ export default function ShiftLog() {
     return sortAsc ? diff : -diff;
   });
 
-  // YTD breakdown
-  const shiftsForBreakdown = allShifts.map(({ _periodName, _periodId, _periodStart, _shiftIdx, ...shift }) => shift);
-  const breakdown = settings && shiftsForBreakdown.length ? calculatePeriodBreakdown(shiftsForBreakdown, settings) : null;
+  // YTD breakdown: filter to current year, compute per-period, sum
+  const currentYear = new Date().getFullYear();
+  const yearStart = `${currentYear}-01-01`;
+  const ytdAllShifts = allShifts.filter(s => s.date >= yearStart);
+  const ytdPeriodIds = new Set(ytdAllShifts.map(s => s._periodId));
+
+  // Group shifts by period and compute per-period breakdown, then sum
+  let breakdown = null;
+  if (settings && ytdAllShifts.length > 0) {
+    const periodGroups = {};
+    for (const s of ytdAllShifts) {
+      if (!periodGroups[s._periodId]) periodGroups[s._periodId] = [];
+      periodGroups[s._periodId].push(s);
+    }
+    breakdown = Object.values(periodGroups).reduce((acc, groupShifts) => {
+      const cleanShifts = groupShifts.map(({ _periodName, _periodId, _periodStart, _shiftIdx, ...shift }) => shift);
+      const pb = calculatePeriodBreakdown(cleanShifts, settings);
+      return {
+        straight_time_pay: (acc.straight_time_pay || 0) + pb.straight_time_pay,
+        overtime_pay: (acc.overtime_pay || 0) + pb.overtime_pay,
+        stat_pay: (acc.stat_pay || 0) + pb.stat_pay,
+        regular_premium_total: (acc.regular_premium_total || 0) + pb.regular_premium_total,
+        regular_premium_hours: (acc.regular_premium_hours || 0) + (pb.regular_premium_hours || 0),
+        evening_premium_total: (acc.evening_premium_total || 0) + pb.evening_premium_total,
+        evening_premium_hours: (acc.evening_premium_hours || 0) + (pb.evening_premium_hours || 0),
+        night_premium_total: (acc.night_premium_total || 0) + pb.night_premium_total,
+        night_premium_hours: (acc.night_premium_hours || 0) + (pb.night_premium_hours || 0),
+        weekend_premium_total: (acc.weekend_premium_total || 0) + pb.weekend_premium_total,
+        weekend_premium_hours: (acc.weekend_premium_hours || 0) + (pb.weekend_premium_hours || 0),
+        super_shift_premium_total: (acc.super_shift_premium_total || 0) + pb.super_shift_premium_total,
+        super_shift_premium_hours: (acc.super_shift_premium_hours || 0) + (pb.super_shift_premium_hours || 0),
+        short_notice_total: (acc.short_notice_total || 0) + pb.short_notice_total,
+        short_notice_hours: (acc.short_notice_hours || 0) + (pb.short_notice_hours || 0),
+        responsibility_total: (acc.responsibility_total || 0) + pb.responsibility_total,
+        responsibility_hours: (acc.responsibility_hours || 0) + (pb.responsibility_hours || 0),
+        preceptor_total: (acc.preceptor_total || 0) + pb.preceptor_total,
+        preceptor_hours: (acc.preceptor_hours || 0) + (pb.preceptor_hours || 0),
+        on_call_total: (acc.on_call_total || 0) + pb.on_call_total,
+        on_call_hours: (acc.on_call_hours || 0) + (pb.on_call_hours || 0),
+        allowance_total: (acc.allowance_total || 0) + pb.allowance_total,
+        allowance_monthly: (acc.allowance_monthly || 0) + (pb.allowance_monthly || 0),
+        qualification_total: (acc.qualification_total || 0) + pb.qualification_total,
+        qualification_annual: (acc.qualification_annual || 0) + (pb.qualification_annual || 0),
+        qualification_hourly: pb.qualification_hourly,  // same per-hour rate
+        union_dues: (acc.union_dues || 0) + pb.union_dues,
+        gross_pay: (acc.gross_pay || 0) + pb.gross_pay,
+        regular_hours: (acc.regular_hours || 0) + pb.regular_hours,
+        overtime_detail: null, // detail too complex to merge; drop in YTD
+      };
+    }, {});
+  }
 
   return (
     <div className="space-y-6">
@@ -150,7 +198,7 @@ export default function ShiftLog() {
         <div>
           <h2 className="text-2xl font-display font-bold text-foreground tracking-tight">Shift Log</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            {allShifts.length} shifts across all pay periods — Year-to-Date
+            {ytdAllShifts.length} shift{ytdAllShifts.length !== 1 ? 's' : ''} in {currentYear} across {ytdPeriodIds.size} pay period{ytdPeriodIds.size !== 1 ? 's' : ''} — Year-to-Date
           </p>
         </div>
         <Button variant="ghost" size="sm" onClick={() => setSortAsc(s => !s)} className="h-8 px-2 text-xs text-muted-foreground">
@@ -237,7 +285,7 @@ export default function ShiftLog() {
       </div>
 
       {breakdown && (
-        <PayBreakdown breakdown={breakdown} wage={settings?.hourly_wage} />
+        <PayBreakdown breakdown={breakdown} wage={settings?.hourly_wage} title="Year-to-Date Breakdown" />
       )}
     </div>
   );

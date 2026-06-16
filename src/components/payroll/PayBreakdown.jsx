@@ -124,7 +124,7 @@ function SectionHeader({ title }) {
   return <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider pt-3 pb-1">{title}</h4>;
 }
 
-export default function PayBreakdown({ breakdown, wage }) {
+export default function PayBreakdown({ breakdown, wage, title = 'Pay Period Breakdown' }) {
   const [openInfo, setOpenInfo] = useState(null);
   if (!breakdown) return null;
 
@@ -133,7 +133,7 @@ export default function PayBreakdown({ breakdown, wage }) {
   return (
     <div className="bg-card border border-border rounded-xl p-6 space-y-1" onClick={() => setOpenInfo(null)}>
       <div className="flex items-center justify-between pb-2 border-b border-border">
-        <h3 className="text-base font-display font-semibold text-foreground">Pay Period Breakdown</h3>
+        <h3 className="text-base font-display font-semibold text-foreground">{title}</h3>
         {wage && <span className="text-xs text-muted-foreground">Base wage: ${wage.toFixed(2)}/hr</span>}
       </div>
 
