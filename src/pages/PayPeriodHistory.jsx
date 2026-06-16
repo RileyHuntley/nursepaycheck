@@ -23,10 +23,11 @@ export default function PayPeriodHistory() {
   const loadPeriods = useCallback(async () => {
     setLoading(true);
     const list = await base44.entities.PayPeriod.list('-start_date', 50);
-    // Deduplicate by start_date (keep first occurrence)
+    // Deduplicate by start_date and exclude empty periods
     const seen = new Set();
     const deduped = list.filter(p => {
       if (seen.has(p.start_date)) return false;
+      if (!p.shifts || p.shifts.length === 0) return false;
       seen.add(p.start_date);
       return true;
     });
