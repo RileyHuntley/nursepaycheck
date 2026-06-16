@@ -3,8 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Trash2, Eye, Loader2, CalendarPlus } from 'lucide-react';
-import { getVCHPeriodNumber, VCH_PAY_PERIODS_2026 } from '@/lib/statHolidays';
-import { getPayPeriodName } from '@/lib/premiumCalculator';
+import { getVCHPeriodNumber } from '@/lib/statHolidays';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,30 +23,14 @@ export default function PayPeriodHistory() {
   const loadPeriods = useCallback(async () => {
     setLoading(true);
     const list = await base44.entities.PayPeriod.list('-start_date', 50);
-
-    // Auto-generate missing VCH periods for the current year up to today's period + 1 ahead
-    const today = new Date().toISOString().split('T')[0];
-    const currentYear = new Date().getFullYear();
-    const yearStart = `${currentYear}-01-01`;
-    const currentIdx = VCH_PAY_PERIODS_2026.findIndex(p => today >= p.start && today <= p.end);
-    const endIdx = currentIdx >= 0 ? Math.min(currentIdx + 1, VCH_PAY_PERIODS_2026.length - 1) : VCH_PAY_PERIODS_2026.length - 1;
-    const existingStarts = new Set(list.map(p => p.start_date));
-    const missingPeriods = VCH_PAY_PERIODS_2026
-      .filter((p, i) => p.start >= yearStart && i <= endIdx && !existingStarts.has(p.start))
-      .map(vp => ({
-        name: getPayPeriodName(vp.start, vp.end),
-        start_date: vp.start,
-        end_date: vp.end,
-        shifts: [],
-        status: 'draft',
-      }));
-    if (missingPeriods.length > 0) {
-      await base44.entities.PayPeriod.bulkCreate(missingPeriods);
-      const updated = await base44.entities.PayPeriod.list('-start_date', 50);
-      setPeriods(updated);
-    } else {
-      setPeriods(list);
-    }
+    // Deduplicate by start_date (keep first occurrence)
+    const seen = new Set();
+    const deduped = list.filter(p => {
+      if (seen.has(p.start_date)) return false;
+      seen.add(p.start_date);
+      return true;
+    });
+    setPeriods(deduped);
     setLoading(false);
   }, []);
 
