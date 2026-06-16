@@ -246,7 +246,7 @@ export default function ShiftForm({ onSubmit, onCancel, initial, settings }) {
             <SelectContent>
               <SelectItem value="_none">— None —</SelectItem>
               {(settings?.units || []).map(u => (
-                <SelectItem key={u} value={u}>{u}</SelectItem>
+                <SelectItem key={u.name} value={u.name}>{u.name} [{u.code}]</SelectItem>
               ))}
             </SelectContent>
           </Select>

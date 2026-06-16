@@ -172,10 +172,22 @@
     },
     "units": {
       "type": "array",
+      "default": [],
       "items": {
-        "type": "string"
-      },
-      "default": []
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "code"
+        ]
+      }
     },
     "default_hospital": {
       "type": "string"

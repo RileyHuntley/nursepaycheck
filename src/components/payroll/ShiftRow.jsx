@@ -44,6 +44,7 @@ function PremiumChip({ label, amount, overridden }) {
 export default function ShiftRow({ shift, premiums, settings, onEdit, onDelete }) {
   const overridden = premiums?._overridden || [];
   const hosp = shift.hospital ? (settings?.hospitals || []).find(h => h.name === shift.hospital) : null;
+  const unit = shift.unit ? (settings?.units || []).find(u => u.name === shift.unit) : null;
 
   return (
     <div className="px-4 py-3 bg-card hover:bg-muted/20 transition-colors duration-150 group">
@@ -68,7 +69,10 @@ export default function ShiftRow({ shift, premiums, settings, onEdit, onDelete }
             {hosp && <span className="text-foreground font-medium">{hosp.name}</span>}
             {hosp?.acronym && <span className="text-[10px] ml-1">[{hosp.acronym}]</span>}
             {shift.hospital && !hosp && <span>{shift.hospital}</span>}
-            {shift.unit && <span> — {shift.unit}</span>}
+            {shift.unit && (unit
+              ? <span> — {unit.name} <span className="text-[10px]">[{unit.code}]</span></span>
+              : <span> — {shift.unit}</span>
+            )}
           </span>
         )}
 

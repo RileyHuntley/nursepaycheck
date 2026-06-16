@@ -102,7 +102,8 @@ export default function Settings() {
   const [newHospitalName, setNewHospitalName] = useState('');
   const [newHospitalAcronym, setNewHospitalAcronym] = useState('');
   const [newHospitalHA, setNewHospitalHA] = useState('');
-  const [newUnit, setNewUnit] = useState('');
+  const [newUnitName, setNewUnitName] = useState('');
+  const [newUnitCode, setNewUnitCode] = useState('');
 
   const addHospital = () => {
     const name = newHospitalName.trim();
@@ -121,14 +122,17 @@ export default function Settings() {
   };
 
   const addUnit = () => {
-    const name = newUnit.trim();
-    if (!name || (settings.units || []).includes(name)) return;
-    setSettings(s => ({ ...s, units: [...(s.units || []), name] }));
-    setNewUnit('');
+    const name = newUnitName.trim();
+    const code = newUnitCode.trim();
+    if (!name || !code) return;
+    if ((settings.units || []).some(u => u.name === name)) return;
+    setSettings(s => ({ ...s, units: [...(s.units || []), { name, code }] }));
+    setNewUnitName('');
+    setNewUnitCode('');
   };
 
   const removeUnit = (name) => {
-    setSettings(s => ({ ...s, units: (s.units || []).filter(u => u !== name), default_unit: s.default_unit === name ? '' : s.default_unit }));
+    setSettings(s => ({ ...s, units: (s.units || []).filter(u => u.name !== name), default_unit: s.default_unit === name ? '' : s.default_unit }));
   };
 
   const handleSave = async () => {
@@ -339,24 +343,30 @@ export default function Settings() {
         {/* Units */}
         <div className="space-y-3">
           <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Units</h4>
-          <div className="flex gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_100px_auto] gap-2">
             <Input
-              value={newUnit}
-              onChange={e => setNewUnit(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addUnit())}
-              placeholder="e.g. ICU, Emergency, Med-Surg"
-              className="h-9 text-sm flex-1"
+              value={newUnitName}
+              onChange={e => setNewUnitName(e.target.value)}
+              placeholder="Unit name (e.g. Medicine)"
+              className="h-9 text-sm"
             />
-            <Button size="sm" variant="outline" onClick={addUnit} disabled={!newUnit.trim()} className="flex-shrink-0">
+            <Input
+              value={newUnitCode}
+              onChange={e => setNewUnitCode(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addUnit())}
+              placeholder="Code (e.g. C2B)"
+              className="h-9 text-sm"
+            />
+            <Button size="sm" variant="outline" onClick={addUnit} disabled={!newUnitName.trim() || !newUnitCode.trim()} className="flex-shrink-0">
               <Plus className="w-4 h-4 mr-1" /> Add
             </Button>
           </div>
           {(settings.units || []).length > 0 ? (
             <div className="flex flex-wrap gap-2">
               {(settings.units || []).map(u => (
-                <span key={u} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-muted text-xs font-medium text-foreground">
-                  {u}
-                  <button onClick={() => removeUnit(u)} className="ml-1 text-muted-foreground hover:text-destructive">
+                <span key={u.name} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-muted text-xs font-medium text-foreground">
+                  {u.name} <span className="text-[10px] text-muted-foreground">[{u.code}]</span>
+                  <button onClick={() => removeUnit(u.name)} className="ml-1 text-muted-foreground hover:text-destructive">
                     <X className="w-3 h-3" />
                   </button>
                 </span>
@@ -392,7 +402,7 @@ export default function Settings() {
               <SelectContent>
                 <SelectItem value="_none">— None —</SelectItem>
                 {(settings.units || []).map(u => (
-                  <SelectItem key={u} value={u}>{u}</SelectItem>
+                  <SelectItem key={u.name} value={u.name}>{u.name} [{u.code}]</SelectItem>
                 ))}
               </SelectContent>
             </Select>
