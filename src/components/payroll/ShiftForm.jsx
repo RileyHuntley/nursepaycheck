@@ -336,7 +336,7 @@ export default function ShiftForm({ onSubmit, onCancel, initial, settings }) {
                           placeholder="override"
                           value={isOverridden ? overrides[key] : ''}
                           onChange={e => setOverride(key, e.target.value)}
-                          className={`h-7 w-28 text-xs font-mono pl-5 ${isOverridden ? 'border-chart-2 ring-1 ring-chart-2/30' : ''}`}
+                          className={`h-7 w-32 text-xs font-mono pl-5 ${isOverridden ? 'border-chart-2 ring-1 ring-chart-2/30' : ''}`}
                         />
                       </div>
                       {isOverridden && (
