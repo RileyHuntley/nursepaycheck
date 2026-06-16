@@ -104,7 +104,7 @@ function LineItem({ label, amount, sublabel, negative, infoKey, openInfo, onTogg
         {info && (
           <div className="relative flex-shrink-0">
             <button
-              onClick={() => onToggleInfo(isOpen ? null : infoKey)}
+              onClick={(e) => { e.stopPropagation(); onToggleInfo(isOpen ? null : infoKey); }}
               className={`p-0.5 rounded transition-colors ${isOpen ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
             >
               <Info className="w-3.5 h-3.5" />
@@ -142,9 +142,6 @@ export default function PayBreakdown({ breakdown, wage }) {
         label="Straight-Time Pay"
         amount={breakdown.straight_time_pay}
         sublabel={`${breakdown.regular_hours || 0}h @ $${(wage || breakdown.straight_time_pay / (breakdown.regular_hours || 1)).toFixed(2)}/hr`}
-        infoKey="straight_time"
-        openInfo={openInfo}
-        onToggleInfo={toggle}
       />
       <LineItem
         label="Overtime/Stat Pay"
@@ -159,9 +156,6 @@ export default function PayBreakdown({ breakdown, wage }) {
           }
           return parts.length > 0 ? parts.join(', ') : null;
         })()}
-        infoKey="overtime"
-        openInfo={openInfo}
-        onToggleInfo={toggle}
       />
 
       <SectionHeader title="Hourly Premiums" />
