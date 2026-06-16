@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
 import PaySummaryPanel from '@/components/payroll/PaySummaryPanel';
+import EarningsTrendChart from '@/components/payroll/EarningsTrendChart';
 import { calculatePeriodBreakdown, getCurrentPayPeriodDates } from '@/lib/premiumCalculator';
 import { Button } from '@/components/ui/button';
 import { CalendarPlus } from 'lucide-react';
@@ -132,6 +133,8 @@ export default function Dashboard() {
           loading={loading}
         />
       </div>
+
+      <EarningsTrendChart periods={computedPeriods} settings={settings} />
     </div>
   );
 }
