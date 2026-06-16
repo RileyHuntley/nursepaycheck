@@ -12,7 +12,7 @@ import {
 import { X, CalendarPlus } from 'lucide-react';
 import { SHIFT_PATTERNS, generateShiftsFromPattern } from '@/lib/shiftPatterns';
 
-export default function BulkAddShift({ onSubmit, onCancel, settings, minDate, maxDate }) {
+export default function BulkAddShift({ onSubmit, onCancel, settings }) {
   const [startDate, setStartDate] = useState('');
   const [patternName, setPatternName] = useState(settings?.default_shift_pattern || 'DDNN');
   const [occurrences, setOccurrences] = useState(1);
@@ -78,8 +78,6 @@ export default function BulkAddShift({ onSubmit, onCancel, settings, minDate, ma
             type="date"
             value={startDate}
             onChange={(e) => handleStartDateChange(e.target.value)}
-            min={minDate}
-            max={maxDate}
             className="h-9 text-sm"
           />
         </div>
