@@ -41,12 +41,15 @@
             "type": "string",
             "enum": [
               "regular",
+              "day_off",
+              "work_stat",
+              "work_super_stat",
+              "ot_stat",
               "overtime",
-              "overtime_extended",
-              "stat_holiday",
-              "ot_stat_holiday",
+              "isn",
               "vacation",
               "sick",
+              "pdo_pst",
               "other_leave"
             ]
           },
@@ -88,6 +91,36 @@
           },
           "notes": {
             "type": "string"
+          },
+          "premium_overrides": {
+            "type": "object",
+            "description": "Manual dollar-amount overrides for individual premiums on this shift",
+            "properties": {
+              "evening": {
+                "type": "number"
+              },
+              "night": {
+                "type": "number"
+              },
+              "weekend": {
+                "type": "number"
+              },
+              "super_shift": {
+                "type": "number"
+              },
+              "regular_premium": {
+                "type": "number"
+              },
+              "short_notice": {
+                "type": "number"
+              },
+              "responsibility": {
+                "type": "number"
+              },
+              "preceptor": {
+                "type": "number"
+              }
+            }
           }
         }
       }
@@ -151,5 +184,6 @@
     "notes": {
       "type": "string"
     }
-  }
+  },
+  "required": []
 }

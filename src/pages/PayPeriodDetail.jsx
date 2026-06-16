@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import ShiftForm from '@/components/payroll/ShiftForm';
 import ShiftRow from '@/components/payroll/ShiftRow';
 import PayBreakdown from '@/components/payroll/PayBreakdown';
-import { calculatePeriodBreakdown, getCurrentPayPeriodDates, getPayPeriodName } from '@/lib/premiumCalculator';
+import { calculatePeriodBreakdown, calculateShiftPremiums, getCurrentPayPeriodDates, getPayPeriodName } from '@/lib/premiumCalculator';
 import { Plus, Loader2, Calculator, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function PayPeriodDetail() {
@@ -219,6 +219,7 @@ export default function PayPeriodDetail() {
             <ShiftForm
               onSubmit={addShift}
               onCancel={() => setShowForm(false)}
+              settings={settings}
             />
           </div>
         )}
@@ -229,6 +230,7 @@ export default function PayPeriodDetail() {
               initial={editingShift.data}
               onSubmit={updateShift}
               onCancel={() => setEditingShift(null)}
+              settings={settings}
             />
           </div>
         )}
@@ -249,6 +251,7 @@ export default function PayPeriodDetail() {
             <ShiftRow
               key={idx}
               shift={shift}
+              premiums={settings ? calculateShiftPremiums(shift, settings) : null}
               onEdit={(s) => setEditingShift({ data: s, index: idx })}
               onDelete={() => deleteShift(shift, idx)}
             />

@@ -10,8 +10,18 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { X } from 'lucide-react';
+import { X, ChevronDown, ChevronUp } from 'lucide-react';
 import { getStatType, getStatName } from '@/lib/statHolidays';
+import { calculateShiftPremiums } from '@/lib/premiumCalculator';
+
+// Default settings used when none provided (for premium preview in form)
+const DEFAULT_RATES = {
+  premium_rates: {
+    evening: 1.40, night: 5.00, weekend: 3.50, super_shift: 1.85,
+    regular_premium: 2.15, short_notice: 2.00, responsibility_hourly: 2.50,
+    responsibility_flat: 18.75, preceptor: 1.50,
+  },
+};
 
 // Shift types per NBA CBA screenshot
 const SHIFT_TYPES = [
@@ -65,10 +75,20 @@ const emptyShift = {
   notes: '',
 };
 
-export default function ShiftForm({ onSubmit, onCancel, initial }) {
+export default function ShiftForm({ onSubmit, onCancel, initial, settings }) {
   const [shift, setShift] = useState(initial || { ...emptyShift });
+  const [showOverrides, setShowOverrides] = useState(false);
 
   const set = (field, value) => setShift((s) => ({ ...s, [field]: value }));
+  const setOverride = (field, value) => setShift(s => ({
+    ...s,
+    premium_overrides: { ...(s.premium_overrides || {}), [field]: value === '' ? null : parseFloat(value) || 0 },
+  }));
+  const clearOverride = (field) => setShift(s => {
+    const ov = { ...(s.premium_overrides || {}) };
+    delete ov[field];
+    return { ...s, premium_overrides: ov };
+  });
 
   // When date changes, auto-suggest shift type if it's a stat
   const handleDateChange = (dateStr) => {
@@ -211,6 +231,77 @@ export default function ShiftForm({ onSubmit, onCancel, initial }) {
         <Label className="text-xs text-muted-foreground">Notes (optional)</Label>
         <Input value={shift.notes} onChange={(e) => set('notes', e.target.value)} placeholder="e.g. covered Jane's shift" className="h-9 text-sm" />
       </div>
+
+      {/* Premium Preview & Override */}
+      {shift.start_time && shift.end_time && shift.paid_hours > 0 && (() => {
+        const calcSettings = settings || DEFAULT_RATES;
+        const premiums = calculateShiftPremiums(shift, calcSettings);
+        const overrides = shift.premium_overrides || {};
+        const PREMIUM_FIELDS = [
+          { key: 'evening',         label: 'Evening Premium' },
+          { key: 'night',           label: 'Night Premium' },
+          { key: 'weekend',         label: 'Weekend Premium' },
+          { key: 'super_shift',     label: 'Super Shift Premium' },
+          { key: 'regular_premium', label: 'Regular Premium' },
+          { key: 'short_notice',    label: 'Short Notice' },
+          { key: 'responsibility',  label: 'Responsibility Pay' },
+          { key: 'preceptor',       label: 'Preceptor' },
+        ];
+        const hasAnyPremium = PREMIUM_FIELDS.some(f => premiums[f.key] > 0);
+        return (
+          <div className="border border-border rounded-lg overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setShowOverrides(v => !v)}
+              className="w-full flex items-center justify-between px-4 py-2.5 bg-muted/40 hover:bg-muted/60 transition-colors text-left"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-foreground">Calculated Premiums</span>
+                {hasAnyPremium && (
+                  <span className="text-xs text-primary font-mono">
+                    ${PREMIUM_FIELDS.reduce((s, f) => s + (premiums[f.key] || 0), 0).toFixed(2)}
+                  </span>
+                )}
+                {!hasAnyPremium && <span className="text-xs text-muted-foreground">None applicable</span>}
+                {Object.keys(overrides).some(k => overrides[k] != null) && (
+                  <span className="text-[10px] bg-chart-2/20 text-chart-2 px-1.5 py-0.5 rounded font-medium">overridden</span>
+                )}
+              </div>
+              {showOverrides ? <ChevronUp className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />}
+            </button>
+            {showOverrides && (
+              <div className="px-4 py-3 space-y-2 bg-card">
+                <p className="text-[11px] text-muted-foreground mb-3">Auto-calculated values shown. Enter an override to replace a value on this shift only. Clear to restore auto-calculation.</p>
+                {PREMIUM_FIELDS.map(({ key, label }) => {
+                  const calcVal = premiums[key] || 0;
+                  const isOverridden = overrides[key] != null;
+                  return (
+                    <div key={key} className="flex items-center gap-3">
+                      <div className="w-36 text-xs text-muted-foreground flex-shrink-0">{label}</div>
+                      <div className="text-xs font-mono text-foreground w-14 text-right flex-shrink-0">
+                        ${calcVal.toFixed(2)}
+                      </div>
+                      <span className="text-xs text-muted-foreground flex-shrink-0">→</span>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="override"
+                        value={isOverridden ? overrides[key] : ''}
+                        onChange={e => setOverride(key, e.target.value)}
+                        className={`h-7 w-24 text-xs font-mono ${isOverridden ? 'border-chart-2 ring-1 ring-chart-2/30' : ''}`}
+                      />
+                      {isOverridden && (
+                        <button type="button" onClick={() => clearOverride(key)} className="text-[10px] text-muted-foreground hover:text-destructive">clear</button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       <div className="flex gap-2 pt-1">
         <Button type="submit" size="sm" className="bg-primary text-primary-foreground hover:opacity-90">

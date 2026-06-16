@@ -4,6 +4,10 @@
  */
 import { VCH_PAY_PERIODS_2026 } from './statHolidays.js';
 
+function round2(n) {
+  return Math.round(n * 100) / 100;
+}
+
 /**
  * Parse time string "HH:MM" or "HH.MM" to decimal hours (e.g. "15:30" → 15.5)
  */
@@ -48,28 +52,49 @@ export function hoursInRange(shiftStart, shiftEnd, rangeStart, rangeEnd) {
 }
 
 /**
- * Determine if a shift is evening (majority of hours between 15:30–23:30)
+ * Returns the total clock hours spanned by the shift (including overnight)
  */
-export function isEveningShift(startTime, endTime) {
+export function shiftSpanHours(startTime, endTime) {
   const start = parseTime(startTime);
-  const end = parseTime(endTime);
-  const totalHours = end > start ? end - start : end + 24 - start;
-  const eveningHours = hoursInRange(start, end, 15.5, 23.5);
-  const nightHours = hoursInRange(start, end, 23.5, 7.5);
-  return eveningHours > nightHours && eveningHours > totalHours / 2;
+  let end = parseTime(endTime);
+  if (end <= start) end += 24; // overnight
+  return end - start;
 }
 
 /**
- * Determine if a shift is night (majority of hours between 23:30–07:30)
+ * Determine if a shift qualifies for evening premium (majority rule: >50% in 15:30–23:30)
+ * Returns: 'full' (extended-hour: pay all paid hours), 'partial' (pay hours in window), or null
  */
-export function isNightShift(startTime, endTime) {
+export function eveningShiftType(startTime, endTime) {
   const start = parseTime(startTime);
   const end = parseTime(endTime);
-  const totalHours = end > start ? end - start : end + 24 - start;
-  const eveningHours = hoursInRange(start, end, 15.5, 23.5);
-  const nightHours = hoursInRange(start, end, 23.5, 7.5);
-  return nightHours > eveningHours && nightHours > totalHours / 2;
+  const span = shiftSpanHours(startTime, endTime);
+  const eveningHrs = hoursInRange(start, end, 15.5, 23.5);
+  const nightHrs = hoursInRange(start, end, 23.5, 31.5); // 23.5 to 31.5 = 23:30–07:30
+  if (eveningHrs <= nightHrs) return null; // night wins
+  if (eveningHrs <= span / 2) return null; // majority rule not met
+  // Extended hour rotation = shift span >= 10h → pay all paid hours
+  return span >= 10 ? 'full' : 'partial';
 }
+
+/**
+ * Determine if a shift qualifies for night premium (majority rule: >50% in 23:30–07:30)
+ * Returns: 'full' (extended-hour: pay all paid hours), 'partial' (pay hours in window), or null
+ */
+export function nightShiftType(startTime, endTime) {
+  const start = parseTime(startTime);
+  const end = parseTime(endTime);
+  const span = shiftSpanHours(startTime, endTime);
+  const nightHrs = hoursInRange(start, end, 23.5, 31.5);
+  const eveningHrs = hoursInRange(start, end, 15.5, 23.5);
+  if (nightHrs <= eveningHrs) return null; // evening wins
+  if (nightHrs <= span / 2) return null; // majority rule not met
+  return span >= 10 ? 'full' : 'partial';
+}
+
+// Keep backward-compat helpers
+export function isEveningShift(startTime, endTime) { return eveningShiftType(startTime, endTime) !== null; }
+export function isNightShift(startTime, endTime) { return nightShiftType(startTime, endTime) !== null; }
 
 /**
  * Check if a date falls on a weekend (Saturday or Sunday)
@@ -97,130 +122,133 @@ export function isSaturday(dateStr) {
 }
 
 /**
- * Calculate weekend premium hours for a shift
- * Weekend = Friday 23:00 to Sunday 23:00
+ * Calculate weekend premium hours for a shift.
+ * Weekend = every hour between Friday 23:00 and Sunday 23:00.
+ * Handles overnight shifts by normalising end > 24.
  */
 export function weekendHours(dateStr, startTime, endTime) {
   const start = parseTime(startTime);
-  const end = parseTime(endTime);
-  if (end <= start) return 0; // no overnight
+  let end = parseTime(endTime);
+  if (end <= start) end += 24; // overnight
 
-  let weekendHrs = 0;
+  const dayOfWeek = new Date(dateStr + 'T12:00:00').getUTCDay(); // 0=Sun,5=Fri,6=Sat
 
-  if (isFriday(dateStr)) {
-    // Friday: from 23:00 to end (or midnight if end > 24)
-    weekendHrs += hoursInRange(start, Math.min(end, 24), 23, 24);
-  }
-  if (isSaturday(dateStr)) {
-    // Saturday: whole shift is weekend
-    weekendHrs += hoursInRange(start, end, 0, 24);
-  }
-  if (isWeekendDay(dateStr) && !isSaturday(dateStr)) {
-    // Sunday: from start to 23:00
-    weekendHrs += hoursInRange(start, end, 0, 23);
-  }
-
-  // Check Friday overnight into Saturday
-  if (isFriday(dateStr) && end > 24) {
-    // Overnight portion into Saturday is all weekend
-    weekendHrs += (end - 24);
-  }
-
-  return weekendHrs;
-}
-
-/**
- * Calculate super shift premium hours
- * Super shift = Fri 23:30–Sat 07:30 OR Sat 23:30–Sun 07:30
- */
-export function superShiftHours(dateStr, startTime, endTime) {
-  const start = parseTime(startTime);
-  const end = parseTime(endTime);
-  if (end <= start) return 0;
+  // Express the shift window relative to midnight of dateStr.
+  // Weekend window expressed relative to same midnight:
+  //   Friday (5):  23 → 47  (23:00 Fri to 23:00 Sun = +48h, capped at shift end)
+  //   Saturday (6): 0 → 23  (all of Saturday) plus Sat-to-Sun overnight handled by overnight shift
+  //   Sunday (0):   0 → 23  (midnight to 23:00 Sun)
+  //   Any other day: only overnight portion can clip into Sat/Sun — handle via normalised window
 
   let total = 0;
 
-  // Friday overnight into Saturday: 23:30–07:30
-  if (isFriday(dateStr)) {
-    total += hoursInRange(start, Math.min(end, 24), 23.5, 24);
-    if (end > 24) {
-      total += Math.min(end - 24, 7.5);
-    }
+  if (dayOfWeek === 5) {
+    // Friday: weekend starts at 23:00
+    // Shift may run into Sat (end > 24) — weekend is 23 to 23+24 = 47
+    total += hoursInRange(start, end, 23, 47);
+  } else if (dayOfWeek === 6) {
+    // Saturday: entire day is weekend; overnight portion into Sun ends at 23 next day (23+24=47)
+    total += hoursInRange(start, end, 0, 47);
+    // cap at Sunday 23:00 = 23 hours into Sunday = Saturday 00 + 47
+    total = Math.min(total, hoursInRange(start, end, 0, 47));
+  } else if (dayOfWeek === 0) {
+    // Sunday: weekend ends at 23:00 Sunday
+    total += hoursInRange(start, end, 0, 23);
   }
 
-  // Saturday overnight into Sunday: 23:30–07:30
-  if (isSaturday(dateStr)) {
-    total += hoursInRange(start, Math.min(end, 24), 23.5, 24);
-    if (end > 24) {
-      total += Math.min(end - 24, 7.5);
-    }
-  }
-
-  return total;
+  return Math.max(0, total);
 }
 
 /**
- * Calculate all applicable premiums for a single shift
- * Returns breakdown object with premium amounts
+ * Calculate super shift premium hours.
+ * Super shift = actual hours worked between:
+ *   (a) Fri 23:30 – Sat 07:30
+ *   (b) Sat 23:30 – Sun 07:30
+ */
+export function superShiftHours(dateStr, startTime, endTime) {
+  const start = parseTime(startTime);
+  let end = parseTime(endTime);
+  if (end <= start) end += 24; // normalise overnight
+
+  const dayOfWeek = new Date(dateStr + 'T12:00:00').getUTCDay(); // 0=Sun,5=Fri,6=Sat
+
+  let total = 0;
+
+  if (dayOfWeek === 5) {
+    // Friday: super shift window is 23:30–31:30 (= Sat 07:30)
+    total += hoursInRange(start, end, 23.5, 31.5);
+  } else if (dayOfWeek === 6) {
+    // Saturday: super shift window is 23:30–31:30 (= Sun 07:30)
+    total += hoursInRange(start, end, 23.5, 31.5);
+  }
+
+  return Math.max(0, total);
+}
+
+/**
+ * Calculate all applicable premiums for a single shift.
+ * Returns amounts + the billed hours used for each premium (for display).
+ * If shift.premium_overrides exists, those values are used instead of calculated ones.
  */
 export function calculateShiftPremiums(shift, settings) {
   const rates = settings.premium_rates;
   const paidHours = shift.paid_hours || 0;
   const isStraight = ['regular', 'isn', 'vacation', 'sick', 'pdo_pst', 'other_leave'].includes(shift.shift_type);
+  const overrides = shift.premium_overrides || {};
 
-  const result = {
-    evening: 0,
-    night: 0,
-    weekend: 0,
-    super_shift: 0,
-    regular_premium: 0,
-    short_notice: 0,
-    responsibility: 0,
-    preceptor: 0,
+  // --- Evening / Night (mutually exclusive) ---
+  const evType = eveningShiftType(shift.start_time, shift.end_time);
+  const niType = nightShiftType(shift.start_time, shift.end_time);
+
+  let eveningHrs = 0, nightHrs = 0;
+  if (evType === 'full') {
+    eveningHrs = paidHours;
+  } else if (evType === 'partial') {
+    const s = parseTime(shift.start_time), e = parseTime(shift.end_time);
+    eveningHrs = hoursInRange(s, e, 15.5, 23.5);
+  } else if (niType === 'full') {
+    nightHrs = paidHours;
+  } else if (niType === 'partial') {
+    const s = parseTime(shift.start_time), e = parseTime(shift.end_time);
+    nightHrs = hoursInRange(s, e, 23.5, 31.5);
+  }
+
+  const wkndHrs = weekendHours(shift.date, shift.start_time, shift.end_time);
+  const superHrs = superShiftHours(shift.date, shift.start_time, shift.end_time);
+
+  // Build calculated values
+  const calc = {
+    evening:          round2(eveningHrs * rates.evening),
+    evening_hours:    round2(eveningHrs),
+    night:            round2(nightHrs * rates.night),
+    night_hours:      round2(nightHrs),
+    weekend:          round2(wkndHrs * rates.weekend),
+    weekend_hours:    round2(wkndHrs),
+    super_shift:      round2(superHrs * rates.super_shift),
+    super_shift_hours:round2(superHrs),
+    regular_premium:  isStraight ? round2(paidHours * rates.regular_premium) : 0,
+    short_notice:     shift.short_notice ? round2(paidHours * rates.short_notice) : 0,
+    responsibility:   shift.responsibility_pay === 'hourly'
+                        ? round2(paidHours * rates.responsibility_hourly)
+                        : shift.responsibility_pay === 'flat'
+                          ? rates.responsibility_flat
+                          : 0,
+    preceptor:        shift.preceptor ? round2(paidHours * rates.preceptor) : 0,
   };
 
-  // Evening vs Night (mutually exclusive, majority rule)
-  if (isEveningShift(shift.start_time, shift.end_time)) {
-    result.evening = paidHours * rates.evening;
-  } else if (isNightShift(shift.start_time, shift.end_time)) {
-    result.night = paidHours * rates.night;
-  }
-
-  // Weekend Premium (per hour in weekend window)
-  const wkndHrs = weekendHours(shift.date, shift.start_time, shift.end_time);
-  if (wkndHrs > 0) {
-    result.weekend = wkndHrs * rates.weekend;
-  }
-
-  // Super Shift Premium
-  const superHrs = superShiftHours(shift.date, shift.start_time, shift.end_time);
-  if (superHrs > 0) {
-    result.super_shift = superHrs * rates.super_shift;
-  }
-
-  // Regular Premium — straight-time shifts only (not OT/stat)
-  if (isStraight) {
-    result.regular_premium = paidHours * rates.regular_premium;
-  }
-
-  // Short Notice
-  if (shift.short_notice) {
-    result.short_notice = paidHours * rates.short_notice;
-  }
-
-  // Responsibility Pay
-  if (shift.responsibility_pay === 'hourly') {
-    result.responsibility = paidHours * rates.responsibility_hourly;
-  } else if (shift.responsibility_pay === 'flat') {
-    result.responsibility = rates.responsibility_flat;
-  }
-
-  // Preceptor
-  if (shift.preceptor) {
-    result.preceptor = paidHours * rates.preceptor;
-  }
-
-  return result;
+  // Apply any manual overrides
+  return {
+    ...calc,
+    evening:         overrides.evening         != null ? overrides.evening         : calc.evening,
+    night:           overrides.night           != null ? overrides.night           : calc.night,
+    weekend:         overrides.weekend         != null ? overrides.weekend         : calc.weekend,
+    super_shift:     overrides.super_shift     != null ? overrides.super_shift     : calc.super_shift,
+    regular_premium: overrides.regular_premium != null ? overrides.regular_premium : calc.regular_premium,
+    short_notice:    overrides.short_notice    != null ? overrides.short_notice    : calc.short_notice,
+    responsibility:  overrides.responsibility  != null ? overrides.responsibility  : calc.responsibility,
+    preceptor:       overrides.preceptor       != null ? overrides.preceptor       : calc.preceptor,
+    _overridden: Object.keys(overrides).filter(k => overrides[k] != null),
+  };
 }
 
 /**
@@ -377,10 +405,6 @@ export function calculatePeriodBreakdown(shifts, settings) {
     gross_pay: round2(grossPay),
     regular_hours: regularHours,
   };
-}
-
-function round2(n) {
-  return Math.round(n * 100) / 100;
 }
 
 /**
