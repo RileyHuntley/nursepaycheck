@@ -65,7 +65,7 @@ export function shiftSpanHours(startTime, endTime) {
  * Determine if a shift qualifies for evening premium (majority rule: >50% in 15:30–23:30)
  * Returns: 'full' (extended-hour: pay all paid hours), 'partial' (pay hours in window), or null
  */
-export function eveningShiftType(startTime, endTime) {
+export function eveningShiftType(startTime, endTime, extendedShift) {
   const start = parseTime(startTime);
   const end = parseTime(endTime);
   const span = shiftSpanHours(startTime, endTime);
@@ -73,15 +73,15 @@ export function eveningShiftType(startTime, endTime) {
   const nightHrs = hoursInRange(start, end, 23.5, 31.5); // 23.5 to 31.5 = 23:30–07:30
   if (eveningHrs <= nightHrs) return null; // night wins
   if (eveningHrs <= span / 2) return null; // majority rule not met
-  // Extended hour rotation = shift span >= 10h → pay all paid hours
-  return span >= 10 ? 'full' : 'partial';
+  // Extended shift → pay all paid hours; otherwise only hours in the window
+  return extendedShift ? 'full' : 'partial';
 }
 
 /**
  * Determine if a shift qualifies for night premium (majority rule: >50% in 23:30–07:30)
- * Returns: 'full' (extended-hour: pay all paid hours), 'partial' (pay hours in window), or null
+ * Returns: 'full' (extended: pay all paid hours), 'partial' (pay hours in window), or null
  */
-export function nightShiftType(startTime, endTime) {
+export function nightShiftType(startTime, endTime, extendedShift) {
   const start = parseTime(startTime);
   const end = parseTime(endTime);
   const span = shiftSpanHours(startTime, endTime);
@@ -89,12 +89,12 @@ export function nightShiftType(startTime, endTime) {
   const eveningHrs = hoursInRange(start, end, 15.5, 23.5);
   if (nightHrs <= eveningHrs) return null; // evening wins
   if (nightHrs <= span / 2) return null; // majority rule not met
-  return span >= 10 ? 'full' : 'partial';
+  return extendedShift ? 'full' : 'partial';
 }
 
-// Keep backward-compat helpers
-export function isEveningShift(startTime, endTime) { return eveningShiftType(startTime, endTime) !== null; }
-export function isNightShift(startTime, endTime) { return nightShiftType(startTime, endTime) !== null; }
+// Keep backward-compat helpers (no extended info → default to partial)
+export function isEveningShift(startTime, endTime) { return eveningShiftType(startTime, endTime, false) !== null; }
+export function isNightShift(startTime, endTime) { return nightShiftType(startTime, endTime, false) !== null; }
 
 /**
  * Check if a date falls on a weekend (Saturday or Sunday)
@@ -197,8 +197,9 @@ export function calculateShiftPremiums(shift, settings) {
   const overrides = shift.premium_overrides || {};
 
   // --- Evening / Night (mutually exclusive) ---
-  const evType = eveningShiftType(shift.start_time, shift.end_time);
-  const niType = nightShiftType(shift.start_time, shift.end_time);
+  const extended = shift.extended_shift || false;
+  const evType = eveningShiftType(shift.start_time, shift.end_time, extended);
+  const niType = nightShiftType(shift.start_time, shift.end_time, extended);
 
   let eveningHrs = 0, nightHrs = 0;
   if (evType === 'full') {

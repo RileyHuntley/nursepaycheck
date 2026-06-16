@@ -81,6 +81,9 @@ export default function ShiftRow({ shift, premiums, onEdit, onDelete }) {
       {/* Premium chips row */}
       {premiums && (
         <div className="flex flex-wrap gap-1.5 mt-1.5 ml-0">
+          {shift.extended_shift && (
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-destructive/10 text-destructive">Extended (full hrs)</span>
+          )}
           <PremiumChip label="Evening" amount={premiums.evening} overridden={overridden.includes('evening')} />
           <PremiumChip label="Night" amount={premiums.night} overridden={overridden.includes('night')} />
           <PremiumChip label="Weekend" amount={premiums.weekend} overridden={overridden.includes('weekend')} />
@@ -100,6 +103,7 @@ export default function ShiftRow({ shift, premiums, onEdit, onDelete }) {
       {/* Misc flags when no premiums yet */}
       {!premiums && (
         <div className="flex flex-wrap gap-1.5 mt-1.5">
+          {shift.extended_shift && <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-destructive/10 text-destructive">Extended</span>}
           {shift.short_notice && <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-chart-1/15 text-chart-1">Short Notice</span>}
           {shift.responsibility_pay !== 'none' && <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-chart-1/15 text-chart-1">Resp. Pay {shift.responsibility_pay === 'flat' ? '(Flat)' : '(Hrly)'}</span>}
           {shift.preceptor && <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-chart-1/15 text-chart-1">Preceptor</span>}

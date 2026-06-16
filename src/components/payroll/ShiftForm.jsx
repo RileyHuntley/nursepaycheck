@@ -72,6 +72,7 @@ const emptyShift = {
   responsibility_pay: 'none',
   preceptor: false,
   on_call_hours: 0,
+  extended_shift: false,
   notes: '',
 };
 
@@ -220,6 +221,10 @@ export default function ShiftForm({ onSubmit, onCancel, initial, settings }) {
         <div className="flex items-center gap-2">
           <Switch checked={shift.preceptor} onCheckedChange={(v) => set('preceptor', v)} />
           <Label className="text-xs text-muted-foreground cursor-pointer">Preceptor</Label>
+        </div>
+        <div className="flex items-center gap-2">
+          <Switch checked={shift.extended_shift} onCheckedChange={(v) => set('extended_shift', v)} />
+          <Label className="text-xs text-muted-foreground cursor-pointer">Extended Shift</Label>
         </div>
         <div className="flex items-center gap-3">
           <Label className="text-xs text-muted-foreground">On-Call Hours</Label>

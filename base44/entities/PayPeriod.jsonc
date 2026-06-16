@@ -89,6 +89,10 @@
             "minimum": 0,
             "default": 0
           },
+          "extended_shift": {
+            "type": "boolean",
+            "default": false
+          },
           "notes": {
             "type": "string"
           },
