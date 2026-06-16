@@ -215,7 +215,7 @@ export function calculateShiftPremiums(shift, settings) {
     preceptor:        shift.preceptor ? round2(paidHours * rates.preceptor) : 0,
   };
 
-  // Apply any manual overrides
+  // Apply any manual overrides — hours are unaffected by dollar overrides
   return {
     ...calc,
     evening:         overrides.evening         != null ? overrides.evening         : calc.evening,
@@ -226,6 +226,14 @@ export function calculateShiftPremiums(shift, settings) {
     short_notice:    overrides.short_notice    != null ? overrides.short_notice    : calc.short_notice,
     responsibility:  overrides.responsibility  != null ? overrides.responsibility  : calc.responsibility,
     preceptor:       overrides.preceptor       != null ? overrides.preceptor       : calc.preceptor,
+    evening_hours:   calc.evening_hours,
+    night_hours:     calc.night_hours,
+    weekend_hours:   calc.weekend_hours,
+    super_shift_hours: calc.super_shift_hours,
+    regular_premium_hours: calc.regular_premium > 0 ? paidHours : 0,
+    short_notice_hours: calc.short_notice > 0 ? paidHours : 0,
+    responsibility_hours: shift.responsibility_pay === 'hourly' ? paidHours : (shift.responsibility_pay === 'flat' ? 1 : 0),
+    preceptor_hours: calc.preceptor > 0 ? paidHours : 0,
     _overridden: Object.keys(overrides).filter(k => overrides[k] != null),
   };
 }
@@ -312,10 +320,13 @@ export function calculatePeriodBreakdown(shifts, settings) {
   // Track overtime/stat hours by shift type
   let otDetail = { overtime: 0, day_off: 0, work_stat: 0, work_super_stat: 0, ot_stat: 0 };
 
-  // Premium accumulators
+  // Premium accumulators (dollars + hours)
   let eveningTotal = 0, nightTotal = 0, weekendTotal = 0, superShiftTotal = 0;
-  let regularPremiumTotal = 0;
-  let shortNoticeTotal = 0, responsibilityTotal = 0, preceptorTotal = 0;
+  let eveningHours = 0, nightHours = 0, weekendHours = 0, superShiftHours = 0;
+  let regularPremiumTotal = 0, regularPremiumHours = 0;
+  let shortNoticeTotal = 0, shortNoticeHours = 0;
+  let responsibilityTotal = 0, responsibilityHours = 0;
+  let preceptorTotal = 0, preceptorHours = 0;
 
   for (const shift of shifts) {
     const paidHours = shift.paid_hours || 0;
@@ -339,6 +350,14 @@ export function calculatePeriodBreakdown(shifts, settings) {
     shortNoticeTotal += premiums.short_notice;
     responsibilityTotal += premiums.responsibility;
     preceptorTotal += premiums.preceptor;
+    eveningHours += premiums.evening_hours || 0;
+    nightHours += premiums.night_hours || 0;
+    weekendHours += premiums.weekend_hours || 0;
+    superShiftHours += premiums.super_shift_hours || 0;
+    regularPremiumHours += premiums.regular_premium_hours || 0;
+    shortNoticeHours += premiums.short_notice_hours || 0;
+    responsibilityHours += premiums.responsibility_hours || 0;
+    preceptorHours += premiums.preceptor_hours || 0;
   }
 
   // On-call (treat per-period — proxy for monthly; handle month boundaries in dashboard)
@@ -370,13 +389,21 @@ export function calculatePeriodBreakdown(shifts, settings) {
     overtime_pay: round2(overtimePay),
     stat_pay: round2(overtimePay), // stat pay bundled into overtime pay per multiplier
     regular_premium_total: round2(regularPremiumTotal),
+    regular_premium_hours: round2(regularPremiumHours),
     evening_premium_total: round2(eveningTotal),
+    evening_premium_hours: round2(eveningHours),
     night_premium_total: round2(nightTotal),
+    night_premium_hours: round2(nightHours),
     weekend_premium_total: round2(weekendTotal),
+    weekend_premium_hours: round2(weekendHours),
     super_shift_premium_total: round2(superShiftTotal),
+    super_shift_premium_hours: round2(superShiftHours),
     short_notice_total: round2(shortNoticeTotal),
+    short_notice_hours: round2(shortNoticeHours),
     responsibility_total: round2(responsibilityTotal),
+    responsibility_hours: round2(responsibilityHours),
     preceptor_total: round2(preceptorTotal),
+    preceptor_hours: round2(preceptorHours),
     on_call_total: round2(onCall.total),
     on_call_hours: onCall.hours,
     allowance_total: round2(allowances.per_period),

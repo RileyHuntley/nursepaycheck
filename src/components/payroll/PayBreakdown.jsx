@@ -45,14 +45,14 @@ export default function PayBreakdown({ breakdown, wage }) {
       />
 
       <SectionHeader title="Hourly Premiums" />
-      <LineItem label="Regular Premium" amount={breakdown.regular_premium_total} sublabel="$2.15/hr on straight time" />
-      <LineItem label="Evening Premium" amount={breakdown.evening_premium_total} sublabel="$1.40/hr" />
-      <LineItem label="Night Premium" amount={breakdown.night_premium_total} sublabel="$5.00/hr" />
-      <LineItem label="Weekend Premium" amount={breakdown.weekend_premium_total} sublabel="$3.50/hr" />
-      <LineItem label="Super Shift Premium" amount={breakdown.super_shift_premium_total} sublabel="$1.85/hr" />
-      <LineItem label="Short Notice" amount={breakdown.short_notice_total} sublabel="$2.00/hr" />
-      <LineItem label="Responsibility Pay" amount={breakdown.responsibility_total} />
-      <LineItem label="Preceptor" amount={breakdown.preceptor_total} sublabel="$1.50/hr" />
+      <LineItem label="Regular Premium" amount={breakdown.regular_premium_total} sublabel={breakdown.regular_premium_hours > 0 ? `${breakdown.regular_premium_hours}h × $2.15/hr` : null} />
+      <LineItem label="Evening Premium" amount={breakdown.evening_premium_total} sublabel={breakdown.evening_premium_hours > 0 ? `${breakdown.evening_premium_hours}h × $1.40/hr` : null} />
+      <LineItem label="Night Premium" amount={breakdown.night_premium_total} sublabel={breakdown.night_premium_hours > 0 ? `${breakdown.night_premium_hours}h × $5.00/hr` : null} />
+      <LineItem label="Weekend Premium" amount={breakdown.weekend_premium_total} sublabel={breakdown.weekend_premium_hours > 0 ? `${breakdown.weekend_premium_hours}h × $3.50/hr` : null} />
+      <LineItem label="Super Shift Premium" amount={breakdown.super_shift_premium_total} sublabel={breakdown.super_shift_premium_hours > 0 ? `${breakdown.super_shift_premium_hours}h × $1.85/hr` : null} />
+      <LineItem label="Short Notice" amount={breakdown.short_notice_total} sublabel={breakdown.short_notice_hours > 0 ? `${breakdown.short_notice_hours}h × $2.00/hr` : null} />
+      <LineItem label="Responsibility Pay" amount={breakdown.responsibility_total} sublabel={breakdown.responsibility_hours > 0 ? (breakdown.responsibility_hours >= 1 && breakdown.responsibility_hours < 2 ? '1 shift × $18.75' : `${breakdown.responsibility_hours}h × $2.50/hr`) : null} />
+      <LineItem label="Preceptor" amount={breakdown.preceptor_total} sublabel={breakdown.preceptor_hours > 0 ? `${breakdown.preceptor_hours}h × $1.50/hr` : null} />
       <LineItem label="On-Call Pay" amount={breakdown.on_call_total} sublabel={breakdown.on_call_hours ? `${breakdown.on_call_hours}h total` : null} />
 
       <SectionHeader title="Monthly Allowances & Qualifications" />
