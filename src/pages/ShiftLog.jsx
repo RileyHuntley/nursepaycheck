@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import ShiftRow from '@/components/payroll/ShiftRow';
 import ShiftForm from '@/components/payroll/ShiftForm';
 import PayBreakdown from '@/components/payroll/PayBreakdown';
-import { calculatePeriodBreakdown, calculateShiftPremiums, getCurrentPayPeriodDates, getPayPeriodName } from '@/lib/premiumCalculator';
+import { calculatePeriodBreakdown, calculateShiftPremiums, getPayPeriodForDate } from '@/lib/premiumCalculator';
 import { Button } from '@/components/ui/button';
 import { Loader2, ArrowUpDown, Plus, CalendarPlus } from 'lucide-react';
 import BulkAddShift from '@/components/payroll/BulkAddShift';
@@ -78,12 +78,12 @@ export default function ShiftLog() {
     loadData();
   };
 
-  const getOrCreateCurrentPeriod = async () => {
-    const { start_date, end_date } = getCurrentPayPeriodDates();
-    const existing = Object.values(periodMap).find(p => p.start_date === start_date && p.end_date === end_date);
+  const findOrCreatePeriodForDate = async (date) => {
+    const existing = Object.values(periodMap).find(p => date >= p.start_date && date <= p.end_date);
     if (existing) return existing;
+    const { start_date, end_date } = getPayPeriodForDate(date);
     const created = await base44.entities.PayPeriod.create({
-      name: getPayPeriodName(start_date, end_date),
+      name: `PP: ${new Date(start_date+'T12:00:00').toLocaleDateString('en-CA',{month:'short',day:'numeric'})} – ${new Date(end_date+'T12:00:00').toLocaleDateString('en-CA',{month:'short',day:'numeric'})}`,
       start_date,
       end_date,
       shifts: [],
@@ -94,7 +94,7 @@ export default function ShiftLog() {
   };
 
   const addShift = async (shiftData) => {
-    const period = await getOrCreateCurrentPeriod();
+    const period = await findOrCreatePeriodForDate(shiftData.date);
     const updatedShifts = [...(period.shifts || []), { ...shiftData }];
     const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings) : null;
     await base44.entities.PayPeriod.update(period.id, {
@@ -106,13 +106,21 @@ export default function ShiftLog() {
   };
 
   const bulkAddShifts = async (shifts) => {
-    const period = await getOrCreateCurrentPeriod();
-    const updatedShifts = [...(period.shifts || []), ...shifts];
-    const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings) : null;
-    await base44.entities.PayPeriod.update(period.id, {
-      shifts: updatedShifts,
-      ...(breakdown ? { breakdown, status: 'calculated' } : {}),
-    });
+    // Group shifts by their period, find/create each period, update accordingly
+    const groups = {};
+    for (const s of shifts) {
+      const period = await findOrCreatePeriodForDate(s.date);
+      if (!groups[period.id]) groups[period.id] = { period, shifts: [] };
+      groups[period.id].shifts.push({ ...s });
+    }
+    for (const { period, shifts: groupShifts } of Object.values(groups)) {
+      const updatedShifts = [...(period.shifts || []), ...groupShifts];
+      const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings) : null;
+      await base44.entities.PayPeriod.update(period.id, {
+        shifts: updatedShifts,
+        ...(breakdown ? { breakdown, status: 'calculated' } : {}),
+      });
+    }
     setShowBulkForm(false);
     loadData();
   };

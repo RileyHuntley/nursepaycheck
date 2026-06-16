@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { ChevronLeft, ChevronRight, Loader2, Filter, X, Calendar } from 'lucide-react';
 import { getStatType, getStatName, getPayDate } from '@/lib/statHolidays';
 import ShiftForm from '@/components/payroll/ShiftForm';
-import { calculatePeriodBreakdown, calculateShiftPremiums } from '@/lib/premiumCalculator';
+import { calculatePeriodBreakdown, calculateShiftPremiums, getPayPeriodForDate, getPayPeriodName } from '@/lib/premiumCalculator';
 import {
   Select,
   SelectContent,
@@ -132,13 +132,53 @@ export default function ShiftCalendar() {
   const updateShift = async (shiftData) => {
     if (!editingShift) return;
     const periodList = await base44.entities.PayPeriod.list('-start_date', 100);
-    const period = periodList.find(p => p.id === editingShift.periodId);
-    if (!period) return;
-    const updatedShifts = (period.shifts || []).map((s, i) =>
+    const oldPeriod = periodList.find(p => p.id === editingShift.periodId);
+    if (!oldPeriod) return;
+
+    // If date changed, check if it still falls in the same period
+    if (shiftData.date !== editingShift.data.date) {
+      const newDates = getPayPeriodForDate(shiftData.date);
+      const stillInOldPeriod = shiftData.date >= oldPeriod.start_date && shiftData.date <= oldPeriod.end_date;
+
+      if (!stillInOldPeriod) {
+        // Remove from old period
+        const oldShifts = (oldPeriod.shifts || []).filter((_, i) => i !== editingShift.periodShiftIdx);
+        const oldBreakdown = settings ? calculatePeriodBreakdown(oldShifts, settings) : null;
+        await base44.entities.PayPeriod.update(oldPeriod.id, {
+          shifts: oldShifts,
+          ...(oldBreakdown ? { breakdown: oldBreakdown, status: 'calculated' } : { status: 'draft' }),
+        });
+
+        // Find or create new period
+        const newPeriod = periodList.find(p => p.start_date === newDates.start_date && p.end_date === newDates.end_date);
+        if (newPeriod) {
+          const newShifts = [...(newPeriod.shifts || []), { ...shiftData }];
+          const newBreakdown = settings ? calculatePeriodBreakdown(newShifts, settings) : null;
+          await base44.entities.PayPeriod.update(newPeriod.id, {
+            shifts: newShifts,
+            ...(newBreakdown ? { breakdown: newBreakdown, status: 'calculated' } : {}),
+          });
+        } else {
+          await base44.entities.PayPeriod.create({
+            name: getPayPeriodName(newDates.start_date, newDates.end_date),
+            start_date: newDates.start_date,
+            end_date: newDates.end_date,
+            shifts: [{ ...shiftData }],
+            status: 'draft',
+          });
+        }
+        setEditingShift(null);
+        loadShifts();
+        return;
+      }
+    }
+
+    // Same period — simple update
+    const updatedShifts = (oldPeriod.shifts || []).map((s, i) =>
       i === editingShift.periodShiftIdx ? { ...shiftData } : s
     );
     const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings) : null;
-    await base44.entities.PayPeriod.update(period.id, {
+    await base44.entities.PayPeriod.update(oldPeriod.id, {
       shifts: updatedShifts,
       ...(breakdown ? { breakdown, status: 'calculated' } : {}),
     });

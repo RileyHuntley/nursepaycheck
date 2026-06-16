@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import ShiftForm from '@/components/payroll/ShiftForm';
 import ShiftRow from '@/components/payroll/ShiftRow';
 import PayBreakdown from '@/components/payroll/PayBreakdown';
-import { calculatePeriodBreakdown, calculateShiftPremiums, getCurrentPayPeriodDates, getPayPeriodName } from '@/lib/premiumCalculator';
+import { calculatePeriodBreakdown, calculateShiftPremiums, getCurrentPayPeriodDates, getPayPeriodName, getPayPeriodForDate } from '@/lib/premiumCalculator';
 import { Plus, Loader2, CalendarPlus, ArrowUpDown } from 'lucide-react';
 import BulkAddShift from '@/components/payroll/BulkAddShift';
 import { getVCHPeriodNumber } from '@/lib/statHolidays';
@@ -57,7 +57,39 @@ export default function PayPeriodDetail() {
     return () => { unsub1(); unsub2(); };
   }, [loadData]);
 
+  const isValidForPeriod = (date) => {
+    if (!period) return false;
+    return date >= period.start_date && date <= period.end_date;
+  };
+
   const addShift = async (shiftData) => {
+    if (!isValidForPeriod(shiftData.date)) {
+      // Allow but warn: if date is outside current period, auto-route to correct period
+      const { start_date, end_date } = getPayPeriodForDate(shiftData.date);
+      const allPeriods = await base44.entities.PayPeriod.list('-start_date', 50);
+      const existing = allPeriods.find(p => p.start_date === start_date && p.end_date === end_date);
+      if (existing) {
+        const updatedShifts = [...(existing.shifts || []), { ...shiftData }];
+        const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings) : null;
+        await base44.entities.PayPeriod.update(existing.id, {
+          shifts: updatedShifts,
+          ...(breakdown ? { breakdown, status: 'calculated' } : {}),
+        });
+      } else {
+        await base44.entities.PayPeriod.create({
+          name: getPayPeriodName(start_date, end_date),
+          start_date,
+          end_date,
+          shifts: [{ ...shiftData }],
+          status: 'draft',
+        });
+      }
+      // Reload to refresh the current period view
+      loadData();
+      setShowForm(false);
+      return;
+    }
+
     const updatedShifts = [...(period.shifts || []), { ...shiftData }];
     const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings) : null;
     const updated = await base44.entities.PayPeriod.update(period.id, {
@@ -69,13 +101,40 @@ export default function PayPeriodDetail() {
   };
 
   const bulkAddShifts = async (shifts) => {
-    const updatedShifts = [...(period.shifts || []), ...shifts];
-    const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings) : null;
-    const updated = await base44.entities.PayPeriod.update(period.id, {
-      shifts: updatedShifts,
-      ...(breakdown ? { breakdown, status: 'calculated' } : {}),
-    });
-    setPeriod(updated);
+    // Route each shift to its correct period
+    const allPeriods = await base44.entities.PayPeriod.list('-start_date', 50);
+    const groups = {};
+    for (const s of shifts) {
+      const { start_date, end_date } = getPayPeriodForDate(s.date);
+      const key = `${start_date}|${end_date}`;
+      if (!groups[key]) {
+        const existing = allPeriods.find(p => p.start_date === start_date && p.end_date === end_date);
+        if (existing) {
+          groups[key] = { period: existing, created: false };
+        } else {
+          const created = await base44.entities.PayPeriod.create({
+            name: getPayPeriodName(start_date, end_date),
+            start_date,
+            end_date,
+            shifts: [],
+            status: 'draft',
+          });
+          groups[key] = { period: created, created: true };
+          allPeriods.push(created);
+        }
+      }
+      if (!groups[key].shifts) groups[key].shifts = [];
+      groups[key].shifts.push({ ...s });
+    }
+    for (const { period, shifts: groupShifts } of Object.values(groups)) {
+      const updatedShifts = [...(period.shifts || []), ...groupShifts];
+      const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings) : null;
+      await base44.entities.PayPeriod.update(period.id, {
+        shifts: updatedShifts,
+        ...(breakdown ? { breakdown, status: 'calculated' } : {}),
+      });
+    }
+    loadData();
     setShowBulkForm(false);
   };
 

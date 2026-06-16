@@ -441,7 +441,23 @@ export function getCurrentPayPeriodDates(refDate) {
     return { start_date: found.start, end_date: found.end };
   }
   // Fallback: 14-day blocks from a reference date
-  const d = new Date(refDate || new Date());
+  return getPayPeriodForDate(refDate || new Date());
+}
+
+/**
+ * Calculate the bi-weekly pay period (start_date, end_date) that contains the given date.
+ */
+export function getPayPeriodForDate(date) {
+  const d = new Date(typeof date === 'string' ? date + 'T12:00:00' : date);
+  const dateStr = d.toISOString().split('T')[0];
+
+  // Check VCH periods first
+  const found = VCH_PAY_PERIODS_2026.find(p => dateStr >= p.start && dateStr <= p.end);
+  if (found) {
+    return { start_date: found.start, end_date: found.end };
+  }
+
+  // Fallback: 14-day blocks from reference
   const reference = new Date('2026-01-02T12:00:00');
   const diffDays = Math.floor((d - reference) / (1000 * 60 * 60 * 24));
   const periodIndex = Math.floor(diffDays / 14);
