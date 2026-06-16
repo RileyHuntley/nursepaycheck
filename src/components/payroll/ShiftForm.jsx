@@ -327,15 +327,18 @@ export default function ShiftForm({ onSubmit, onCancel, initial, settings }) {
                         ${calcVal.toFixed(2)}
                       </div>
                       <span className="text-xs text-muted-foreground flex-shrink-0">→</span>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        placeholder="override"
-                        value={isOverridden ? overrides[key] : ''}
-                        onChange={e => setOverride(key, e.target.value)}
-                        className={`h-7 w-24 text-xs font-mono ${isOverridden ? 'border-chart-2 ring-1 ring-chart-2/30' : ''}`}
-                      />
+                      <div className="relative">
+                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-mono">$</span>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="override"
+                          value={isOverridden ? overrides[key] : ''}
+                          onChange={e => setOverride(key, e.target.value)}
+                          className={`h-7 w-28 text-xs font-mono pl-5 ${isOverridden ? 'border-chart-2 ring-1 ring-chart-2/30' : ''}`}
+                        />
+                      </div>
                       {isOverridden && (
                         <button type="button" onClick={() => clearOverride(key)} className="text-[10px] text-muted-foreground hover:text-destructive">clear</button>
                       )}
