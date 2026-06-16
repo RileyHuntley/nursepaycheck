@@ -1,9 +1,10 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, CalendarPlus, Clock, Settings } from 'lucide-react';
+import { LayoutDashboard, CalendarPlus, Clock, Settings, CalendarDays } from 'lucide-react';
 
 const links = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/pay-period', icon: CalendarPlus, label: 'Current Pay Period' },
+  { to: '/calendar', icon: CalendarDays, label: 'Shift Calendar' },
   { to: '/pay-periods', icon: Clock, label: 'Pay Period History' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ];

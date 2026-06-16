@@ -12,6 +12,7 @@ import Dashboard from '@/pages/Dashboard';
 import PayPeriodDetail from '@/pages/PayPeriodDetail';
 import PayPeriodHistory from '@/pages/PayPeriodHistory';
 import Settings from '@/pages/Settings';
+import ShiftCalendar from '@/pages/ShiftCalendar';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -45,6 +46,7 @@ const AuthenticatedApp = () => {
         <Route path="/pay-period" element={<PayPeriodDetail />} />
         <Route path="/pay-periods" element={<PayPeriodHistory />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/calendar" element={<ShiftCalendar />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
