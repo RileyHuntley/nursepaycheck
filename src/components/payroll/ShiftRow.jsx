@@ -65,14 +65,14 @@ export default function ShiftRow({ shift, premiums, settings, onEdit, onDelete }
         </span>
 
         {(shift.hospital || shift.unit) && (
-          <span className="text-xs text-muted-foreground truncate max-w-[240px] flex-shrink-0">
-            {hosp && <span className="text-foreground font-medium">{hosp.name}</span>}
-            {hosp?.acronym && <span className="text-[10px] ml-1">[{hosp.acronym}]</span>}
-            {shift.hospital && !hosp && <span>{shift.hospital}</span>}
-            {shift.unit && (unit
-              ? <span> — {unit.name} <span className="text-[10px]">[{unit.code}]</span></span>
-              : <span> — {shift.unit}</span>
-            )}
+          <span className="text-[11px] text-muted-foreground font-mono flex-shrink-0">
+            {hosp?.acronym && <span className="text-foreground font-semibold">{hosp.acronym}</span>}
+            {shift.hospital && !hosp?.acronym && <span>{shift.hospital}</span>}
+            {shift.unit && (unit?.code ? (
+              <span> · <span className="text-foreground font-medium">{unit.code}</span></span>
+            ) : (
+              <span> · {shift.unit}</span>
+            ))}
           </span>
         )}
 
