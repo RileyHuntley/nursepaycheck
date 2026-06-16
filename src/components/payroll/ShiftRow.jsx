@@ -41,8 +41,9 @@ function PremiumChip({ label, amount, overridden }) {
   );
 }
 
-export default function ShiftRow({ shift, premiums, onEdit, onDelete }) {
+export default function ShiftRow({ shift, premiums, settings, onEdit, onDelete }) {
   const overridden = premiums?._overridden || [];
+  const hosp = shift.hospital ? (settings?.hospitals || []).find(h => h.name === shift.hospital) : null;
 
   return (
     <div className="px-4 py-3 bg-card hover:bg-muted/20 transition-colors duration-150 group">
@@ -63,8 +64,11 @@ export default function ShiftRow({ shift, premiums, onEdit, onDelete }) {
         </span>
 
         {(shift.hospital || shift.unit) && (
-          <span className="text-xs text-muted-foreground truncate max-w-[180px] flex-shrink-0">
-            {[shift.hospital, shift.unit].filter(Boolean).join(' — ')}
+          <span className="text-xs text-muted-foreground truncate max-w-[240px] flex-shrink-0">
+            {hosp && <span className="text-foreground font-medium">{hosp.name}</span>}
+            {hosp?.acronym && <span className="text-[10px] ml-1">[{hosp.acronym}]</span>}
+            {shift.hospital && !hosp && <span>{shift.hospital}</span>}
+            {shift.unit && <span> — {shift.unit}</span>}
           </span>
         )}
 

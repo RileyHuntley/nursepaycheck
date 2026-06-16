@@ -156,12 +156,16 @@
           "name": {
             "type": "string"
           },
+          "acronym": {
+            "type": "string"
+          },
           "health_authority": {
             "type": "string"
           }
         },
         "required": [
           "name",
+          "acronym",
           "health_authority"
         ]
       }

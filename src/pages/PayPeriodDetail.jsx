@@ -254,6 +254,7 @@ export default function PayPeriodDetail() {
               key={idx}
               shift={shift}
               premiums={settings ? calculateShiftPremiums(shift, settings) : null}
+              settings={settings}
               onEdit={(s) => setEditingShift({ data: s, index: idx })}
               onDelete={() => deleteShift(shift, idx)}
             />

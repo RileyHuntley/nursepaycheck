@@ -232,7 +232,7 @@ export default function ShiftForm({ onSubmit, onCancel, initial, settings }) {
             <SelectContent>
               <SelectItem value="_none">— None —</SelectItem>
               {(settings?.hospitals || []).map(h => (
-                <SelectItem key={h.name} value={h.name}>{h.name} ({h.health_authority})</SelectItem>
+                <SelectItem key={h.name} value={h.name}>{h.name} [{h.acronym}] · {h.health_authority}</SelectItem>
               ))}
             </SelectContent>
           </Select>

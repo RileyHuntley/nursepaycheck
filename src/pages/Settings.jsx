@@ -13,6 +13,18 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
+const HEALTH_AUTHORITIES = [
+  { value: 'VCH', label: 'Vancouver Coastal Health (VCH)' },
+  { value: 'FH', label: 'Fraser Health (FH)' },
+  { value: 'VIHA', label: 'Island Health (VIHA)' },
+  { value: 'IH', label: 'Interior Health (IH)' },
+  { value: 'NH', label: 'Northern Health (NH)' },
+  { value: 'FNHA', label: 'First Nations Health Authority (FNHA)' },
+  { value: 'PHSA', label: 'Provincial Health Services Authority (PHSA)' },
+  { value: 'PHC', label: 'Providence Health Care (PHC)' },
+  { value: 'NBA', label: 'Private Facility (NBA)' },
+];
+
 const QUALIFICATION_OPTIONS = [
   { key: 'special_clinical_prep', label: 'Special Clinical Prep', rate: 50 },
   { key: 'bsn', label: 'BSN Degree', rate: 100 },
@@ -88,17 +100,20 @@ export default function Settings() {
   };
 
   const [newHospitalName, setNewHospitalName] = useState('');
-  const [newHospitalAuthority, setNewHospitalAuthority] = useState('');
+  const [newHospitalAcronym, setNewHospitalAcronym] = useState('');
+  const [newHospitalHA, setNewHospitalHA] = useState('');
   const [newUnit, setNewUnit] = useState('');
 
   const addHospital = () => {
     const name = newHospitalName.trim();
-    const authority = newHospitalAuthority.trim();
-    if (!name || !authority) return;
+    const acronym = newHospitalAcronym.trim();
+    const ha = newHospitalHA;
+    if (!name || !acronym || !ha) return;
     if ((settings.hospitals || []).some(h => h.name === name)) return;
-    setSettings(s => ({ ...s, hospitals: [...(s.hospitals || []), { name, health_authority: authority }] }));
+    setSettings(s => ({ ...s, hospitals: [...(s.hospitals || []), { name, acronym, health_authority: ha }] }));
     setNewHospitalName('');
-    setNewHospitalAuthority('');
+    setNewHospitalAcronym('');
+    setNewHospitalHA('');
   };
 
   const removeHospital = (name) => {
@@ -278,21 +293,30 @@ export default function Settings() {
         {/* Hospitals */}
         <div className="space-y-3">
           <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Hospitals</h4>
-          <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_80px_200px_auto] gap-2">
             <Input
               value={newHospitalName}
               onChange={e => setNewHospitalName(e.target.value)}
-              placeholder="Hospital name (e.g. VGH)"
+              placeholder="Hospital name (e.g. Vancouver General)"
               className="h-9 text-sm"
             />
             <Input
-              value={newHospitalAuthority}
-              onChange={e => setNewHospitalAuthority(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addHospital())}
-              placeholder="Health authority (e.g. VCH)"
+              value={newHospitalAcronym}
+              onChange={e => setNewHospitalAcronym(e.target.value)}
+              placeholder="Acronym (e.g. VGH)"
               className="h-9 text-sm"
             />
-            <Button size="sm" variant="outline" onClick={addHospital} disabled={!newHospitalName.trim() || !newHospitalAuthority.trim()} className="flex-shrink-0">
+            <Select value={newHospitalHA} onValueChange={v => setNewHospitalHA(v)}>
+              <SelectTrigger className="h-9 text-sm">
+                <SelectValue placeholder="Health authority" />
+              </SelectTrigger>
+              <SelectContent>
+                {HEALTH_AUTHORITIES.map(ha => (
+                  <SelectItem key={ha.value} value={ha.value}>{ha.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button size="sm" variant="outline" onClick={addHospital} disabled={!newHospitalName.trim() || !newHospitalAcronym.trim() || !newHospitalHA} className="flex-shrink-0">
               <Plus className="w-4 h-4 mr-1" /> Add
             </Button>
           </div>
@@ -300,7 +324,7 @@ export default function Settings() {
             <div className="flex flex-wrap gap-2">
               {(settings.hospitals || []).map(h => (
                 <span key={h.name} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-muted text-xs font-medium text-foreground">
-                  {h.name} <span className="text-[10px] text-muted-foreground">({h.health_authority})</span>
+                  {h.name} <span className="text-[10px] text-muted-foreground">[{h.acronym}] · {h.health_authority}</span>
                   <button onClick={() => removeHospital(h.name)} className="ml-1 text-muted-foreground hover:text-destructive">
                     <X className="w-3 h-3" />
                   </button>
@@ -354,7 +378,7 @@ export default function Settings() {
               <SelectContent>
                 <SelectItem value="_none">— None —</SelectItem>
                 {(settings.hospitals || []).map(h => (
-                  <SelectItem key={h.name} value={h.name}>{h.name} ({h.health_authority})</SelectItem>
+                  <SelectItem key={h.name} value={h.name}>{h.name} [{h.acronym}] · {h.health_authority}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
