@@ -309,8 +309,8 @@ export function calculatePeriodBreakdown(shifts, settings) {
   let overtimePay = 0;
   let regularHours = 0;
 
-  // Track overtime/stat hours by multiplier
-  let otDetail = { 1.5: 0, 2: 0, 2.5: 0, 3: 0 };
+  // Track overtime/stat hours by shift type
+  let otDetail = { overtime: 0, day_off: 0, work_stat: 0, work_super_stat: 0, ot_stat: 0 };
 
   // Premium accumulators
   let eveningTotal = 0, nightTotal = 0, weekendTotal = 0, superShiftTotal = 0;
@@ -327,7 +327,7 @@ export function calculatePeriodBreakdown(shifts, settings) {
       if (isStraight) regularHours += paidHours;
     } else {
       overtimePay += paidHours * wage * multiplier;
-      otDetail[multiplier] = (otDetail[multiplier] || 0) + paidHours;
+      otDetail[shift.shift_type] = (otDetail[shift.shift_type] || 0) + paidHours;
     }
 
     const premiums = calculateShiftPremiums(shift, settings);

@@ -36,9 +36,9 @@ export default function PayBreakdown({ breakdown, wage }) {
           const det = breakdown.overtime_detail;
           if (!det) return null;
           const parts = [];
-          const labels = { 1.5: '1.5× (OT)', 2: '2× (Day Off/Stat)', 2.5: '2.5× (Super Stat)', 3: '3× (OT on Stat)' };
-          for (const [mul, hrs] of Object.entries(det)) {
-            if (hrs > 0) parts.push(`${hrs}h @ ${labels[mul] || mul + '×'}`);
+          const labels = { overtime: '1.5× (OT)', day_off: '2× (Day Off)', work_stat: '2× (Stat)', work_super_stat: '2.5× (Super Stat)', ot_stat: '3× (OT on Stat)' };
+          for (const [type, hrs] of Object.entries(det)) {
+            if (hrs > 0) parts.push(`${hrs}h @ ${labels[type] || type}`);
           }
           return parts.length > 0 ? parts.join(', ') : null;
         })()}
