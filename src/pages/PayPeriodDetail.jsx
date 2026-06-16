@@ -5,7 +5,7 @@ import ShiftForm from '@/components/payroll/ShiftForm';
 import ShiftRow from '@/components/payroll/ShiftRow';
 import PayBreakdown from '@/components/payroll/PayBreakdown';
 import { calculatePeriodBreakdown, calculateShiftPremiums, getCurrentPayPeriodDates, getPayPeriodName } from '@/lib/premiumCalculator';
-import { Plus, Loader2, Calculator, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function PayPeriodDetail() {
   const [settings, setSettings] = useState(null);
@@ -14,7 +14,6 @@ export default function PayPeriodDetail() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingShift, setEditingShift] = useState(null);
-  const [calculating, setCalculating] = useState(false);
   const [currentPeriodIdx, setCurrentPeriodIdx] = useState(0);
 
   const loadData = useCallback(async () => {
@@ -101,7 +100,11 @@ export default function PayPeriodDetail() {
 
   const addShift = async (shiftData) => {
     const updatedShifts = [...(period.shifts || []), { ...shiftData }];
-    const updated = await base44.entities.PayPeriod.update(period.id, { shifts: updatedShifts });
+    const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings) : null;
+    const updated = await base44.entities.PayPeriod.update(period.id, {
+      shifts: updatedShifts,
+      ...(breakdown ? { breakdown, status: 'calculated' } : {}),
+    });
     setPeriod(updated);
     setPeriods(prev => prev.map(p => p.id === updated.id ? updated : p));
     setShowForm(false);
@@ -111,7 +114,11 @@ export default function PayPeriodDetail() {
     const updatedShifts = (period.shifts || []).map((s, i) =>
       i === editingShift.index ? { ...shiftData } : s
     );
-    const updated = await base44.entities.PayPeriod.update(period.id, { shifts: updatedShifts });
+    const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings) : null;
+    const updated = await base44.entities.PayPeriod.update(period.id, {
+      shifts: updatedShifts,
+      ...(breakdown ? { breakdown, status: 'calculated' } : {}),
+    });
     setPeriod(updated);
     setPeriods(prev => prev.map(p => p.id === updated.id ? updated : p));
     setEditingShift(null);
@@ -119,25 +126,13 @@ export default function PayPeriodDetail() {
 
   const deleteShift = async (shift, idx) => {
     const updatedShifts = (period.shifts || []).filter((_, i) => i !== idx);
-    const updated = await base44.entities.PayPeriod.update(period.id, { shifts: updatedShifts });
+    const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings) : null;
+    const updated = await base44.entities.PayPeriod.update(period.id, {
+      shifts: updatedShifts,
+      ...(breakdown ? { breakdown, status: 'calculated' } : {}),
+    });
     setPeriod(updated);
     setPeriods(prev => prev.map(p => p.id === updated.id ? updated : p));
-  };
-
-  const calculatePay = async () => {
-    if (!settings || !period || !period.shifts?.length) return;
-    setCalculating(true);
-    try {
-      const breakdown = calculatePeriodBreakdown(period.shifts, settings);
-      const updated = await base44.entities.PayPeriod.update(period.id, {
-        breakdown,
-        status: 'calculated',
-      });
-      setPeriod(updated);
-      setPeriods(prev => prev.map(p => p.id === updated.id ? updated : p));
-    } finally {
-      setCalculating(false);
-    }
   };
 
   if (loading && !period) {
@@ -258,20 +253,6 @@ export default function PayPeriodDetail() {
           ))}
         </div>
 
-        {/* Calculate button */}
-        {period.shifts?.length > 0 && (
-          <div className="px-5 py-4 border-t border-border bg-muted/20 flex items-center justify-between">
-            <p className="text-xs text-muted-foreground">
-              {period.status === 'calculated'
-                ? 'Breakdown calculated below. Edit shifts and recalculate if needed.'
-                : `${period.shifts.length} shift${period.shifts.length > 1 ? 's' : ''} logged. Ready to calculate.`}
-            </p>
-            <Button onClick={calculatePay} disabled={calculating || !settings} size="sm" className="bg-primary text-primary-foreground">
-              {calculating ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <Calculator className="w-4 h-4 mr-1.5" />}
-              {period.status === 'calculated' ? 'Recalculate' : 'Calculate Pay'}
-            </Button>
-          </div>
-        )}
       </div>
 
       {/* Breakdown */}
