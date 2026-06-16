@@ -173,7 +173,7 @@ export default function PayPeriodDetail() {
     );
   }
 
-  const breakdown = period.breakdown || (settings && period.shifts?.length ? calculatePeriodBreakdown(period.shifts, settings) : null);
+  const breakdown = settings && period.shifts?.length ? calculatePeriodBreakdown(period.shifts, settings) : null;
 
   return (
     <div className="space-y-6">
@@ -301,7 +301,7 @@ export default function PayPeriodDetail() {
 
       {/* Breakdown */}
       {(breakdown || period.breakdown) && (
-        <PayBreakdown breakdown={period.breakdown || breakdown} wage={settings?.hourly_wage} />
+        <PayBreakdown breakdown={breakdown} wage={settings?.hourly_wage} />
       )}
     </div>
   );
