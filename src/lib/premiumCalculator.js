@@ -32,23 +32,14 @@ export function formatTime(decimal) {
  * All values in decimal hours (0-24+). Handles overnight shifts.
  */
 export function hoursInRange(shiftStart, shiftEnd, rangeStart, rangeEnd) {
-  if (shiftStart >= shiftEnd) shiftEnd += 24; // overnight shift
+  // Normalise overnight spans: if end < start, it crosses midnight — add 24 to end
+  if (shiftStart >= shiftEnd) shiftEnd += 24;
   if (rangeStart >= rangeEnd) rangeEnd += 24;
 
-  // Check overlap in 24h window, then shift and check again for overnight
-  let total = 0;
-
-  // Normal window
+  // A single overlap check on the normalised window covers all cases for 8–24h shifts
   const s1 = Math.max(shiftStart, rangeStart);
   const e1 = Math.min(shiftEnd, rangeEnd);
-  if (s1 < e1) total += e1 - s1;
-
-  // Overnight window (shift everything by +24)
-  const s2 = Math.max(shiftStart + 24, rangeStart);
-  const e2 = Math.min(shiftEnd + 24, rangeEnd + 24);
-  if (s2 < e2) total += e2 - s2;
-
-  return total;
+  return s1 < e1 ? e1 - s1 : 0;
 }
 
 /**
@@ -65,36 +56,30 @@ export function shiftSpanHours(startTime, endTime) {
  * Determine if a shift qualifies for evening premium (majority rule: >50% in 15:30–23:30)
  * Returns: 'full' (extended-hour: pay all paid hours), 'partial' (pay hours in window), or null
  */
-export function eveningShiftType(startTime, endTime, extendedShift) {
+export function eveningShiftType(startTime, endTime) {
   const start = parseTime(startTime);
   const end = parseTime(endTime);
   const span = shiftSpanHours(startTime, endTime);
   const eveningHrs = hoursInRange(start, end, 15.5, 23.5);
-  const nightHrs = hoursInRange(start, end, 23.5, 31.5); // 23.5 to 31.5 = 23:30–07:30
-  if (eveningHrs <= nightHrs) return null; // night wins
-  if (eveningHrs <= span / 2) return null; // majority rule not met
-  // Extended shift → pay all paid hours; otherwise only hours in the window
-  return extendedShift ? 'full' : 'partial';
+  const nightHrs = hoursInRange(start, end, 23.5, 31.5);
+  if (eveningHrs <= nightHrs) return null;
+  if (eveningHrs <= span / 2) return null;
+  return 'full'; // majority in window → pay premium on ALL paid hours
 }
 
-/**
- * Determine if a shift qualifies for night premium (majority rule: >50% in 23:30–07:30)
- * Returns: 'full' (extended: pay all paid hours), 'partial' (pay hours in window), or null
- */
-export function nightShiftType(startTime, endTime, extendedShift) {
+export function nightShiftType(startTime, endTime) {
   const start = parseTime(startTime);
   const end = parseTime(endTime);
   const span = shiftSpanHours(startTime, endTime);
   const nightHrs = hoursInRange(start, end, 23.5, 31.5);
   const eveningHrs = hoursInRange(start, end, 15.5, 23.5);
-  if (nightHrs <= eveningHrs) return null; // evening wins
-  if (nightHrs <= span / 2) return null; // majority rule not met
-  return extendedShift ? 'full' : 'partial';
+  if (nightHrs <= eveningHrs) return null;
+  if (nightHrs <= span / 2) return null;
+  return 'full'; // majority in window → pay premium on ALL paid hours
 }
 
-// Keep backward-compat helpers (no extended info → default to partial)
-export function isEveningShift(startTime, endTime) { return eveningShiftType(startTime, endTime, false) !== null; }
-export function isNightShift(startTime, endTime) { return nightShiftType(startTime, endTime, false) !== null; }
+export function isEveningShift(startTime, endTime) { return eveningShiftType(startTime, endTime) !== null; }
+export function isNightShift(startTime, endTime) { return nightShiftType(startTime, endTime) !== null; }
 
 /**
  * Check if a date falls on a weekend (Saturday or Sunday)
@@ -196,22 +181,15 @@ export function calculateShiftPremiums(shift, settings) {
   const isStraight = ['regular', 'isn', 'vacation', 'sick', 'pdo_pst', 'other_leave'].includes(shift.shift_type);
   const overrides = shift.premium_overrides || {};
 
-  // --- Evening / Night (mutually exclusive) ---
-  const extended = shift.extended_shift || false;
-  const evType = eveningShiftType(shift.start_time, shift.end_time, extended);
-  const niType = nightShiftType(shift.start_time, shift.end_time, extended);
+  // --- Evening / Night (mutually exclusive, majority-rule → all paid hours) ---
+  const evType = eveningShiftType(shift.start_time, shift.end_time);
+  const niType = nightShiftType(shift.start_time, shift.end_time);
 
   let eveningHrs = 0, nightHrs = 0;
   if (evType === 'full') {
     eveningHrs = paidHours;
-  } else if (evType === 'partial') {
-    const s = parseTime(shift.start_time), e = parseTime(shift.end_time);
-    eveningHrs = hoursInRange(s, e, 15.5, 23.5);
   } else if (niType === 'full') {
     nightHrs = paidHours;
-  } else if (niType === 'partial') {
-    const s = parseTime(shift.start_time), e = parseTime(shift.end_time);
-    nightHrs = hoursInRange(s, e, 23.5, 31.5);
   }
 
   const wkndHrs = weekendHours(shift.date, shift.start_time, shift.end_time);
