@@ -5,19 +5,17 @@ import ShiftForm from '@/components/payroll/ShiftForm';
 import ShiftRow from '@/components/payroll/ShiftRow';
 import PayBreakdown from '@/components/payroll/PayBreakdown';
 import { calculatePeriodBreakdown, calculateShiftPremiums, getCurrentPayPeriodDates, getPayPeriodName } from '@/lib/premiumCalculator';
-import { Plus, Loader2, ChevronLeft, ChevronRight, CalendarPlus, ArrowUpDown } from 'lucide-react';
+import { Plus, Loader2, CalendarPlus, ArrowUpDown } from 'lucide-react';
 import BulkAddShift from '@/components/payroll/BulkAddShift';
 import { getVCHPeriodNumber } from '@/lib/statHolidays';
 
 export default function PayPeriodDetail() {
   const [settings, setSettings] = useState(null);
   const [period, setPeriod] = useState(null);
-  const [periods, setPeriods] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [showBulkForm, setShowBulkForm] = useState(false);
   const [editingShift, setEditingShift] = useState(null);
-  const [currentPeriodIdx, setCurrentPeriodIdx] = useState(0);
   const [sortAsc, setSortAsc] = useState(true);
 
   const loadData = useCallback(async () => {
@@ -28,26 +26,15 @@ export default function PayPeriodDetail() {
         base44.entities.PayPeriod.list('-start_date', 50),
       ]);
       setSettings(settingsList[0] || null);
-      setPeriods(periodList);
 
-      // Check for period query param
-      const params = new URLSearchParams(window.location.search);
-      const periodId = params.get('period');
+      // Find the current pay period
+      const { start_date, end_date } = getCurrentPayPeriodDates();
+      const current = periodList.find(p => p.start_date === start_date && p.end_date === end_date);
 
-      if (periodId && periodList.length > 0) {
-        const idx = periodList.findIndex(p => p.id === periodId);
-        if (idx >= 0) {
-          setCurrentPeriodIdx(idx);
-          setPeriod(periodList[idx]);
-          return;
-        }
-      }
-
-      if (periodList.length > 0) {
-        setPeriod(periodList[currentPeriodIdx] || periodList[0]);
+      if (current) {
+        setPeriod(current);
       } else {
-        // Create a new pay period for current bi-weekly window
-        const { start_date, end_date } = getCurrentPayPeriodDates();
+        // Create it
         const created = await base44.entities.PayPeriod.create({
           name: getPayPeriodName(start_date, end_date),
           start_date,
@@ -56,12 +43,11 @@ export default function PayPeriodDetail() {
           status: 'draft',
         });
         setPeriod(created);
-        setPeriods([created]);
       }
     } finally {
       setLoading(false);
     }
-  }, [currentPeriodIdx]);
+  }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -71,37 +57,6 @@ export default function PayPeriodDetail() {
     return () => { unsub1(); unsub2(); };
   }, [loadData]);
 
-  const selectPeriod = (idx) => {
-    setCurrentPeriodIdx(idx);
-    setPeriod(periods[idx]);
-  };
-
-  const navigatePeriod = (direction) => {
-    const newIdx = currentPeriodIdx + direction;
-    if (newIdx >= 0 && newIdx < periods.length) {
-      selectPeriod(newIdx);
-    }
-  };
-
-  const createNewPeriod = async () => {
-    setLoading(true);
-    try {
-      const { start_date, end_date } = getCurrentPayPeriodDates();
-      const created = await base44.entities.PayPeriod.create({
-        name: getPayPeriodName(start_date, end_date),
-        start_date,
-        end_date,
-        shifts: [],
-        status: 'draft',
-      });
-      setPeriod(created);
-      setPeriods(prev => [created, ...prev]);
-      setCurrentPeriodIdx(0);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const addShift = async (shiftData) => {
     const updatedShifts = [...(period.shifts || []), { ...shiftData }];
     const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings) : null;
@@ -110,7 +65,6 @@ export default function PayPeriodDetail() {
       ...(breakdown ? { breakdown, status: 'calculated' } : {}),
     });
     setPeriod(updated);
-    setPeriods(prev => prev.map(p => p.id === updated.id ? updated : p));
     setShowForm(false);
   };
 
@@ -122,7 +76,6 @@ export default function PayPeriodDetail() {
       ...(breakdown ? { breakdown, status: 'calculated' } : {}),
     });
     setPeriod(updated);
-    setPeriods(prev => prev.map(p => p.id === updated.id ? updated : p));
     setShowBulkForm(false);
   };
 
@@ -136,7 +89,6 @@ export default function PayPeriodDetail() {
       ...(breakdown ? { breakdown, status: 'calculated' } : {}),
     });
     setPeriod(updated);
-    setPeriods(prev => prev.map(p => p.id === updated.id ? updated : p));
     setEditingShift(null);
   };
 
@@ -148,7 +100,6 @@ export default function PayPeriodDetail() {
       ...(breakdown ? { breakdown, status: 'calculated' } : {}),
     });
     setPeriod(updated);
-    setPeriods(prev => prev.map(p => p.id === updated.id ? updated : p));
   };
 
   if (loading && !period) {
@@ -162,13 +113,9 @@ export default function PayPeriodDetail() {
   if (!period) {
     return (
       <div className="space-y-6">
-        <h2 className="text-2xl font-display font-bold text-foreground tracking-tight">Pay Period</h2>
+        <h2 className="text-2xl font-display font-bold text-foreground tracking-tight">Current Pay Period</h2>
         <div className="bg-card border border-border rounded-xl p-8 text-center">
-          <p className="text-muted-foreground mb-4">No pay periods found. Create one to start logging shifts.</p>
-          <Button onClick={createNewPeriod} className="bg-primary text-primary-foreground">
-            <Plus className="w-4 h-4 mr-2" />
-            Create Current Pay Period
-          </Button>
+          <p className="text-muted-foreground">Unable to determine current pay period.</p>
         </div>
       </div>
     );
@@ -188,7 +135,7 @@ export default function PayPeriodDetail() {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h2 className="text-2xl font-display font-bold text-foreground tracking-tight">Pay Period</h2>
+          <h2 className="text-2xl font-display font-bold text-foreground tracking-tight">Current Pay Period</h2>
           {period && (
             <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
               {getVCHPeriodNumber(period.start_date) && (
@@ -203,24 +150,6 @@ export default function PayPeriodDetail() {
               </span>
             </p>
           )}
-        </div>
-        <div className="flex items-center gap-2">
-          {periods.length > 1 && (
-            <div className="flex items-center gap-1 mr-2">
-              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => navigatePeriod(-1)} disabled={currentPeriodIdx >= periods.length - 1}>
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-              <span className="text-xs text-muted-foreground px-1 min-w-[60px] text-center">
-                {periods.length - currentPeriodIdx} / {periods.length}
-              </span>
-              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => navigatePeriod(1)} disabled={currentPeriodIdx <= 0}>
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-            </div>
-          )}
-          <Button variant="outline" size="sm" onClick={createNewPeriod}>
-            <Plus className="w-4 h-4 mr-1.5" /> New Period
-          </Button>
         </div>
       </div>
 

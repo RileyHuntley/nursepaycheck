@@ -55,7 +55,7 @@ function PremiumChip({ label, amount, overridden }) {
   );
 }
 
-export default function ShiftRow({ shift, premiums, settings, onEdit, onDelete }) {
+export default function ShiftRow({ shift, premiums, settings, onEdit, onDelete, readOnly }) {
   const overridden = premiums?._overridden || [];
   const hosp = shift.hospital ? (settings?.hospitals || []).find(h => h.name === shift.hospital) : null;
   const unit = shift.unit ? (settings?.units || []).find(u => u.name === shift.unit) : null;
@@ -127,14 +127,16 @@ export default function ShiftRow({ shift, premiums, settings, onEdit, onDelete }
           </div>
         )}
 
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex-shrink-0">
-          <Button variant="ghost" size="icon" onClick={() => onEdit(shift)} className="h-7 w-7">
-            <Pencil className="w-3.5 h-3.5" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={() => onDelete(shift)} className="h-7 w-7 text-destructive hover:text-destructive">
-            <Trash2 className="w-3.5 h-3.5" />
-          </Button>
-        </div>
+        {!readOnly && (
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex-shrink-0">
+            <Button variant="ghost" size="icon" onClick={() => onEdit(shift)} className="h-7 w-7">
+              <Pencil className="w-3.5 h-3.5" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={() => onDelete(shift)} className="h-7 w-7 text-destructive hover:text-destructive">
+              <Trash2 className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Premium chips row */}
