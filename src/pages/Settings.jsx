@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Save, Loader2, Plus, X } from 'lucide-react';
+import { SHIFT_PATTERNS } from '@/lib/shiftPatterns';
 import {
   Select,
   SelectContent,
@@ -53,6 +54,7 @@ const defaultSettings = {
   units: [],
   default_hospital: '',
   default_unit: '',
+  default_shift_pattern: 'DDNN',
 };
 
 export default function Settings() {
@@ -380,6 +382,23 @@ export default function Settings() {
         </div>
 
         {/* Defaults */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Default Shift Pattern</Label>
+            <Select value={settings.default_shift_pattern || 'DDNN'} onValueChange={v => set('default_shift_pattern', v)}>
+              <SelectTrigger className="h-9 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SHIFT_PATTERNS.map(p => (
+                  <SelectItem key={p.name} value={p.name}>{p.name} — {p.description}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* Default Hospital / Unit */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">Default Hospital</Label>

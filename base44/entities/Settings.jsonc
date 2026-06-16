@@ -194,6 +194,10 @@
     },
     "default_unit": {
       "type": "string"
+    },
+    "default_shift_pattern": {
+      "type": "string",
+      "default": "DDNN"
     }
   },
   "required": []

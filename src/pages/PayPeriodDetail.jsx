@@ -5,7 +5,8 @@ import ShiftForm from '@/components/payroll/ShiftForm';
 import ShiftRow from '@/components/payroll/ShiftRow';
 import PayBreakdown from '@/components/payroll/PayBreakdown';
 import { calculatePeriodBreakdown, calculateShiftPremiums, getCurrentPayPeriodDates, getPayPeriodName } from '@/lib/premiumCalculator';
-import { Plus, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Loader2, ChevronLeft, ChevronRight, CalendarPlus } from 'lucide-react';
+import BulkAddShift from '@/components/payroll/BulkAddShift';
 import { getVCHPeriodNumber } from '@/lib/statHolidays';
 
 export default function PayPeriodDetail() {
@@ -14,6 +15,7 @@ export default function PayPeriodDetail() {
   const [periods, setPeriods] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [showBulkForm, setShowBulkForm] = useState(false);
   const [editingShift, setEditingShift] = useState(null);
   const [currentPeriodIdx, setCurrentPeriodIdx] = useState(0);
 
@@ -111,6 +113,18 @@ export default function PayPeriodDetail() {
     setShowForm(false);
   };
 
+  const bulkAddShifts = async (shifts) => {
+    const updatedShifts = [...(period.shifts || []), ...shifts];
+    const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings) : null;
+    const updated = await base44.entities.PayPeriod.update(period.id, {
+      shifts: updatedShifts,
+      ...(breakdown ? { breakdown, status: 'calculated' } : {}),
+    });
+    setPeriod(updated);
+    setPeriods(prev => prev.map(p => p.id === updated.id ? updated : p));
+    setShowBulkForm(false);
+  };
+
   const updateShift = async (shiftData) => {
     const updatedShifts = (period.shifts || []).map((s, i) =>
       i === editingShift.index ? { ...shiftData } : s
@@ -206,15 +220,35 @@ export default function PayPeriodDetail() {
       <div className="bg-card border border-border rounded-xl overflow-hidden">
         <div className="px-5 py-4 border-b border-border flex items-center justify-between">
           <h3 className="text-sm font-semibold text-foreground">Shift Log</h3>
-          <Button
-            size="sm"
-            className="bg-primary text-primary-foreground"
-            onClick={() => { setShowForm(true); setEditingShift(null); }}
-            disabled={showForm}
-          >
-            <Plus className="w-4 h-4 mr-1.5" /> Add Shift
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => { setShowBulkForm(true); setShowForm(false); setEditingShift(null); }}
+              disabled={showBulkForm}
+            >
+              <CalendarPlus className="w-4 h-4 mr-1.5" /> Bulk Add
+            </Button>
+            <Button
+              size="sm"
+              className="bg-primary text-primary-foreground"
+              onClick={() => { setShowForm(true); setShowBulkForm(false); setEditingShift(null); }}
+              disabled={showForm}
+            >
+              <Plus className="w-4 h-4 mr-1.5" /> Add Shift
+            </Button>
+          </div>
         </div>
+
+        {showBulkForm && (
+          <div className="px-5 py-4 border-b border-border bg-muted/30">
+            <BulkAddShift
+              onSubmit={bulkAddShifts}
+              onCancel={() => setShowBulkForm(false)}
+              settings={settings}
+            />
+          </div>
+        )}
 
         {showForm && (
           <div className="px-5 py-4 border-b border-border bg-muted/30">
@@ -238,15 +272,17 @@ export default function PayPeriodDetail() {
         )}
 
         <div className="divide-y divide-border">
-          {(!period.shifts || period.shifts.length === 0) && !showForm && (
+          {(!period.shifts || period.shifts.length === 0) && !showForm && !showBulkForm && (
             <div className="px-5 py-12 text-center">
               <p className="text-sm text-muted-foreground">No shifts logged yet for this pay period.</p>
-              <Button
-                variant="outline" size="sm" className="mt-3"
-                onClick={() => setShowForm(true)}
-              >
-                <Plus className="w-4 h-4 mr-1.5" /> Log Your First Shift
-              </Button>
+              <div className="flex items-center justify-center gap-2 mt-3">
+                <Button variant="outline" size="sm" onClick={() => setShowBulkForm(true)}>
+                  <CalendarPlus className="w-4 h-4 mr-1.5" /> Bulk Add
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setShowForm(true)}>
+                  <Plus className="w-4 h-4 mr-1.5" /> Single Shift
+                </Button>
+              </div>
             </div>
           )}
           {period.shifts?.map((shift, idx) => (
