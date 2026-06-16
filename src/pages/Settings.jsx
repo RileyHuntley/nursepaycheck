@@ -297,7 +297,7 @@ export default function Settings() {
         {/* Hospitals */}
         <div className="space-y-3">
           <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Hospitals</h4>
-          <div className="grid grid-cols-1 md:grid-cols-[1fr_120px_200px_auto] gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr] gap-2">
             <Input
               value={newHospitalName}
               onChange={e => setNewHospitalName(e.target.value)}
@@ -307,9 +307,11 @@ export default function Settings() {
             <Input
               value={newHospitalAcronym}
               onChange={e => setNewHospitalAcronym(e.target.value)}
-              placeholder="Acronym (e.g. VGH)"
+              placeholder="Abbreviation (e.g. VGH)"
               className="h-9 text-sm"
             />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-2">
             <Select value={newHospitalHA} onValueChange={v => setNewHospitalHA(v)}>
               <SelectTrigger className="h-9 text-sm">
                 <SelectValue placeholder="Health authority" />
@@ -354,7 +356,7 @@ export default function Settings() {
               value={newUnitCode}
               onChange={e => setNewUnitCode(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addUnit())}
-              placeholder="Code (e.g. C2B)"
+              placeholder="Unit # or Abbreviation (e.g. C2B)"
               className="h-9 text-sm"
             />
             <Button size="sm" variant="outline" onClick={addUnit} disabled={!newUnitName.trim() || !newUnitCode.trim()} className="flex-shrink-0">
