@@ -343,7 +343,7 @@ export default function Settings() {
         {/* Units */}
         <div className="space-y-3">
           <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Units</h4>
-          <div className="grid grid-cols-1 md:grid-cols-[1fr_120px_auto] gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-2">
             <Input
               value={newUnitName}
               onChange={e => setNewUnitName(e.target.value)}
