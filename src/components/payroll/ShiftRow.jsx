@@ -29,6 +29,20 @@ const TYPE_COLORS = {
   other_leave:     'bg-muted text-muted-foreground',
 };
 
+const TYPE_MULTIPLIERS = {
+  regular:         1.0,
+  day_off:         2.0,
+  work_stat:       2.0,
+  work_super_stat: 2.5,
+  ot_stat:         3.0,
+  overtime:        1.5,
+  isn:             1.0,
+  vacation:        1.0,
+  sick:            1.0,
+  pdo_pst:         1.0,
+  other_leave:     1.0,
+};
+
 function PremiumChip({ label, amount, overridden }) {
   if (!amount || amount <= 0) return null;
   return (
@@ -45,6 +59,17 @@ export default function ShiftRow({ shift, premiums, settings, onEdit, onDelete }
   const overridden = premiums?._overridden || [];
   const hosp = shift.hospital ? (settings?.hospitals || []).find(h => h.name === shift.hospital) : null;
   const unit = shift.unit ? (settings?.units || []).find(u => u.name === shift.unit) : null;
+
+  const wage = settings?.hourly_wage || 0;
+  const multiplier = TYPE_MULTIPLIERS[shift.shift_type] || 1.0;
+  const baseGross = shift.paid_hours * wage * multiplier;
+  const premiumTotal = premiums
+    ? (premiums.evening || 0) + (premiums.night || 0) + (premiums.weekend || 0) +
+      (premiums.super_shift || 0) + (premiums.regular_premium || 0) +
+      (premiums.short_notice || 0) + (premiums.responsibility || 0) +
+      (premiums.preceptor || 0)
+    : 0;
+  const totalGross = baseGross + premiumTotal;
 
   return (
     <div className="px-4 py-3 bg-card hover:bg-muted/20 transition-colors duration-150 group">
@@ -79,6 +104,26 @@ export default function ShiftRow({ shift, premiums, settings, onEdit, onDelete }
         <div className="text-sm text-foreground font-mono flex-shrink-0">
           {shift.paid_hours}h
         </div>
+
+        {wage > 0 && (
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <span className="text-[11px] font-mono text-muted-foreground">
+              ${baseGross.toFixed(2)}
+            </span>
+            {premiumTotal > 0 && (
+              <>
+                <span className="text-[11px] text-muted-foreground">+</span>
+                <span className="text-[11px] font-mono text-primary">
+                  ${premiumTotal.toFixed(2)}
+                </span>
+              </>
+            )}
+            <span className="text-[11px] text-muted-foreground">=</span>
+            <span className="text-xs font-mono font-semibold text-foreground">
+              ${totalGross.toFixed(2)}
+            </span>
+          </div>
+        )}
 
         <div className="flex-1" />
 
