@@ -7,6 +7,11 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ScrollToTop from './components/ScrollToTop';
 // Add page imports here
+import Layout from '@/components/payroll/Layout';
+import Dashboard from '@/pages/Dashboard';
+import PayPeriodDetail from '@/pages/PayPeriodDetail';
+import PayPeriodHistory from '@/pages/PayPeriodHistory';
+import Settings from '@/pages/Settings';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -35,6 +40,12 @@ const AuthenticatedApp = () => {
   return (
     <Routes>
       {/* Add your page Route elements here */}
+      <Route element={<Layout />}>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/pay-period" element={<PayPeriodDetail />} />
+        <Route path="/pay-periods" element={<PayPeriodHistory />} />
+        <Route path="/settings" element={<Settings />} />
+      </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

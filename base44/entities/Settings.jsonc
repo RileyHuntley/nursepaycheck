@@ -1,0 +1,151 @@
+{
+  "name": "Settings",
+  "type": "object",
+  "properties": {
+    "hourly_wage": {
+      "type": "number",
+      "minimum": 0,
+      "default": 45.0
+    },
+    "ot_multipliers": {
+      "type": "object",
+      "properties": {
+        "overtime": {
+          "type": "number",
+          "default": 1.5
+        },
+        "overtime_extended": {
+          "type": "number",
+          "default": 2.0
+        },
+        "stat_holiday": {
+          "type": "number",
+          "default": 1.5
+        },
+        "ot_stat_holiday": {
+          "type": "number",
+          "default": 3.0
+        }
+      }
+    },
+    "premium_rates": {
+      "type": "object",
+      "properties": {
+        "evening": {
+          "type": "number",
+          "default": 1.4
+        },
+        "night": {
+          "type": "number",
+          "default": 5.0
+        },
+        "weekend": {
+          "type": "number",
+          "default": 3.5
+        },
+        "super_shift": {
+          "type": "number",
+          "default": 1.85
+        },
+        "regular_premium": {
+          "type": "number",
+          "default": 2.15
+        },
+        "short_notice": {
+          "type": "number",
+          "default": 2.0
+        },
+        "responsibility_hourly": {
+          "type": "number",
+          "default": 2.5
+        },
+        "responsibility_flat": {
+          "type": "number",
+          "default": 18.75
+        },
+        "preceptor": {
+          "type": "number",
+          "default": 1.5
+        },
+        "on_call_first_72": {
+          "type": "number",
+          "default": 7.0
+        },
+        "on_call_beyond_72": {
+          "type": "number",
+          "default": 7.5
+        }
+      }
+    },
+    "active_allowances": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "isolation",
+          "business"
+        ]
+      },
+      "default": [
+        "isolation"
+      ]
+    },
+    "allowance_rates": {
+      "type": "object",
+      "properties": {
+        "isolation": {
+          "type": "number",
+          "default": 150
+        },
+        "business": {
+          "type": "number",
+          "default": 150
+        }
+      }
+    },
+    "active_qualifications": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "special_clinical_prep",
+          "bsn",
+          "masters",
+          "rpn_dual",
+          "cha_bcit",
+          "university_prep"
+        ]
+      },
+      "default": []
+    },
+    "qualification_rates": {
+      "type": "object",
+      "properties": {
+        "special_clinical_prep": {
+          "type": "number",
+          "default": 50
+        },
+        "bsn": {
+          "type": "number",
+          "default": 100
+        },
+        "masters": {
+          "type": "number",
+          "default": 125
+        },
+        "rpn_dual": {
+          "type": "number",
+          "default": 50
+        },
+        "cha_bcit": {
+          "type": "number",
+          "default": 25
+        },
+        "university_prep": {
+          "type": "number",
+          "default": 25
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,155 @@
+{
+  "name": "PayPeriod",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "calculated"
+      ],
+      "default": "draft"
+    },
+    "shifts": {
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "start_time": {
+            "type": "string"
+          },
+          "end_time": {
+            "type": "string"
+          },
+          "shift_type": {
+            "type": "string",
+            "enum": [
+              "regular",
+              "overtime",
+              "overtime_extended",
+              "stat_holiday",
+              "ot_stat_holiday",
+              "vacation",
+              "sick",
+              "other_leave"
+            ]
+          },
+          "paid_hours": {
+            "type": "number",
+            "minimum": 0
+          },
+          "unpaid_break": {
+            "type": "number",
+            "minimum": 0,
+            "default": 0
+          },
+          "paid_break": {
+            "type": "number",
+            "minimum": 0,
+            "default": 0
+          },
+          "short_notice": {
+            "type": "boolean",
+            "default": false
+          },
+          "responsibility_pay": {
+            "type": "string",
+            "enum": [
+              "none",
+              "hourly",
+              "flat"
+            ],
+            "default": "none"
+          },
+          "preceptor": {
+            "type": "boolean",
+            "default": false
+          },
+          "on_call_hours": {
+            "type": "number",
+            "minimum": 0,
+            "default": 0
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "breakdown": {
+      "type": "object",
+      "properties": {
+        "straight_time_pay": {
+          "type": "number"
+        },
+        "overtime_pay": {
+          "type": "number"
+        },
+        "stat_pay": {
+          "type": "number"
+        },
+        "regular_premium_total": {
+          "type": "number"
+        },
+        "evening_premium_total": {
+          "type": "number"
+        },
+        "night_premium_total": {
+          "type": "number"
+        },
+        "weekend_premium_total": {
+          "type": "number"
+        },
+        "super_shift_premium_total": {
+          "type": "number"
+        },
+        "short_notice_total": {
+          "type": "number"
+        },
+        "responsibility_total": {
+          "type": "number"
+        },
+        "preceptor_total": {
+          "type": "number"
+        },
+        "on_call_total": {
+          "type": "number"
+        },
+        "allowance_total": {
+          "type": "number"
+        },
+        "qualification_total": {
+          "type": "number"
+        },
+        "union_dues": {
+          "type": "number"
+        },
+        "gross_pay": {
+          "type": "number"
+        }
+      }
+    },
+    "actual_gross": {
+      "type": "number"
+    },
+    "notes": {
+      "type": "string"
+    }
+  }
+}
