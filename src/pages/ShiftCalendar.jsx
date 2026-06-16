@@ -34,6 +34,16 @@ const TYPE_SHORT = {
   sick: 'Sick', pdo_pst: 'PDO', other_leave: 'Off',
 };
 
+const HA_FULL_NAMES = {
+  VCH:   'Vancouver Coastal Health',
+  FH:    'Fraser Health',
+  VIHA:  'Island Health',
+  IH:    'Interior Health',
+  NH:    'Northern Health',
+  PHSA:  'Provincial Health Services Authority',
+  PHC:   'Providence Health Care',
+};
+
 export default function ShiftCalendar() {
   const [settings, setSettings] = useState(null);
   const [shiftsMap, setShiftsMap] = useState({});
@@ -136,24 +146,23 @@ export default function ShiftCalendar() {
     return h?.health_authority || null;
   }).filter(Boolean))];
 
-  // Unique unit combos: "ACRONYM CODE" keyed by unit name (so filtering is consistent)
-  const unitCombos = [...new Set(allShifts
-    .filter(s => s.hospital && s.unit)
-    .map(s => {
-      const h = hospitals.find(x => x.name === s.hospital);
-      const u = units.find(x => x.name === s.unit);
-      return `${h?.acronym || s.hospital} ${u?.code || s.unit}`;
-    })
-  )].sort();
-
-  // Build a lookup: "ACRONYM CODE" → unit name (for filtering purposes, we filter by unit name)
+  // Unique unit combos with full names for display
+  const unitOptions = [];
   const unitComboToName = {};
+  const seen = new Set();
   allShifts.filter(s => s.hospital && s.unit).forEach(s => {
     const h = hospitals.find(x => x.name === s.hospital);
     const u = units.find(x => x.name === s.unit);
     const combo = `${h?.acronym || s.hospital} ${u?.code || s.unit}`;
-    if (!unitComboToName[combo]) unitComboToName[combo] = s.unit;
+    if (seen.has(combo)) return;
+    seen.add(combo);
+    unitComboToName[combo] = s.unit;
+    unitOptions.push({
+      value: combo,
+      label: `${u?.name || s.unit} [${combo}]`,
+    });
   });
+  unitOptions.sort((a, b) => a.label.localeCompare(b.label));
 
   // Apply filters to shiftsMap
   const filteredMap = {};
@@ -242,13 +251,13 @@ export default function ShiftCalendar() {
             value={haFilter}
             onValueChange={(v) => { setHaFilter(v); setHospitalFilter('all'); setUnitFilter('all'); }}
           >
-            <SelectTrigger className="h-8 w-[180px] text-xs">
+            <SelectTrigger className="h-8 w-[200px] text-xs">
               <SelectValue placeholder="All Health Authorities" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Health Authorities</SelectItem>
               {shiftHAs.map(ha => (
-                <SelectItem key={ha} value={ha}>{ha}</SelectItem>
+                <SelectItem key={ha} value={ha}>{HA_FULL_NAMES[ha] || ha}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -258,13 +267,13 @@ export default function ShiftCalendar() {
             value={unitFilter}
             onValueChange={setUnitFilter}
           >
-            <SelectTrigger className="h-8 w-[180px] text-xs">
+            <SelectTrigger className="h-8 w-[220px] text-xs">
               <SelectValue placeholder="All Units" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Units</SelectItem>
-              {unitCombos.map(combo => (
-                <SelectItem key={combo} value={combo}>{combo}</SelectItem>
+              {unitOptions.map(opt => (
+                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
