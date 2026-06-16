@@ -52,13 +52,40 @@ export default function ShiftLog() {
   }, [loadData]);
 
   const updateShift = async (shiftData) => {
-    const period = periodMap[editingShift._periodId];
-    if (!period) return;
-    const updatedShifts = (period.shifts || []).map((s, i) =>
+    const oldPeriod = periodMap[editingShift._periodId];
+    if (!oldPeriod) return;
+
+    // If date changed outside current period, move the shift
+    if (shiftData.date !== editingShift.data.date) {
+      const newDates = getPayPeriodForDate(shiftData.date);
+      const stillInOldPeriod = shiftData.date >= oldPeriod.start_date && shiftData.date <= oldPeriod.end_date;
+      if (!stillInOldPeriod) {
+        // Remove from old period
+        const oldShifts = (oldPeriod.shifts || []).filter((_, i) => i !== editingShift._shiftIdx);
+        const oldBreakdown = settings ? calculatePeriodBreakdown(oldShifts, settings) : null;
+        await base44.entities.PayPeriod.update(oldPeriod.id, {
+          shifts: oldShifts,
+          ...(oldBreakdown ? { breakdown: oldBreakdown, status: 'calculated' } : { status: 'draft' }),
+        });
+        // Find or create new period
+        const newPeriod = await findOrCreatePeriodForDate(shiftData.date);
+        const newShifts = [...(newPeriod.shifts || []), { ...shiftData }];
+        const newBreakdown = settings ? calculatePeriodBreakdown(newShifts, settings) : null;
+        await base44.entities.PayPeriod.update(newPeriod.id, {
+          shifts: newShifts,
+          ...(newBreakdown ? { breakdown: newBreakdown, status: 'calculated' } : {}),
+        });
+        setEditingShift(null);
+        loadData();
+        return;
+      }
+    }
+
+    const updatedShifts = (oldPeriod.shifts || []).map((s, i) =>
       i === editingShift._shiftIdx ? { ...shiftData } : s
     );
     const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings) : null;
-    await base44.entities.PayPeriod.update(period.id, {
+    await base44.entities.PayPeriod.update(oldPeriod.id, {
       shifts: updatedShifts,
       ...(breakdown ? { breakdown, status: 'calculated' } : {}),
     });
