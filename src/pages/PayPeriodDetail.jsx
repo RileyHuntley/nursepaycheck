@@ -241,11 +241,7 @@ export default function PayPeriodDetail() {
                   PP {getVCHPeriodNumber(period.start_date)}
                 </span>
               )}
-              <span>{period.name} · {displayShifts.length} shift{displayShifts.length !== 1 ? 's' : ''} ·{' '}
-                <span className={period.status === 'calculated' ? 'text-primary font-medium' : 'text-chart-2'}>
-                  {period.status === 'calculated' ? 'Calculated' : 'Draft'}
-                </span>
-              </span>
+              <span>{period.name} · {displayShifts.length} shift{displayShifts.length !== 1 ? 's' : ''}</span>
             </p>
           )}
         </div>
