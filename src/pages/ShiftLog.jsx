@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
 import ShiftRow from '@/components/payroll/ShiftRow';
+import ShiftForm from '@/components/payroll/ShiftForm';
 import PayBreakdown from '@/components/payroll/PayBreakdown';
 import { calculatePeriodBreakdown, calculateShiftPremiums } from '@/lib/premiumCalculator';
 import { Button } from '@/components/ui/button';
@@ -9,8 +10,10 @@ import { Loader2, ArrowUpDown } from 'lucide-react';
 export default function ShiftLog() {
   const [settings, setSettings] = useState(null);
   const [allShifts, setAllShifts] = useState([]);
+  const [periodMap, setPeriodMap] = useState({}); // id -> period
   const [loading, setLoading] = useState(true);
   const [sortAsc, setSortAsc] = useState(true);
+  const [editingShift, setEditingShift] = useState(null); // { data, _periodId, _shiftIdx }
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -21,13 +24,16 @@ export default function ShiftLog() {
       ]);
       setSettings(settingsList[0] || null);
 
-      // Merge all shifts from all periods with their period info
+      const map = {};
       const merged = [];
       for (const period of periodList) {
-        for (const shift of (period.shifts || [])) {
-          merged.push({ ...shift, _periodName: period.name, _periodId: period.id, _periodStart: period.start_date });
+        map[period.id] = period;
+        const shifts = (period.shifts || []);
+        for (let i = 0; i < shifts.length; i++) {
+          merged.push({ ...shifts[i], _periodName: period.name, _periodId: period.id, _periodStart: period.start_date, _shiftIdx: i });
         }
       }
+      setPeriodMap(map);
       setAllShifts(merged);
     } finally {
       setLoading(false);
@@ -41,6 +47,33 @@ export default function ShiftLog() {
     const unsub2 = base44.entities.PayPeriod.subscribe(() => loadData());
     return () => { unsub1(); unsub2(); };
   }, [loadData]);
+
+  const updateShift = async (shiftData) => {
+    const period = periodMap[editingShift._periodId];
+    if (!period) return;
+    const updatedShifts = (period.shifts || []).map((s, i) =>
+      i === editingShift._shiftIdx ? { ...shiftData } : s
+    );
+    const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings) : null;
+    await base44.entities.PayPeriod.update(period.id, {
+      shifts: updatedShifts,
+      ...(breakdown ? { breakdown, status: 'calculated' } : {}),
+    });
+    setEditingShift(null);
+    loadData();
+  };
+
+  const deleteShift = async (shift) => {
+    const period = periodMap[shift._periodId];
+    if (!period) return;
+    const updatedShifts = (period.shifts || []).filter((_, i) => i !== shift._shiftIdx);
+    const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings) : null;
+    await base44.entities.PayPeriod.update(period.id, {
+      shifts: updatedShifts,
+      ...(breakdown ? { breakdown, status: 'calculated' } : {}),
+    });
+    loadData();
+  };
 
   if (loading) {
     return (
@@ -57,8 +90,8 @@ export default function ShiftLog() {
     return sortAsc ? diff : -diff;
   });
 
-  // YTD breakdown using all shifts (just the shift objects)
-  const shiftsForBreakdown = allShifts.map(({ _periodName, _periodId, _periodStart, ...shift }) => shift);
+  // YTD breakdown
+  const shiftsForBreakdown = allShifts.map(({ _periodName, _periodId, _periodStart, _shiftIdx, ...shift }) => shift);
   const breakdown = settings && shiftsForBreakdown.length ? calculatePeriodBreakdown(shiftsForBreakdown, settings) : null;
 
   return (
@@ -76,6 +109,17 @@ export default function ShiftLog() {
         </Button>
       </div>
 
+      {editingShift && (
+        <div className="bg-card border border-border rounded-xl p-5">
+          <ShiftForm
+            initial={editingShift.data}
+            onSubmit={updateShift}
+            onCancel={() => setEditingShift(null)}
+            settings={settings}
+          />
+        </div>
+      )}
+
       <div className="bg-card border border-border rounded-xl overflow-hidden">
         <div className="px-5 py-4 border-b border-border">
           <h3 className="text-sm font-semibold text-foreground">All Shifts</h3>
@@ -88,17 +132,16 @@ export default function ShiftLog() {
             </div>
           )}
           {sortedShifts.map((shift, idx) => (
-            <div key={`${shift._periodId}-${idx}`} className="px-4 py-2 bg-muted/30 border-b border-border">
-              <div className="text-[10px] text-muted-foreground font-mono mb-0.5">
+            <div key={`${shift._periodId}-${shift._shiftIdx}`} className="bg-muted/30 border-b border-border">
+              <div className="text-[10px] text-muted-foreground font-mono px-4 pt-2">
                 {shift._periodName}
               </div>
               <ShiftRow
                 shift={shift}
                 premiums={settings ? calculateShiftPremiums(shift, settings) : null}
                 settings={settings}
-                onEdit={() => {}}
-                onDelete={() => {}}
-                readOnly
+                onEdit={(s) => setEditingShift({ data: s, _periodId: shift._periodId, _shiftIdx: shift._shiftIdx })}
+                onDelete={() => deleteShift(shift)}
               />
             </div>
           ))}

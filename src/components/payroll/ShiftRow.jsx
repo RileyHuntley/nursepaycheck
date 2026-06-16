@@ -72,7 +72,10 @@ export default function ShiftRow({ shift, premiums, settings, onEdit, onDelete, 
   const totalGross = baseGross + premiumTotal;
 
   return (
-    <div className="px-4 py-3 bg-card hover:bg-muted/20 transition-colors duration-150 group">
+    <div
+      className="px-4 py-3 bg-card hover:bg-muted/20 transition-colors duration-150 cursor-pointer"
+      onClick={() => onEdit && onEdit(shift)}
+    >
       {/* Top row: date, time, type, hours, actions */}
       <div className="flex items-center gap-3 flex-wrap">
         <div className="w-28 flex-shrink-0">
@@ -128,11 +131,11 @@ export default function ShiftRow({ shift, premiums, settings, onEdit, onDelete, 
         )}
 
         {!readOnly && (
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex-shrink-0">
-            <Button variant="ghost" size="icon" onClick={() => onEdit(shift)} className="h-7 w-7">
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); onEdit(shift); }} className="h-7 w-7">
               <Pencil className="w-3.5 h-3.5" />
             </Button>
-            <Button variant="ghost" size="icon" onClick={() => onDelete(shift)} className="h-7 w-7 text-destructive hover:text-destructive">
+            <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); onDelete(shift); }} className="h-7 w-7 text-destructive hover:text-destructive">
               <Trash2 className="w-3.5 h-3.5" />
             </Button>
           </div>
