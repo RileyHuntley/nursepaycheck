@@ -87,18 +87,22 @@ export default function Settings() {
     });
   };
 
-  const [newHospital, setNewHospital] = useState('');
+  const [newHospitalName, setNewHospitalName] = useState('');
+  const [newHospitalAuthority, setNewHospitalAuthority] = useState('');
   const [newUnit, setNewUnit] = useState('');
 
   const addHospital = () => {
-    const name = newHospital.trim();
-    if (!name || (settings.hospitals || []).includes(name)) return;
-    setSettings(s => ({ ...s, hospitals: [...(s.hospitals || []), name] }));
-    setNewHospital('');
+    const name = newHospitalName.trim();
+    const authority = newHospitalAuthority.trim();
+    if (!name || !authority) return;
+    if ((settings.hospitals || []).some(h => h.name === name)) return;
+    setSettings(s => ({ ...s, hospitals: [...(s.hospitals || []), { name, health_authority: authority }] }));
+    setNewHospitalName('');
+    setNewHospitalAuthority('');
   };
 
   const removeHospital = (name) => {
-    setSettings(s => ({ ...s, hospitals: (s.hospitals || []).filter(h => h !== name), default_hospital: s.default_hospital === name ? '' : s.default_hospital }));
+    setSettings(s => ({ ...s, hospitals: (s.hospitals || []).filter(h => h.name !== name), default_hospital: s.default_hospital === name ? '' : s.default_hospital }));
   };
 
   const addUnit = () => {
@@ -274,24 +278,30 @@ export default function Settings() {
         {/* Hospitals */}
         <div className="space-y-3">
           <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Hospitals</h4>
-          <div className="flex gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-2">
             <Input
-              value={newHospital}
-              onChange={e => setNewHospital(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addHospital())}
-              placeholder="e.g. VGH, St. Paul's"
-              className="h-9 text-sm flex-1"
+              value={newHospitalName}
+              onChange={e => setNewHospitalName(e.target.value)}
+              placeholder="Hospital name (e.g. VGH)"
+              className="h-9 text-sm"
             />
-            <Button size="sm" variant="outline" onClick={addHospital} disabled={!newHospital.trim()} className="flex-shrink-0">
+            <Input
+              value={newHospitalAuthority}
+              onChange={e => setNewHospitalAuthority(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addHospital())}
+              placeholder="Health authority (e.g. VCH)"
+              className="h-9 text-sm"
+            />
+            <Button size="sm" variant="outline" onClick={addHospital} disabled={!newHospitalName.trim() || !newHospitalAuthority.trim()} className="flex-shrink-0">
               <Plus className="w-4 h-4 mr-1" /> Add
             </Button>
           </div>
           {(settings.hospitals || []).length > 0 ? (
             <div className="flex flex-wrap gap-2">
               {(settings.hospitals || []).map(h => (
-                <span key={h} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-muted text-xs font-medium text-foreground">
-                  {h}
-                  <button onClick={() => removeHospital(h)} className="ml-1 text-muted-foreground hover:text-destructive">
+                <span key={h.name} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-muted text-xs font-medium text-foreground">
+                  {h.name} <span className="text-[10px] text-muted-foreground">({h.health_authority})</span>
+                  <button onClick={() => removeHospital(h.name)} className="ml-1 text-muted-foreground hover:text-destructive">
                     <X className="w-3 h-3" />
                   </button>
                 </span>
@@ -344,7 +354,7 @@ export default function Settings() {
               <SelectContent>
                 <SelectItem value="_none">— None —</SelectItem>
                 {(settings.hospitals || []).map(h => (
-                  <SelectItem key={h} value={h}>{h}</SelectItem>
+                  <SelectItem key={h.name} value={h.name}>{h.name} ({h.health_authority})</SelectItem>
                 ))}
               </SelectContent>
             </Select>
