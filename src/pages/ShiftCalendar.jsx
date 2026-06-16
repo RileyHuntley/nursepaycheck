@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { getStatType, getStatName, getPayDate } from '@/lib/statHolidays';
+import ShiftForm from '@/components/payroll/ShiftForm';
+import { calculatePeriodBreakdown, calculateShiftPremiums } from '@/lib/premiumCalculator';
 
 const DAYS_OF_WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -27,8 +28,10 @@ const TYPE_SHORT = {
 };
 
 export default function ShiftCalendar() {
+  const [settings, setSettings] = useState(null);
   const [shiftsMap, setShiftsMap] = useState({});
   const [loading, setLoading] = useState(true);
+  const [editingShift, setEditingShift] = useState(null); // { data, periodId }
   const [viewDate, setViewDate] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -37,13 +40,18 @@ export default function ShiftCalendar() {
   const loadShifts = useCallback(async () => {
     setLoading(true);
     try {
-      const periods = await base44.entities.PayPeriod.list('-start_date', 100);
+      const [settingsList, periods] = await Promise.all([
+        base44.entities.Settings.list(),
+        base44.entities.PayPeriod.list('-start_date', 100),
+      ]);
+      setSettings(settingsList[0] || null);
       const map = {};
       for (const p of periods) {
-        for (const s of (p.shifts || [])) {
+        for (let si = 0; si < (p.shifts || []).length; si++) {
+          const s = p.shifts[si];
           if (!s.date) continue;
           if (!map[s.date]) map[s.date] = [];
-          map[s.date].push({ ...s, periodId: p.id, periodName: p.name });
+          map[s.date].push({ ...s, periodId: p.id, periodName: p.name, periodShiftIdx: si });
         }
       }
       setShiftsMap(map);
@@ -55,8 +63,9 @@ export default function ShiftCalendar() {
   useEffect(() => { loadShifts(); }, [loadShifts]);
 
   useEffect(() => {
-    const unsub = base44.entities.PayPeriod.subscribe(() => loadShifts());
-    return () => unsub();
+    const unsub1 = base44.entities.Settings.subscribe(() => loadShifts());
+    const unsub2 = base44.entities.PayPeriod.subscribe(() => loadShifts());
+    return () => { unsub1(); unsub2(); };
   }, [loadShifts]);
 
   const year = viewDate.getFullYear();
@@ -84,6 +93,23 @@ export default function ShiftCalendar() {
   const prevMonth = () => setViewDate(new Date(year, month - 1, 1));
   const nextMonth = () => setViewDate(new Date(year, month + 1, 1));
 
+  const updateShift = async (shiftData) => {
+    if (!editingShift) return;
+    const periodList = await base44.entities.PayPeriod.list('-start_date', 100);
+    const period = periodList.find(p => p.id === editingShift.periodId);
+    if (!period) return;
+    const updatedShifts = (period.shifts || []).map((s, i) =>
+      i === editingShift.periodShiftIdx ? { ...shiftData } : s
+    );
+    const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings) : null;
+    await base44.entities.PayPeriod.update(period.id, {
+      shifts: updatedShifts,
+      ...(breakdown ? { breakdown, status: 'calculated' } : {}),
+    });
+    setEditingShift(null);
+    loadShifts();
+  };
+
   const monthLabel = viewDate.toLocaleDateString('en-CA', { month: 'long', year: 'numeric' });
 
   if (loading) {
@@ -108,6 +134,17 @@ export default function ShiftCalendar() {
           </button>
         </div>
       </div>
+
+      {editingShift && (
+        <div className="bg-card border border-border rounded-xl p-5 mb-4">
+          <ShiftForm
+            initial={editingShift.data}
+            onSubmit={updateShift}
+            onCancel={() => setEditingShift(null)}
+            settings={settings}
+          />
+        </div>
+      )}
 
       <div className="bg-card border border-border rounded-xl overflow-hidden">
         {/* Day headers */}
@@ -173,10 +210,10 @@ export default function ShiftCalendar() {
                   {shifts.map((shift, si) => {
                     const colors = TYPE_COLORS[shift.shift_type] || TYPE_COLORS.regular;
                     return (
-                      <Link
+                      <button
                         key={si}
-                        to={`/pay-period?period=${shift.periodId}`}
-                        className={`block px-1.5 py-0.5 rounded text-[10px] leading-tight border ${colors} hover:brightness-95 transition-all`}
+                        onClick={() => setEditingShift({ data: shift, periodId: shift.periodId, periodShiftIdx: shift.periodShiftIdx })}
+                        className={`w-full text-left px-1.5 py-0.5 rounded text-[10px] leading-tight border ${colors} hover:brightness-95 transition-all cursor-pointer`}
                       >
                         <div className="flex items-center gap-1">
                           <span className="font-semibold">{TYPE_SHORT[shift.shift_type] || shift.shift_type}</span>
@@ -187,7 +224,7 @@ export default function ShiftCalendar() {
                           {shift.extended_shift && <span className="text-destructive font-medium">Ext</span>}
                           {shift.short_notice && <span className="font-medium">Notice</span>}
                         </div>
-                      </Link>
+                      </button>
                     );
                   })}
                 </div>
