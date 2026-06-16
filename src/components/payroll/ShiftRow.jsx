@@ -2,25 +2,31 @@ import { Button } from '@/components/ui/button';
 import { Pencil, Trash2 } from 'lucide-react';
 
 const TYPE_LABELS = {
-  regular: 'Regular',
-  overtime: 'OT (1.5x)',
-  overtime_extended: 'OT Ext (2x)',
-  stat_holiday: 'Stat Holiday',
-  ot_stat_holiday: 'OT on Stat (3x)',
-  vacation: 'Vacation',
-  sick: 'Sick',
-  other_leave: 'Leave',
+  regular:         'Regular (×1.0)',
+  day_off:         'Day Off (×2.0)',
+  work_stat:       'Work Stat (×2.0)',
+  work_super_stat: 'Super Stat (×2.5)',
+  ot_stat:         'OT on Stat (×3.0)',
+  overtime:        'Overtime (×1.5)',
+  isn:             'ISN',
+  vacation:        'Vacation',
+  sick:            'Sick',
+  pdo_pst:         'PDO/PST',
+  other_leave:     'Leave',
 };
 
 const TYPE_COLORS = {
-  regular: 'bg-chart-3/15 text-chart-3',
-  overtime: 'bg-chart-2/15 text-chart-2',
-  overtime_extended: 'bg-chart-2/15 text-chart-2',
-  stat_holiday: 'bg-chart-5/15 text-chart-5',
-  ot_stat_holiday: 'bg-chart-5/15 text-chart-5',
-  vacation: 'bg-chart-4/15 text-chart-4',
-  sick: 'bg-chart-1/15 text-chart-1',
-  other_leave: 'bg-muted text-muted-foreground',
+  regular:         'bg-chart-3/15 text-chart-3',
+  day_off:         'bg-chart-2/15 text-chart-2',
+  work_stat:       'bg-chart-5/15 text-chart-5',
+  work_super_stat: 'bg-destructive/15 text-destructive',
+  ot_stat:         'bg-destructive/15 text-destructive',
+  overtime:        'bg-chart-2/15 text-chart-2',
+  isn:             'bg-chart-3/15 text-chart-3',
+  vacation:        'bg-chart-4/15 text-chart-4',
+  sick:            'bg-chart-1/15 text-chart-1',
+  pdo_pst:         'bg-muted text-muted-foreground',
+  other_leave:     'bg-muted text-muted-foreground',
 };
 
 export default function ShiftRow({ shift, onEdit, onDelete }) {

@@ -132,25 +132,10 @@ export default function Settings() {
         <p className="text-xs text-muted-foreground">Update annually when your CBA wage scale changes.</p>
       </section>
 
-      {/* OT Multipliers */}
-      <section className="bg-card border border-border rounded-xl p-5 space-y-4">
-        <h3 className="text-sm font-semibold text-foreground">Overtime Multipliers</h3>
-        {[
-          { key: 'overtime', label: 'Regular Overtime' },
-          { key: 'overtime_extended', label: 'Extended Overtime' },
-          { key: 'stat_holiday', label: 'Stat Holiday' },
-          { key: 'ot_stat_holiday', label: 'OT on Stat Holiday' },
-        ].map(({ key, label }) => (
-          <div key={key} className="flex items-center gap-3">
-            <Label className="text-xs text-muted-foreground w-40">{label} (×)</Label>
-            <Input
-              type="number" step="0.1" min="1"
-              value={settings.ot_multipliers?.[key] || 1}
-              onChange={e => set(`ot_multipliers.${key}`, parseFloat(e.target.value) || 1)}
-              className="h-9 w-24 text-sm font-mono"
-            />
-          </div>
-        ))}
+      {/* OT Multipliers info */}
+      <section className="bg-muted/50 border border-border rounded-xl p-4">
+        <h3 className="text-sm font-semibold text-foreground mb-1">Overtime Multipliers</h3>
+        <p className="text-xs text-muted-foreground">Multipliers are set per-shift when logging time, per the NBA CBA: Regular ×1.0 · Overtime ×1.5 · Working Day Off ×2.0 · Work Stat ×2.0 · Work Super Stat ×2.5 · OT on Stat ×3.0. Super stats are Good Friday, Labour Day, and Christmas Day.</p>
       </section>
 
       {/* Premium Rates */}

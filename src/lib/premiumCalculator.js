@@ -2,6 +2,7 @@
  * NBA Collective Agreement Premium & Pay Calculator
  * Pure functions — no side effects, no API calls.
  */
+import { VCH_PAY_PERIODS_2026 } from './statHolidays.js';
 
 /**
  * Parse time string "HH:MM" or "HH.MM" to decimal hours (e.g. "15:30" → 15.5)
@@ -165,8 +166,7 @@ export function superShiftHours(dateStr, startTime, endTime) {
 export function calculateShiftPremiums(shift, settings) {
   const rates = settings.premium_rates;
   const paidHours = shift.paid_hours || 0;
-  const isOT = ['overtime', 'overtime_extended', 'stat_holiday', 'ot_stat_holiday'].includes(shift.shift_type);
-  const isStraight = ['regular', 'vacation', 'sick', 'other_leave'].includes(shift.shift_type);
+  const isStraight = ['regular', 'isn', 'vacation', 'sick', 'pdo_pst', 'other_leave'].includes(shift.shift_type);
 
   const result = {
     evening: 0,
@@ -224,16 +224,24 @@ export function calculateShiftPremiums(shift, settings) {
 }
 
 /**
- * Get the wage multiplier for a shift type
+ * Get the wage multiplier for a shift type (per-shift, per NBA CBA screenshot)
+ * regular = ×1.0
+ * day_off (working a day off) = ×2.0
+ * work_stat (working a regular stat) = ×2.0
+ * work_super_stat (working Good Friday / Labour Day / Christmas) = ×2.5
+ * ot_stat (OT shift on any stat) = ×3.0
+ * overtime = ×1.5
+ * isn = ×1.0 (same base as regular, separate category)
+ * vacation / sick / pdo_pst / other_leave = ×1.0
  */
-export function getShiftMultiplier(shiftType, settings) {
-  const multipliers = settings.ot_multipliers;
+export function getShiftMultiplier(shiftType) {
   switch (shiftType) {
-    case 'overtime': return multipliers.overtime || 1.5;
-    case 'overtime_extended': return multipliers.overtime_extended || 2.0;
-    case 'stat_holiday': return multipliers.stat_holiday || 1.5;
-    case 'ot_stat_holiday': return multipliers.ot_stat_holiday || 3.0;
-    default: return 1.0;
+    case 'day_off':         return 2.0;
+    case 'work_stat':       return 2.0;
+    case 'work_super_stat': return 2.5;
+    case 'ot_stat':         return 3.0;
+    case 'overtime':        return 1.5;
+    default:                return 1.0;
   }
 }
 
@@ -301,8 +309,8 @@ export function calculatePeriodBreakdown(shifts, settings) {
 
   for (const shift of shifts) {
     const paidHours = shift.paid_hours || 0;
-    const multiplier = getShiftMultiplier(shift.shift_type, settings);
-    const isStraight = ['regular', 'vacation', 'sick', 'other_leave'].includes(shift.shift_type);
+    const multiplier = getShiftMultiplier(shift.shift_type);
+    const isStraight = ['regular', 'isn', 'vacation', 'sick', 'pdo_pst', 'other_leave'].includes(shift.shift_type);
 
     if (multiplier === 1.0) {
       straightTimePay += paidHours * wage;
@@ -388,20 +396,24 @@ export function getPayPeriodName(startDate, endDate) {
 }
 
 /**
- * Get the bi-weekly period that contains a given date (for finding current period)
+ * Get the VCH bi-weekly pay period that contains today's date.
+ * Falls back to a 14-day block calculation if no VCH period matches.
  */
 export function getCurrentPayPeriodDates(refDate) {
+  const today = (refDate ? new Date(refDate) : new Date()).toISOString().split('T')[0];
+  const found = VCH_PAY_PERIODS_2026.find(p => today >= p.start && today <= p.end);
+  if (found) {
+    return { start_date: found.start, end_date: found.end };
+  }
+  // Fallback: 14-day blocks from a reference date
   const d = new Date(refDate || new Date());
-  // Find the Monday of the current or previous bi-weekly period
-  // Simple approach: use 14-day blocks from a reference Monday
-  const reference = new Date('2026-01-05T12:00:00'); // A known Monday
+  const reference = new Date('2026-01-02T12:00:00');
   const diffDays = Math.floor((d - reference) / (1000 * 60 * 60 * 24));
   const periodIndex = Math.floor(diffDays / 14);
   const start = new Date(reference);
   start.setDate(reference.getDate() + periodIndex * 14);
   const end = new Date(start);
   end.setDate(start.getDate() + 13);
-
   const fmt = (dt) => dt.toISOString().split('T')[0];
   return { start_date: fmt(start), end_date: fmt(end) };
 }
