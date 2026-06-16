@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
-import { ChevronLeft, ChevronRight, Loader2, Filter, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2, Filter, X, Calendar } from 'lucide-react';
 import { getStatType, getStatName, getPayDate } from '@/lib/statHolidays';
 import ShiftForm from '@/components/payroll/ShiftForm';
 import { calculatePeriodBreakdown, calculateShiftPremiums } from '@/lib/premiumCalculator';
@@ -11,6 +11,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 
 const DAYS_OF_WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -56,6 +61,17 @@ export default function ShiftCalendar() {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  const goToMonth = (m, y) => {
+    setViewDate(new Date(y, m, 1));
+    setPickerOpen(false);
+  };
+  const goToToday = () => {
+    const now = new Date();
+    setViewDate(new Date(now.getFullYear(), now.getMonth(), 1));
+    setPickerOpen(false);
+  };
 
   const loadShifts = useCallback(async () => {
     setLoading(true);
@@ -201,7 +217,48 @@ export default function ShiftCalendar() {
           <button onClick={prevMonth} className="p-1.5 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors">
             <ChevronLeft className="w-5 h-5" />
           </button>
-          <span className="text-sm font-semibold text-foreground min-w-[140px] text-center">{monthLabel}</span>
+          <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
+            <PopoverTrigger asChild>
+              <button className="inline-flex items-center gap-1.5 text-sm font-semibold text-foreground min-w-[140px] justify-center px-3 py-1 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors">
+                {monthLabel}
+                <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-60 p-3" align="center">
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Select value={String(month)} onValueChange={(v) => goToMonth(parseInt(v), year)}>
+                    <SelectTrigger className="h-8 text-xs flex-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {['January','February','March','April','May','June',
+                        'July','August','September','October','November','December']
+                        .map((m, i) => (
+                          <SelectItem key={i} value={String(i)}>{m}</SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={String(year)} onValueChange={(v) => goToMonth(month, parseInt(v))}>
+                    <SelectTrigger className="h-8 text-xs w-[80px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 11 }, (_, i) => year - 5 + i).map(y => (
+                        <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <button
+                  onClick={goToToday}
+                  className="w-full text-xs font-medium text-primary hover:bg-accent hover:text-accent-foreground rounded-md py-1.5 transition-colors"
+                >
+                  Jump to Today
+                </button>
+              </div>
+            </PopoverContent>
+          </Popover>
           <button onClick={nextMonth} className="p-1.5 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors">
             <ChevronRight className="w-5 h-5" />
           </button>
