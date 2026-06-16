@@ -1,9 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
-import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2, Filter, X } from 'lucide-react';
 import { getStatType, getStatName, getPayDate } from '@/lib/statHolidays';
 import ShiftForm from '@/components/payroll/ShiftForm';
 import { calculatePeriodBreakdown, calculateShiftPremiums } from '@/lib/premiumCalculator';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 const DAYS_OF_WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -32,6 +39,9 @@ export default function ShiftCalendar() {
   const [shiftsMap, setShiftsMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [editingShift, setEditingShift] = useState(null); // { data, periodId }
+  const [hospitalFilter, setHospitalFilter] = useState('all');
+  const [haFilter, setHaFilter] = useState('all');
+  const [unitFilter, setUnitFilter] = useState('all');
   const [viewDate, setViewDate] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -112,6 +122,60 @@ export default function ShiftCalendar() {
 
   const monthLabel = viewDate.toLocaleDateString('en-CA', { month: 'long', year: 'numeric' });
 
+  // Derive filter options from all shifts + settings
+  const allShifts = Object.values(shiftsMap).flat();
+  const hospitals = settings?.hospitals || [];
+  const units = settings?.units || [];
+
+  // Unique hospitals from shifts
+  const shiftHospitals = [...new Set(allShifts.map(s => s.hospital).filter(Boolean))];
+
+  // Unique HAs from shifts (via settings lookups)
+  const shiftHAs = [...new Set(shiftHospitals.map(hName => {
+    const h = hospitals.find(x => x.name === hName);
+    return h?.health_authority || null;
+  }).filter(Boolean))];
+
+  // Unique unit combos: "ACRONYM CODE" keyed by unit name (so filtering is consistent)
+  const unitCombos = [...new Set(allShifts
+    .filter(s => s.hospital && s.unit)
+    .map(s => {
+      const h = hospitals.find(x => x.name === s.hospital);
+      const u = units.find(x => x.name === s.unit);
+      return `${h?.acronym || s.hospital} ${u?.code || s.unit}`;
+    })
+  )].sort();
+
+  // Build a lookup: "ACRONYM CODE" → unit name (for filtering purposes, we filter by unit name)
+  const unitComboToName = {};
+  allShifts.filter(s => s.hospital && s.unit).forEach(s => {
+    const h = hospitals.find(x => x.name === s.hospital);
+    const u = units.find(x => x.name === s.unit);
+    const combo = `${h?.acronym || s.hospital} ${u?.code || s.unit}`;
+    if (!unitComboToName[combo]) unitComboToName[combo] = s.unit;
+  });
+
+  // Apply filters to shiftsMap
+  const filteredMap = {};
+  for (const [dateStr, shifts] of Object.entries(shiftsMap)) {
+    const filtered = shifts.filter(s => {
+      if (hospitalFilter !== 'all' && s.hospital !== hospitalFilter) return false;
+      if (haFilter !== 'all') {
+        const h = hospitals.find(x => x.name === s.hospital);
+        if (!h || h.health_authority !== haFilter) return false;
+      }
+      if (unitFilter !== 'all') {
+        const targetUnitName = unitComboToName[unitFilter];
+        if (!targetUnitName || s.unit !== targetUnitName) return false;
+      }
+      return true;
+    });
+    if (filtered.length > 0) filteredMap[dateStr] = filtered;
+  }
+
+  // When HA changes, reset hospital filter; when hospital changes, reset unit filter
+  // (handled by onChange handlers)
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -146,6 +210,76 @@ export default function ShiftCalendar() {
         </div>
       )}
 
+      {/* Filters */}
+      <div className="bg-card border border-border rounded-xl p-4">
+        <div className="flex items-center gap-3 flex-wrap">
+          <Filter className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+          <span className="text-xs font-medium text-muted-foreground mr-1">Filters:</span>
+
+          {/* Hospital filter */}
+          <Select
+            value={hospitalFilter}
+            onValueChange={(v) => { setHospitalFilter(v); setUnitFilter('all'); }}
+          >
+            <SelectTrigger className="h-8 w-[180px] text-xs">
+              <SelectValue placeholder="All Hospitals" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Hospitals</SelectItem>
+              {shiftHospitals.map(hName => {
+                const h = hospitals.find(x => x.name === hName);
+                return (
+                  <SelectItem key={hName} value={hName}>
+                    {h?.acronym ? `${h.acronym} — ${hName}` : hName}
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+
+          {/* Health Authority filter */}
+          <Select
+            value={haFilter}
+            onValueChange={(v) => { setHaFilter(v); setHospitalFilter('all'); setUnitFilter('all'); }}
+          >
+            <SelectTrigger className="h-8 w-[180px] text-xs">
+              <SelectValue placeholder="All Health Authorities" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Health Authorities</SelectItem>
+              {shiftHAs.map(ha => (
+                <SelectItem key={ha} value={ha}>{ha}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Unit filter */}
+          <Select
+            value={unitFilter}
+            onValueChange={setUnitFilter}
+          >
+            <SelectTrigger className="h-8 w-[180px] text-xs">
+              <SelectValue placeholder="All Units" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Units</SelectItem>
+              {unitCombos.map(combo => (
+                <SelectItem key={combo} value={combo}>{combo}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {(hospitalFilter !== 'all' || haFilter !== 'all' || unitFilter !== 'all') && (
+            <button
+              onClick={() => { setHospitalFilter('all'); setHaFilter('all'); setUnitFilter('all'); }}
+              className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <X className="w-3 h-3" /> Clear all
+            </button>
+          )}
+        </div>
+      </div>
+
       <div className="bg-card border border-border rounded-xl overflow-hidden">
         {/* Day headers */}
         <div className="grid grid-cols-7 border-b border-border">
@@ -164,7 +298,7 @@ export default function ShiftCalendar() {
             }
 
             const isToday = cell.dateStr === todayStr;
-            const shifts = shiftsMap[cell.dateStr] || [];
+            const shifts = filteredMap[cell.dateStr] || [];
             const statType = getStatType(cell.dateStr);
             const statName = getStatName(cell.dateStr);
             const payPeriod = getPayDate(cell.dateStr);
@@ -236,7 +370,7 @@ export default function ShiftCalendar() {
 
       <div className="flex items-center gap-4 flex-wrap">
         <p className="text-xs text-muted-foreground">
-          {Object.keys(shiftsMap).length} shift days across all pay periods
+          {Object.keys(filteredMap).length} shift day{Object.keys(filteredMap).length !== 1 ? 's' : ''}
         </p>
         <div className="flex items-center gap-3 flex-wrap">
           <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
