@@ -168,16 +168,31 @@
         "on_call_total": {
           "type": "number"
         },
+        "on_call_hours": {
+          "type": "number"
+        },
         "allowance_total": {
           "type": "number"
         },
+        "allowance_monthly": {
+          "type": "number"
+        },
         "qualification_total": {
+          "type": "number"
+        },
+        "qualification_annual": {
+          "type": "number"
+        },
+        "qualification_hourly": {
           "type": "number"
         },
         "union_dues": {
           "type": "number"
         },
         "gross_pay": {
+          "type": "number"
+        },
+        "regular_hours": {
           "type": "number"
         }
       }
