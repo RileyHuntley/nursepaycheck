@@ -6,8 +6,8 @@ import { HA_PORTALS, getUserHealthAuthorities } from '@/lib/healthAuthorityPorta
 
 const links = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/pay-period', icon: CalendarPlus, label: 'Current Pay Period' },
   { to: '/shift-log', icon: List, label: 'Shift Log' },
+  { to: '/pay-period', icon: CalendarPlus, label: 'Current Pay Period' },
   { to: '/calendar', icon: CalendarDays, label: 'Shift Calendar' },
   { to: '/pay-periods', icon: Clock, label: 'Pay Period History' },
   { to: '/settings', icon: Settings, label: 'Settings' },
