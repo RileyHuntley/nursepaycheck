@@ -100,7 +100,7 @@ export default function Sidebar() {
                 href={link.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                title={collapsed ? `${link.haLabel} · ${link.label}` : undefined}
+                title={collapsed ? `${link.label} [${link.ha}]` : undefined}
                 className={`flex items-center gap-3 rounded-lg text-sm font-medium transition-colors duration-150 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground ${
                   collapsed ? 'justify-center px-0 py-2.5 w-full' : 'px-3 py-2.5'
                 }`}
@@ -108,9 +108,8 @@ export default function Sidebar() {
                 <ExternalLink className="w-4 h-4 flex-shrink-0" />
                 {!collapsed && (
                   <span className="truncate">
-                    <span className="text-[10px] text-muted-foreground font-normal">{link.haLabel}</span>
-                    <span className="mx-1.5 text-muted-foreground/50">·</span>
                     {link.label}
+                    <span className="text-[10px] text-muted-foreground font-normal ml-1.5">[{link.ha}]</span>
                   </span>
                 )}
               </a>
