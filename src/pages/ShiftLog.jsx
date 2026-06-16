@@ -83,7 +83,7 @@ export default function ShiftLog() {
     if (existing) return existing;
     const { start_date, end_date } = getPayPeriodForDate(date);
     const created = await base44.entities.PayPeriod.create({
-      name: `PP: ${new Date(start_date+'T12:00:00').toLocaleDateString('en-CA',{month:'short',day:'numeric'})} – ${new Date(end_date+'T12:00:00').toLocaleDateString('en-CA',{month:'short',day:'numeric'})}`,
+      name: getPayPeriodName(start_date, end_date),
       start_date,
       end_date,
       shifts: [],
