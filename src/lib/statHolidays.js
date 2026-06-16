@@ -19,12 +19,14 @@ const REGULAR_STATS = [
   // 2026
   '2026-01-01', // New Year's Day
   '2026-02-16', // Family Day
+  '2026-04-06', // Easter Monday
   '2026-05-18', // Victoria Day
   '2026-07-01', // Canada Day
   '2026-08-03', // BC Day
   '2026-09-30', // National Day for Truth and Reconciliation
   '2026-10-12', // Thanksgiving Day
   '2026-11-11', // Remembrance Day
+  '2026-12-26', // Boxing Day
   // 2027
   '2027-01-01', // New Year's Day
   '2027-02-15', // Family Day
@@ -34,6 +36,7 @@ const REGULAR_STATS = [
   '2027-09-30', // National Day for Truth and Reconciliation
   '2027-10-11', // Thanksgiving Day
   '2027-11-11', // Remembrance Day
+  '2027-12-26', // Boxing Day
 ];
 
 export function isSuperStat(dateStr) {
@@ -55,6 +58,7 @@ export function getStatName(dateStr) {
     '2026-01-01': "New Year's Day",
     '2026-02-16': 'Family Day',
     '2026-04-03': 'Good Friday',
+    '2026-04-06': 'Easter Monday',
     '2026-05-18': 'Victoria Day',
     '2026-07-01': 'Canada Day',
     '2026-08-03': 'BC Day',
@@ -63,6 +67,7 @@ export function getStatName(dateStr) {
     '2026-10-12': 'Thanksgiving Day',
     '2026-11-11': 'Remembrance Day',
     '2026-12-25': 'Christmas Day',
+    '2026-12-26': 'Boxing Day',
     '2027-01-01': "New Year's Day",
     '2027-02-15': 'Family Day',
     '2027-03-26': 'Good Friday',
@@ -74,8 +79,16 @@ export function getStatName(dateStr) {
     '2027-10-11': 'Thanksgiving Day',
     '2027-11-11': 'Remembrance Day',
     '2027-12-25': 'Christmas Day',
+    '2027-12-26': 'Boxing Day',
   };
   return all[dateStr] || null;
+}
+
+/**
+ * Get the VCH pay date for a given date string (returns pay_date if dateStr is a pay_date)
+ */
+export function getPayDate(dateStr) {
+  return VCH_PAY_PERIODS_2026.find(p => p.pay_date === dateStr) || null;
 }
 
 // VCH 2026 pay periods (from official calendar)

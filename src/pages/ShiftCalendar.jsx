@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { getStatType, getStatName, getPayDate } from '@/lib/statHolidays';
 
 const DAYS_OF_WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -127,17 +128,47 @@ export default function ShiftCalendar() {
 
             const isToday = cell.dateStr === todayStr;
             const shifts = shiftsMap[cell.dateStr] || [];
+            const statType = getStatType(cell.dateStr);
+            const statName = getStatName(cell.dateStr);
+            const payPeriod = getPayDate(cell.dateStr);
 
             return (
               <div
                 key={cell.dateStr}
                 className={`min-h-[80px] border-b border-r border-border flex flex-col ${
+                  statType === 'super_stat' ? 'bg-destructive/5' :
+                  statType === 'stat' ? 'bg-chart-5/5' :
                   isToday ? 'bg-primary/5 ring-1 ring-inset ring-primary/20' : 'bg-card'
                 }`}
               >
-                <div className={`px-2 pt-1.5 text-xs font-medium ${isToday ? 'text-primary font-bold' : 'text-foreground'}`}>
-                  {cell.day}
+                <div className="px-2 pt-1.5 flex items-start justify-between gap-1">
+                  <span className={`text-xs font-medium ${isToday ? 'text-primary font-bold' : 'text-foreground'}`}>
+                    {cell.day}
+                  </span>
+                  <div className="flex items-center gap-0.5 flex-wrap justify-end">
+                    {payPeriod && (
+                      <span className="text-[9px] font-bold bg-primary text-primary-foreground px-1 py-0.5 rounded leading-none">
+                        PAY
+                      </span>
+                    )}
+                    {statType === 'super_stat' && (
+                      <span title={statName} className="text-[9px] font-bold bg-destructive text-destructive-foreground px-1 py-0.5 rounded leading-none">
+                        ⭐S-STAT
+                      </span>
+                    )}
+                    {statType === 'stat' && (
+                      <span title={statName} className="text-[9px] font-bold bg-chart-5/80 text-white px-1 py-0.5 rounded leading-none">
+                        STAT
+                      </span>
+                    )}
+                  </div>
                 </div>
+                {(statType || payPeriod) && (
+                  <div className="px-2 text-[9px] text-muted-foreground leading-tight mb-0.5">
+                    {statName && <span>{statName}</span>}
+                    {payPeriod && !statName && <span>PP {payPeriod.id}</span>}
+                  </div>
+                )}
                 <div className="flex-1 px-1.5 pb-1.5 space-y-0.5">
                   {shifts.map((shift, si) => {
                     const colors = TYPE_COLORS[shift.shift_type] || TYPE_COLORS.regular;
@@ -171,6 +202,15 @@ export default function ShiftCalendar() {
           {Object.keys(shiftsMap).length} shift days across all pay periods
         </p>
         <div className="flex items-center gap-3 flex-wrap">
+          <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+            <span className="text-[9px] font-bold bg-primary text-primary-foreground px-1 py-0.5 rounded">PAY</span> Pay Day
+          </span>
+          <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+            <span className="text-[9px] font-bold bg-chart-5/80 text-white px-1 py-0.5 rounded">STAT</span> Stat Holiday
+          </span>
+          <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+            <span className="text-[9px] font-bold bg-destructive text-destructive-foreground px-1 py-0.5 rounded">⭐S-STAT</span> Super Stat
+          </span>
           {Object.entries(TYPE_COLORS).filter(([k]) => k !== 'regular').map(([key, colors]) => (
             <span key={key} className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium border ${colors}`}>
               {TYPE_SHORT[key]}
