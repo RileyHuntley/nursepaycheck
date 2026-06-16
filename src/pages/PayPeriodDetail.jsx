@@ -139,6 +139,42 @@ export default function PayPeriodDetail() {
   };
 
   const updateShift = async (shiftData) => {
+    // If date changed and no longer in this period, route to correct period
+    if (!isValidForPeriod(shiftData.date)) {
+      const { start_date, end_date } = getPayPeriodForDate(shiftData.date);
+      const allPeriods = await base44.entities.PayPeriod.list('-start_date', 50);
+
+      // Remove from this period
+      const updatedShifts = (period.shifts || []).filter((_, i) => i !== editingShift.index);
+      const thisBreakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings) : null;
+      await base44.entities.PayPeriod.update(period.id, {
+        shifts: updatedShifts,
+        ...(thisBreakdown ? { breakdown: thisBreakdown, status: 'calculated' } : { status: 'draft' }),
+      });
+
+      // Add to correct period
+      const target = allPeriods.find(p => p.start_date === start_date && p.end_date === end_date);
+      if (target) {
+        const targetShifts = [...(target.shifts || []), { ...shiftData }];
+        const targetBreakdown = settings ? calculatePeriodBreakdown(targetShifts, settings) : null;
+        await base44.entities.PayPeriod.update(target.id, {
+          shifts: targetShifts,
+          ...(targetBreakdown ? { breakdown: targetBreakdown, status: 'calculated' } : {}),
+        });
+      } else {
+        await base44.entities.PayPeriod.create({
+          name: getPayPeriodName(start_date, end_date),
+          start_date,
+          end_date,
+          shifts: [{ ...shiftData }],
+          status: 'draft',
+        });
+      }
+      loadData();
+      setEditingShift(null);
+      return;
+    }
+
     const updatedShifts = (period.shifts || []).map((s, i) =>
       i === editingShift.index ? { ...shiftData } : s
     );
@@ -180,10 +216,13 @@ export default function PayPeriodDetail() {
     );
   }
 
-  const breakdown = settings && period.shifts?.length ? calculatePeriodBreakdown(period.shifts, settings) : null;
+  // Filter shifts to only those within this period's date range
+  const allWithIdx = (period.shifts || []).map((s, i) => ({ ...s, _origIdx: i }));
+  const displayShifts = allWithIdx.filter(s => isValidForPeriod(s.date));
+  const breakdown = settings && displayShifts.length ? calculatePeriodBreakdown(displayShifts, settings) : null;
 
-  // Sorted shifts with original indices
-  const sortedShifts = (period.shifts || []).map((s, i) => ({ ...s, _origIdx: i }));
+  // Sorted for display
+  const sortedShifts = [...displayShifts];
   sortedShifts.sort((a, b) => {
     const diff = (a.date || '').localeCompare(b.date || '');
     return sortAsc ? diff : -diff;
@@ -202,7 +241,7 @@ export default function PayPeriodDetail() {
                   PP {getVCHPeriodNumber(period.start_date)}
                 </span>
               )}
-              <span>{period.name} · {period.shifts?.length || 0} shifts ·{' '}
+              <span>{period.name} · {displayShifts.length} shift{displayShifts.length !== 1 ? 's' : ''} ·{' '}
                 <span className={period.status === 'calculated' ? 'text-primary font-medium' : 'text-chart-2'}>
                   {period.status === 'calculated' ? 'Calculated' : 'Draft'}
                 </span>
@@ -278,7 +317,7 @@ export default function PayPeriodDetail() {
         )}
 
         <div className="divide-y divide-border">
-          {(!period.shifts || period.shifts.length === 0) && !showForm && !showBulkForm && (
+          {displayShifts.length === 0 && !showForm && !showBulkForm && (
             <div className="px-5 py-12 text-center">
               <p className="text-sm text-muted-foreground">No shifts logged yet for this pay period.</p>
               <div className="flex items-center justify-center gap-2 mt-3">

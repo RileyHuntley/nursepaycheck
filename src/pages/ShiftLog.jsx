@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import ShiftRow from '@/components/payroll/ShiftRow';
 import ShiftForm from '@/components/payroll/ShiftForm';
 import PayBreakdown from '@/components/payroll/PayBreakdown';
-import { calculatePeriodBreakdown, calculateShiftPremiums, getPayPeriodForDate } from '@/lib/premiumCalculator';
+import { calculatePeriodBreakdown, calculateShiftPremiums, getPayPeriodForDate, getPayPeriodName } from '@/lib/premiumCalculator';
 import { Button } from '@/components/ui/button';
 import { Loader2, ArrowUpDown, Plus, CalendarPlus } from 'lucide-react';
 import BulkAddShift from '@/components/payroll/BulkAddShift';
@@ -144,15 +144,20 @@ export default function ShiftLog() {
   const currentYear = new Date().getFullYear();
   const yearStart = `${currentYear}-01-01`;
   const ytdAllShifts = allShifts.filter(s => s.date >= yearStart);
-  const ytdPeriodIds = new Set(ytdAllShifts.map(s => s._periodId));
+  const ytdPeriodKeys = new Set(ytdAllShifts.map(s => {
+    const pd = getPayPeriodForDate(s.date);
+    return `${pd.start_date}|${pd.end_date}`;
+  }));
 
-  // Group shifts by period and compute per-period breakdown, then sum
+  // Group shifts by actual pay period (from date) and compute per-period breakdown, then sum
   let breakdown = null;
   if (settings && ytdAllShifts.length > 0) {
     const periodGroups = {};
     for (const s of ytdAllShifts) {
-      if (!periodGroups[s._periodId]) periodGroups[s._periodId] = [];
-      periodGroups[s._periodId].push(s);
+      const pd = getPayPeriodForDate(s.date);
+      const key = `${pd.start_date}|${pd.end_date}`;
+      if (!periodGroups[key]) periodGroups[key] = [];
+      periodGroups[key].push(s);
     }
     breakdown = Object.values(periodGroups).reduce((acc, groupShifts) => {
       const cleanShifts = groupShifts.map(({ _periodName, _periodId, _periodStart, _shiftIdx, ...shift }) => shift);
@@ -198,7 +203,7 @@ export default function ShiftLog() {
         <div>
           <h2 className="text-2xl font-display font-bold text-foreground tracking-tight">Shift Log</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            {ytdAllShifts.length} shift{ytdAllShifts.length !== 1 ? 's' : ''} in {currentYear} across {ytdPeriodIds.size} pay period{ytdPeriodIds.size !== 1 ? 's' : ''} — Year-to-Date
+            {ytdAllShifts.length} shift{ytdAllShifts.length !== 1 ? 's' : ''} in {currentYear} across {ytdPeriodKeys.size} pay period{ytdPeriodKeys.size !== 1 ? 's' : ''} — Year-to-Date
           </p>
         </div>
         <Button variant="ghost" size="sm" onClick={() => setSortAsc(s => !s)} className="h-8 px-2 text-xs text-muted-foreground">
@@ -270,7 +275,10 @@ export default function ShiftLog() {
           {sortedShifts.map((shift, idx) => (
             <div key={`${shift._periodId}-${shift._shiftIdx}`} className="bg-muted/30 border-b border-border">
               <div className="text-[10px] text-muted-foreground font-mono px-4 pt-2">
-                {shift._periodName}
+                {(() => {
+                  const pd = getPayPeriodForDate(shift.date);
+                  return getPayPeriodName(pd.start_date, pd.end_date);
+                })()}
               </div>
               <ShiftRow
                 shift={shift}
