@@ -105,6 +105,8 @@ export default function ShiftRow({ shift, premiums, settings, onEdit, onDelete }
           {shift.paid_hours}h
         </div>
 
+        <div className="flex-1" />
+
         {wage > 0 && (
           <div className="flex items-center gap-2 flex-shrink-0">
             <span className="text-[11px] font-mono text-muted-foreground">
@@ -124,8 +126,6 @@ export default function ShiftRow({ shift, premiums, settings, onEdit, onDelete }
             </span>
           </div>
         )}
-
-        <div className="flex-1" />
 
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex-shrink-0">
           <Button variant="ghost" size="icon" onClick={() => onEdit(shift)} className="h-7 w-7">
