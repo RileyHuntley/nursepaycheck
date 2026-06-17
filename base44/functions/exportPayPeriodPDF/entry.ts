@@ -176,82 +176,69 @@ Deno.serve(async (req) => {
       doc.text('Shift Log', M, y); y += 7;
 
       for (const shift of shifts) {
-        if (y > PAGE_H - 40) { doc.addPage(); y = M + 4; }
+        // Calculate per-shift pay first to know row height
+        const pr = shiftPremiums(shift, rates);
+        const flags = [];
+        if (pr.eveH > 0) flags.push(`EVE ${pr.eveH}h`);
+        if (pr.nightH > 0) flags.push(`NGT ${pr.nightH}h`);
+        if (pr.wkndH > 0) flags.push(`WKD ${pr.wkndH}h`);
+        if (pr.superH > 0) flags.push('Super');
+        if (shift.short_notice) flags.push('Short Notice');
+        if (shift.responsibility_pay && shift.responsibility_pay !== 'none') flags.push(`Resp`);
+        if (shift.specialty_premium) flags.push('Specialty');
+        if (shift.preceptor) flags.push('Preceptor');
+        if (shift.on_call_hours > 0) flags.push(`On-Call ${shift.on_call_hours}h`);
+
+        const hasLoc = !!(shift.hospital || shift.unit);
+        const rowH = 28; // fixed height: date(5) + time(5) + loc(4) + flags(4) + pay(5) + padding(9)
+        if (y > PAGE_H - rowH - 6) { doc.addPage(); y = M + 4; }
 
         // Row background
         doc.setFillColor(252,253,254).setDrawColor(...COL.border).setLineWidth(0.15);
-        const rowH = shift.hospital||shift.unit ? 24 : 20;
         doc.roundedRect(M, y - 2, PW, rowH, 2, 2, 'FD');
 
-        // Date & time
+        // LEFT COLUMN: date, time, location, flags
+        const isNightShift = pr.night > 0;
         const dt = new Date(shift.date+'T12:00:00');
         const dateLabel = dt.toLocaleDateString('en-CA',{month:'short',day:'numeric',weekday:'short'});
-        const isNightShift = (premiums => premiums.night > 0)(shiftPremiums(shift, rates));
+
         doc.setFont('helvetica','bold').setFontSize(9).setTextColor(...COL.dark);
-        doc.text(`${isNightShift ? 'N' : 'D'}  ${dateLabel}`, M + 3, y);
-        doc.setFont('helvetica','normal').setFontSize(8.5).setTextColor(...COL.dark);
-        doc.text(`${shift.start_time} - ${shift.end_time}`, M + 3, y + 5);
+        doc.text(`${isNightShift ? 'N' : 'D'}  ${dateLabel}`, M + 3, y + 1);
 
-        // Type badge
         const typeLabel = TYPE_LABELS[shift.shift_type] || shift.shift_type;
-        doc.setFillColor(235,238,242).roundedRect(M + 58, y + 3.5, 22, 4.5, 2, 2, 'F');
-        doc.setFont('helvetica','normal').setFontSize(7).setTextColor(...COL.dark);
-        doc.text(typeLabel, M + 69, y + 6.5, { align: 'center' });
+        doc.setFont('helvetica','normal').setFontSize(8).setTextColor(...COL.dark);
+        doc.text(`${shift.start_time} - ${shift.end_time}`, M + 3, y + 6);
 
-        // Hospital / Unit
-        if (shift.hospital || shift.unit) {
+        // Type badge inline after time
+        doc.setFillColor(235,238,242);
+        doc.roundedRect(M + 38, y + 2.5, 20, 5, 1.5, 1.5, 'F');
+        doc.setFontSize(7).setTextColor(...COL.muted);
+        doc.text(typeLabel, M + 48, y + 6, { align: 'center' });
+
+        let leftY = y + 11;
+        if (hasLoc) {
           doc.setFont('helvetica','normal').setFontSize(7).setTextColor(...COL.muted);
-          doc.text(safe([shift.hospital, shift.unit].filter(Boolean).join(' / ')), M + 3, y + 10);
-
-          // Premium flags
-          const pr = shiftPremiums(shift, rates);
-          const flags = [];
-          if (pr.eveH > 0) flags.push(`EVE ${pr.eveH}h`);
-          if (pr.nightH > 0) flags.push(`NGT ${pr.nightH}h`);
-          if (pr.wkndH > 0) flags.push(`WKD ${pr.wkndH}h`);
-          if (pr.superH > 0) flags.push('Super');
-          if (shift.short_notice) flags.push('Short Notice');
-          if (shift.responsibility_pay !== 'none') flags.push(`Resp (${shift.responsibility_pay})`);
-          if (shift.specialty_premium) flags.push('Specialty');
-          if (shift.preceptor) flags.push('Preceptor');
-          if (shift.on_call_hours > 0) flags.push(`On-Call ${shift.on_call_hours}h`);
-          if (flags.length > 0) {
-            doc.setFontSize(6.5);
-            doc.text(flags.join('  |  '), M + 3, y + 13.5);
-          }
-        } else {
-          // Premium flags below time
-          const pr = shiftPremiums(shift, rates);
-          const flags = [];
-          if (pr.eveH > 0) flags.push(`EVE ${pr.eveH}h`);
-          if (pr.nightH > 0) flags.push(`NGT ${pr.nightH}h`);
-          if (pr.wkndH > 0) flags.push(`WKD ${pr.wkndH}h`);
-          if (pr.superH > 0) flags.push('Super');
-          if (shift.short_notice) flags.push('Short Notice');
-          if (shift.responsibility_pay !== 'none') flags.push(`Resp (${shift.responsibility_pay})`);
-          if (shift.specialty_premium) flags.push('Specialty');
-          if (shift.preceptor) flags.push('Preceptor');
-          if (shift.on_call_hours > 0) flags.push(`On-Call ${shift.on_call_hours}h`);
-          if (flags.length > 0) {
-            doc.setFont('helvetica','normal').setFontSize(6.5).setTextColor(...COL.muted);
-            doc.text(flags.join('  |  '), M + 3, y + 10);
-          }
+          doc.text(safe([shift.hospital, shift.unit].filter(Boolean).join(' / ')), M + 3, leftY);
+          leftY += 4.5;
+        }
+        if (flags.length > 0) {
+          doc.setFont('helvetica','normal').setFontSize(6.5).setTextColor(...COL.muted);
+          doc.text(flags.join(' | '), M + 3, leftY);
         }
 
-        // Status badge
+        // RIGHT COLUMN: status, hours, pay breakdown (right-aligned, no overlap)
         let statusLabel, statusColor;
         const today = new Date().toISOString().slice(0,10);
         if (shift.status === 'verified') { statusLabel = 'Verified'; statusColor = [34,139,34]; }
         else if (shift.date > today) { statusLabel = 'Upcoming'; statusColor = [220,160,20]; }
         else { statusLabel = 'Pending'; statusColor = COL.accent; }
-        doc.setFontSize(7).setTextColor(...statusColor);
-        doc.text(statusLabel, M + 84, y + 3, { align: 'right' });
 
-        // Paid hours
-        doc.setFont('helvetica','normal').setFontSize(8.5).setTextColor(...COL.dark);
-        doc.text(`${shift.paid_hours||0}h`, M + 84, y + 8, { align: 'right' });
+        doc.setFont('helvetica','normal').setFontSize(7.5).setTextColor(...statusColor);
+        doc.text(statusLabel, M + PW - 3, y + 1, { align: 'right' });
+        doc.setFont('helvetica','bold').setFontSize(8.5).setTextColor(...COL.dark);
+        doc.text(`${shift.paid_hours||0}h`, M + PW - 3, y + 6, { align: 'right' });
 
-        // Per-shift pay breakdown line
+        // Pay breakdown on its own line at the bottom of the card
         const segments = splitOvernight(shift);
         let stPay=0; const otGroups={};
         for (const seg of segments) {
@@ -262,22 +249,18 @@ Deno.serve(async (req) => {
             else { stPay += base; otGroups[mult] = (otGroups[mult]||0) + seg.hours * wage * (mult - 1); }
           }
         }
-        const prem = shiftPremiums(shift, rates);
-        const premTot = premSum(prem);
+        const premTot = premSum(pr);
         const otMults = Object.keys(otGroups).map(Number).sort((a,b)=>a-b);
         const shiftGross = r2(stPay + Object.values(otGroups).reduce((s,v)=>s+v,0) + premTot);
 
-        const payX = M + 142;
-        doc.setFont('helvetica','normal').setFontSize(7.5).setTextColor(...COL.dark);
         const payParts = [];
         if (stPay > 0) payParts.push(`ST ${fm$(stPay)}`);
         otMults.forEach(m => payParts.push(`OTx${m} ${fm$(otGroups[m])}`));
-        if (premTot > 0) payParts.push(`Prem ${fm$(premTot)}`);
-        const payText = payParts.join('  +  ');
-        doc.text(payText, payX, shift.hospital||shift.unit ? y + 10 : y + 5);
+        if (premTot > 0) payParts.push(`+ Prem ${fm$(premTot)}`);
+        const payText = payParts.join('  +  ') + `  =  ${fm$(shiftGross)}`;
 
-        doc.setFont('helvetica','bold').setFontSize(9).setTextColor(...COL.primary);
-        doc.text(`= ${fm$(shiftGross)}`, M + PW - 3, shift.hospital||shift.unit ? y + 10 : y + 5, { align: 'right' });
+        doc.setFont('helvetica','normal').setFontSize(7.5).setTextColor(...COL.dark);
+        doc.text(payText, M + PW - 3, y + rowH - 6, { align: 'right' });
 
         y += rowH + 3;
       }
@@ -297,9 +280,15 @@ Deno.serve(async (req) => {
       if (y > PAGE_H - 18) { doc.addPage(); y = M; }
       doc.setFont('helvetica',bold?'bold':'normal').setFontSize(9).setTextColor(...color);
       doc.text(label, M, y);
-      if (sub) { doc.setFontSize(7).setTextColor(...COL.muted); doc.text(sub, M + doc.getTextWidth(label) + 3, y); doc.setFontSize(9).setTextColor(...color); }
       doc.text(fm$(value), M + PW, y, { align: 'right' });
-      y += 5.5;
+      if (sub) {
+        y += 4;
+        doc.setFont('helvetica','normal').setFontSize(7).setTextColor(...COL.muted);
+        doc.text(sub, M + 2, y);
+        y += 4;
+      } else {
+        y += 5.5;
+      }
     };
     const secHdr = (label) => {
       if (y > PAGE_H - 18) { doc.addPage(); y = M; }
