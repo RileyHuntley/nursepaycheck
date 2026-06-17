@@ -83,7 +83,7 @@ const emptyShift = {
   notes: '',
 };
 
-export default function ShiftForm({ onSubmit, onCancel, initial, settings }) {
+export default function ShiftForm({ onSubmit, onCancel, onDelete, initial, settings }) {
   const [shift, setShift] = useState(() => {
     if (initial) return initial;
     return {
@@ -387,6 +387,11 @@ export default function ShiftForm({ onSubmit, onCancel, initial, settings }) {
         {onCancel && (
           <Button type="button" variant="outline" size="sm" onClick={onCancel}>
             Cancel
+          </Button>
+        )}
+        {initial && onDelete && (
+          <Button type="button" variant="destructive" size="sm" onClick={() => onDelete(initial)} className="ml-auto">
+            Delete Shift
           </Button>
         )}
       </div>

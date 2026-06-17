@@ -600,6 +600,10 @@ export default function ShiftLog() {
         settings={settings}
         onSubmit={updateShift}
         onClose={() => setEditingShift(null)}
+        onDelete={(shiftData) => {
+          deleteShift({ data: shiftData, _periodId: editingShift._periodId, _shiftIdx: editingShift._shiftIdx });
+          setEditingShift(null);
+        }}
       />
     </div>
   );

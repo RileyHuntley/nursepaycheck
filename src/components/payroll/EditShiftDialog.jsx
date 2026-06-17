@@ -1,7 +1,7 @@
 import ShiftForm from '@/components/payroll/ShiftForm';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 
-export default function EditShiftDialog({ editingShift, settings, onSubmit, onClose }) {
+export default function EditShiftDialog({ editingShift, settings, onSubmit, onClose, onDelete }) {
   if (!editingShift) return null;
 
   return (
@@ -11,6 +11,7 @@ export default function EditShiftDialog({ editingShift, settings, onSubmit, onCl
           initial={editingShift.data}
           onSubmit={onSubmit}
           onCancel={onClose}
+          onDelete={onDelete}
           settings={settings}
         />
       </DialogContent>
