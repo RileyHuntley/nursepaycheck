@@ -427,7 +427,7 @@ export function getPayPeriodName(startDate, endDate) {
   const opts = { month: 'short', day: 'numeric' };
   const s = start.toLocaleDateString('en-CA', opts);
   const e = end.toLocaleDateString('en-CA', opts);
-  return `PP: ${s} – ${e}`;
+  return `${s} – ${e}`;
 }
 
 /**
