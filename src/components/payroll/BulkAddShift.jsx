@@ -19,6 +19,7 @@ export default function BulkAddShift({ onSubmit, onCancel, settings }) {
   const [hospital, setHospital] = useState(settings?.default_hospital || '');
   const [unit, setUnit] = useState(settings?.default_unit || '');
   const [preview, setPreview] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const pattern = SHIFT_PATTERNS.find(p => p.name === patternName) || SHIFT_PATTERNS[0];
 
@@ -43,14 +44,15 @@ export default function BulkAddShift({ onSubmit, onCancel, settings }) {
     updatePreview(d, p, o, h, u);
   };
 
-  const handleStartDateChange = (d) => { setStartDate(d); refreshPreview({ date: d }); };
+  const handleStartDateChange = (d) => { setStartDate(d); setSubmitting(false); refreshPreview({ date: d }); };
   const handlePatternChange = (p) => { setPatternName(p); refreshPreview({ pattern: SHIFT_PATTERNS.find(pt => pt.name === p) }); };
   const handleOccurrencesChange = (o) => { setOccurrences(o); refreshPreview({ occurrences: o }); };
   const handleHospitalChange = (h) => { setHospital(h === '_none' ? '' : h); refreshPreview({ hospital: h === '_none' ? '' : h }); };
   const handleUnitChange = (u) => { setUnit(u === '_none' ? '' : u); refreshPreview({ unit: u === '_none' ? '' : u }); };
 
   const handleSubmit = () => {
-    if (!preview || preview.length === 0) return;
+    if (!preview || preview.length === 0 || submitting) return;
+    setSubmitting(true);
     onSubmit(preview);
   };
 
@@ -173,10 +175,16 @@ export default function BulkAddShift({ onSubmit, onCancel, settings }) {
           size="sm"
           className="bg-primary text-primary-foreground"
           onClick={handleSubmit}
-          disabled={!preview || preview.length === 0}
+          disabled={!preview || preview.length === 0 || submitting}
         >
-          <CalendarPlus className="w-4 h-4 mr-1.5" />
-          Add {preview ? preview.length : 0} Shifts
+          {submitting ? (
+            <>Adding Shifts...</>
+          ) : (
+            <>
+              <CalendarPlus className="w-4 h-4 mr-1.5" />
+              Add {preview ? preview.length : 0} Shifts
+            </>
+          )}
         </Button>
         {onCancel && (
           <Button type="button" variant="outline" size="sm" onClick={onCancel}>
