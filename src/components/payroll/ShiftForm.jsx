@@ -528,6 +528,12 @@ export default function ShiftForm({ onSubmit, onCancel, onDelete, initial, setti
                     </div>
                   );
                 })}
+                {hasAnyPremium && (
+                  <div className="flex items-center gap-3 pt-1.5 mt-1 border-t border-border">
+                    <div className="w-36 text-xs font-semibold text-foreground flex-shrink-0">Total Premiums</div>
+                    <div className="text-xs font-mono font-semibold text-primary">{formatCurrency(PREMIUM_FIELDS.reduce((s, f) => s + (premiums[f.key] || 0), 0))}</div>
+                  </div>
+                )}
               </div>
             )}
           </div>
