@@ -49,10 +49,8 @@ export default function ShiftLog() {
     loadingRef.current = true;
     setLoading(true);
     try {
-      let [settingsList, periodList] = await Promise.all([
-        base44.entities.Settings.list(),
-        base44.entities.PayPeriod.list('-start_date', 100),
-      ]);
+      const settingsList = await base44.entities.Settings.list();
+      let periodList = await base44.entities.PayPeriod.list('-start_date', 100);
 
       // Auto-create default settings for new users
       if (settingsList.length === 0) {
