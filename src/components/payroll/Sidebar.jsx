@@ -5,6 +5,23 @@ import { base44 } from '@/api/base44Client';
 import { HA_PORTALS, getUserHealthAuthorities } from '@/lib/healthAuthorityPortals';
 import { useTheme } from 'next-themes';
 
+const todayStr = new Date().toISOString().slice(0, 10);
+
+function countPendingVerification(periods) {
+  let count = 0;
+  for (const p of periods) {
+    if (!p.end_date || todayStr <= p.end_date) continue; // period hasn't ended
+    for (const s of (p.shifts || [])) {
+      if (s.status === 'verified') continue;
+      if (s.status === 'upcoming') continue;
+      if (!s.date) continue;
+      // pending if past date or status is explicitly pending
+      if (s.status === 'pending' || s.date <= todayStr) count++;
+    }
+  }
+  return count;
+}
+
 const links = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/shift-log', icon: List, label: 'Shifts' },
@@ -16,6 +33,7 @@ const links = [
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('sidebar-collapsed') === 'true');
   const [healthAuthorities, setHealthAuthorities] = useState([]);
+  const [pendingCount, setPendingCount] = useState(0);
   const { theme, setTheme } = useTheme();
   const isDark = theme === 'dark';
 
@@ -32,6 +50,19 @@ export default function Sidebar() {
       if (list.length > 0) {
         setHealthAuthorities(getUserHealthAuthorities(list[0].hospitals || []));
       }
+    });
+    return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    const load = async () => {
+      const periods = await base44.entities.PayPeriod.list();
+      setPendingCount(countPendingVerification(periods));
+    };
+    load();
+    const unsub = base44.entities.PayPeriod.subscribe(async () => {
+      const periods = await base44.entities.PayPeriod.list();
+      setPendingCount(countPendingVerification(periods));
     });
     return () => unsub();
   }, []);
@@ -75,7 +106,7 @@ export default function Sidebar() {
             end={to === '/'}
             title={collapsed ? label : undefined}
             className={({ isActive }) =>
-              `flex items-center gap-3 rounded-lg text-sm font-medium transition-colors duration-150 ${
+              `flex items-center gap-3 rounded-lg text-sm font-medium transition-colors duration-150 relative ${
                 collapsed ? 'justify-center px-0 py-2.5 w-full' : 'px-3 py-2.5'
               } ${
                 isActive
@@ -86,6 +117,11 @@ export default function Sidebar() {
           >
             <Icon className="w-4 h-4 flex-shrink-0" />
             {!collapsed && label}
+            {to === '/shift-log' && pendingCount > 0 && (
+              <span className={`absolute flex items-center justify-center rounded-full bg-chart-2 text-white text-[10px] font-bold ${collapsed ? 'top-1 right-1 w-4 h-4' : 'ml-auto w-5 h-5'}`}>
+                {pendingCount}
+              </span>
+            )}
           </NavLink>
         ))}
 
