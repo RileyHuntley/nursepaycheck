@@ -74,20 +74,22 @@ export default function EarningsTrendChart({ periods, settings, chartType, title
   if (chartType === 'months_past' || chartType === 'months_future') {
     // ── Monthly charts: prorate period components by shift hours ──
     const monthlyAccum = {};
-    const rangeMonths = chartType === 'months_past' ? 6 : 6;
-    const direction = chartType === 'months_past' ? -1 : 1;
-    const startOffset = chartType === 'months_past' ? -5 : 0;
+    const isPast = chartType === 'months_past';
 
-    // Initialize months
-    for (let i = 0; i < rangeMonths; i++) {
-      const m = new Date(now.getFullYear(), now.getMonth() + startOffset + i * direction, 1);
+    // Generate the 6 target months
+    for (let i = 0; i < 6; i++) {
+      const m = isPast
+        ? new Date(now.getFullYear(), now.getMonth() - i, 1)
+        : new Date(now.getFullYear(), now.getMonth() + i + 1, 1);
       const key = `${m.getFullYear()}-${String(m.getMonth() + 1).padStart(2, '0')}`;
       monthlyAccum[key] = { straightTime: 0, overtime: 0, premiums: 0, allowanceMon: 0, qualification: 0, hours: 0 };
     }
 
-    const cutoffDate = chartType === 'months_past'
-      ? new Date(now.getFullYear(), now.getMonth() - 5, 1).toISOString().split('T')[0]
-      : `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+    // Oldest month in the range — only include shifts on or after this date
+    const oldestMonth = isPast
+      ? new Date(now.getFullYear(), now.getMonth() - 5, 1)
+      : new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const cutoffDate = oldestMonth.toISOString().split('T')[0];
 
     for (const p of periods) {
       const shifts = p.shifts || [];
