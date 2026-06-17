@@ -76,7 +76,7 @@ export default function PayPeriodDetail() {
   // Debounced subscription reload to prevent rate limiting
   const debouncedLoad = useCallback(() => {
     if (loadRef.current) clearTimeout(loadRef.current);
-    loadRef.current = setTimeout(() => loadData(), 300);
+    loadRef.current = setTimeout(() => loadData(), 500);
   }, [loadData]);
 
   useEffect(() => {

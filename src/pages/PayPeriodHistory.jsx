@@ -51,7 +51,7 @@ export default function PayPeriodHistory() {
   // Debounced subscription reload to prevent rate limiting
   const debouncedLoad = useCallback(() => {
     if (loadRef.current) clearTimeout(loadRef.current);
-    loadRef.current = setTimeout(() => loadPeriods(), 300);
+    loadRef.current = setTimeout(() => loadPeriods(), 900);
   }, [loadPeriods]);
 
   useEffect(() => {

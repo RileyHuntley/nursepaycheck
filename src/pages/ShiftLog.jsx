@@ -119,7 +119,7 @@ export default function ShiftLog() {
   // Debounced subscription reload to prevent rate limiting
   const debouncedLoad = useCallback(() => {
     if (loadRef.current) clearTimeout(loadRef.current);
-    loadRef.current = setTimeout(() => loadData(), 300);
+    loadRef.current = setTimeout(() => loadData(), 700);
   }, [loadData]);
 
   useEffect(() => {
