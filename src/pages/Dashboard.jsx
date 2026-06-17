@@ -157,7 +157,7 @@ export default function Dashboard() {
           shiftCount={currentShiftCount}
         />
         <PaySummaryPanel
-          title="Current Month"
+          title="This Month"
           subtitle={monthLabel}
           breakdown={monthBreakdown}
           loading={loading}
