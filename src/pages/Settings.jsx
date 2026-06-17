@@ -333,7 +333,9 @@ export default function Settings() {
               <div key={key} className="flex items-center gap-2">
                 <Label className="text-xs text-muted-foreground w-28 flex-shrink-0">{label}</Label>
                 <Input
-                  type="time"
+                  type="text"
+                  pattern="([01]?[0-9]|2[0-3]):[0-5][0-9]"
+                  placeholder="HH:MM"
                   value={settings.preset_times?.[key] || ''}
                   onChange={e => set(`preset_times.${key}`, e.target.value)}
                   className="h-9 w-[116px] text-sm font-mono"
