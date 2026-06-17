@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import BulkAddShift from '@/components/payroll/BulkAddShift';
+import EditShiftDialog from '@/components/payroll/EditShiftDialog';
 
 export default function ShiftLog() {
   const [settings, setSettings] = useState(null);
@@ -418,17 +419,6 @@ export default function ShiftLog() {
         />
       ) : (
         <>
-          {editingShift && (
-            <div className="bg-card border border-border rounded-xl p-5">
-              <ShiftForm
-                initial={editingShift.data}
-                onSubmit={updateShift}
-                onCancel={() => setEditingShift(null)}
-                settings={settings}
-              />
-            </div>
-          )}
-
           <div className="bg-card border border-border rounded-xl overflow-hidden">
             <div className="px-5 py-4 border-b border-border flex items-center justify-between">
               <h3 className="text-sm font-semibold text-foreground">All Shifts</h3>
@@ -540,6 +530,13 @@ export default function ShiftLog() {
           )}
         </>
       )}
+
+      <EditShiftDialog
+        editingShift={editingShift}
+        settings={settings}
+        onSubmit={updateShift}
+        onClose={() => setEditingShift(null)}
+      />
     </div>
   );
 }
