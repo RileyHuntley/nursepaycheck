@@ -89,10 +89,22 @@ export default function Dashboard() {
   const nextEnd = addDays(curEnd, 14);
   const nextPeriod = computedPeriods.find(p => p.start_date === nextStart && p.end_date === nextEnd) || null;
 
-  // ── Helper: sum breakdowns ──
+  // ── Helper: sum breakdowns with monthly-allowance cap ──
   const sumBreakdowns = (periodsList, maxDate) => {
     if (periodsList.length === 0 || !settings) return null;
-    return periodsList.reduce((acc, p) => {
+
+    // Compute allowance: monthly max × months that have ≥1 shift
+    const monthsWithShifts = new Set();
+    for (const p of periodsList) {
+      for (const shift of (p.shifts || [])) {
+        if (maxDate && shift.date > maxDate) continue;
+        monthsWithShifts.add(shift.date.substring(0, 7));
+      }
+    }
+    const monthlyAllowance = (settings.active_allowances || []).reduce((sum, k) => sum + (settings.allowance_rates?.[k] || 0), 0);
+    const allowanceTotal = monthsWithShifts.size * monthlyAllowance;
+
+    const base = periodsList.reduce((acc, p) => {
       const shifts = p.shifts || [];
       const filtered = maxDate ? shifts.filter(s => s.date <= maxDate) : shifts;
       if (filtered.length === 0) return acc;
@@ -111,13 +123,27 @@ export default function Dashboard() {
         preceptor_total: (acc.preceptor_total || 0) + b.preceptor_total,
         specialty_premium_total: (acc.specialty_premium_total || 0) + b.specialty_premium_total,
         on_call_total: (acc.on_call_total || 0) + b.on_call_total,
-        allowance_total: (acc.allowance_total || 0) + b.allowance_total,
         qualification_total: (acc.qualification_total || 0) + b.qualification_total,
         union_dues: (acc.union_dues || 0) + b.union_dues,
-        gross_pay: (acc.gross_pay || 0) + b.gross_pay,
         regular_hours: (acc.regular_hours || 0) + b.regular_hours,
+        gross_pay: (acc.gross_pay || 0) + b.gross_pay,
       };
     }, {});
+
+    if (!base) return null;
+
+    // Replace prorated period allowances with monthly-capped total, adjust gross
+    const oldAllowance = periodsList.reduce((sum, p) => {
+      const shifts = p.shifts || [];
+      const filtered = maxDate ? shifts.filter(s => s.date <= maxDate) : shifts;
+      const b = filtered.length > 0 && settings ? calculatePeriodBreakdown(filtered, settings) : null;
+      return sum + (b?.allowance_total || 0);
+    }, 0);
+    base.allowance_total = allowanceTotal;
+    base.allowance_monthly = monthlyAllowance;
+    base.gross_pay = (base.gross_pay || 0) - oldAllowance + allowanceTotal;
+
+    return base;
   };
 
   const countShifts = (periodsList, maxDate) =>
