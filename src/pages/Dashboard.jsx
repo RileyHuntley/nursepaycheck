@@ -70,67 +70,79 @@ export default function Dashboard() {
     computedBreakdown: p.breakdown || (settings && p.shifts?.length ? calculatePeriodBreakdown(p.shifts, settings) : null),
   }));
 
+  const now = new Date();
+  const todayStr = now.toISOString().split('T')[0];
+
   // Current pay period
   const { start_date, end_date } = getCurrentPayPeriodDates();
   const current = computedPeriods.find(p => p.start_date === start_date && p.end_date === end_date);
   const currentShiftCount = current?.shifts?.length || 0;
 
+  // --- Helper: sum breakdowns from a list of periods (optionally filtering shifts) ---
+  const sumBreakdowns = (periodsList, maxDate) => {
+    if (periodsList.length === 0 || !settings) return null;
+    return periodsList.reduce((acc, p) => {
+      const shifts = p.shifts || [];
+      const filtered = maxDate ? shifts.filter(s => s.date <= maxDate) : shifts;
+      if (filtered.length === 0) return acc;
+      const b = settings ? calculatePeriodBreakdown(filtered, settings) : null;
+      if (!b) return acc;
+      return {
+        straight_time_pay: (acc.straight_time_pay || 0) + b.straight_time_pay,
+        overtime_pay: (acc.overtime_pay || 0) + b.overtime_pay,
+        regular_premium_total: (acc.regular_premium_total || 0) + b.regular_premium_total,
+        evening_premium_total: (acc.evening_premium_total || 0) + b.evening_premium_total,
+        night_premium_total: (acc.night_premium_total || 0) + b.night_premium_total,
+        weekend_premium_total: (acc.weekend_premium_total || 0) + b.weekend_premium_total,
+        super_shift_premium_total: (acc.super_shift_premium_total || 0) + b.super_shift_premium_total,
+        short_notice_total: (acc.short_notice_total || 0) + b.short_notice_total,
+        responsibility_total: (acc.responsibility_total || 0) + b.responsibility_total,
+        preceptor_total: (acc.preceptor_total || 0) + b.preceptor_total,
+        on_call_total: (acc.on_call_total || 0) + b.on_call_total,
+        allowance_total: (acc.allowance_total || 0) + b.allowance_total,
+        qualification_total: (acc.qualification_total || 0) + b.qualification_total,
+        union_dues: (acc.union_dues || 0) + b.union_dues,
+        gross_pay: (acc.gross_pay || 0) + b.gross_pay,
+        regular_hours: (acc.regular_hours || 0) + b.regular_hours,
+      };
+    }, {});
+  };
+
+  const countShifts = (periodsList, maxDate) =>
+    periodsList.reduce((sum, p) => {
+      const shifts = p.shifts || [];
+      return sum + (maxDate ? shifts.filter(s => s.date <= maxDate).length : shifts.length);
+    }, 0);
+
   // Current month totals
-  const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
   const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
   const monthPeriods = computedPeriods.filter(p => p.start_date >= monthStart && p.start_date <= monthEnd);
-  const monthShiftCount = monthPeriods.reduce((sum, p) => sum + (p.shifts?.length || 0), 0);
-
-  const monthBreakdown = monthPeriods.length > 0 ? monthPeriods.reduce((acc, p) => {
-    const b = p.computedBreakdown;
-    if (!b) return acc;
-    return {
-      straight_time_pay: (acc.straight_time_pay || 0) + b.straight_time_pay,
-      overtime_pay: (acc.overtime_pay || 0) + b.overtime_pay,
-      regular_premium_total: (acc.regular_premium_total || 0) + b.regular_premium_total,
-      evening_premium_total: (acc.evening_premium_total || 0) + b.evening_premium_total,
-      night_premium_total: (acc.night_premium_total || 0) + b.night_premium_total,
-      weekend_premium_total: (acc.weekend_premium_total || 0) + b.weekend_premium_total,
-      super_shift_premium_total: (acc.super_shift_premium_total || 0) + b.super_shift_premium_total,
-      short_notice_total: (acc.short_notice_total || 0) + b.short_notice_total,
-      responsibility_total: (acc.responsibility_total || 0) + b.responsibility_total,
-      preceptor_total: (acc.preceptor_total || 0) + b.preceptor_total,
-      on_call_total: (acc.on_call_total || 0) + b.on_call_total,
-      allowance_total: (acc.allowance_total || 0) + b.allowance_total,
-      qualification_total: (acc.qualification_total || 0) + b.qualification_total,
-      union_dues: (acc.union_dues || 0) + b.union_dues,
-      gross_pay: (acc.gross_pay || 0) + b.gross_pay,
-    };
-  }, {}) : null;
-
-  // Year-to-date totals
-  const yearStart = `${now.getFullYear()}-01-01`;
-  const ytdPeriods = computedPeriods.filter(p => p.start_date >= yearStart);
-  const ytdShiftCount = ytdPeriods.reduce((sum, p) => sum + (p.shifts?.length || 0), 0);
-  const ytdBreakdown = ytdPeriods.length > 0 ? ytdPeriods.reduce((acc, p) => {
-    const b = p.computedBreakdown;
-    if (!b) return acc;
-    return {
-      straight_time_pay: (acc.straight_time_pay || 0) + b.straight_time_pay,
-      overtime_pay: (acc.overtime_pay || 0) + b.overtime_pay,
-      regular_premium_total: (acc.regular_premium_total || 0) + b.regular_premium_total,
-      evening_premium_total: (acc.evening_premium_total || 0) + b.evening_premium_total,
-      night_premium_total: (acc.night_premium_total || 0) + b.night_premium_total,
-      weekend_premium_total: (acc.weekend_premium_total || 0) + b.weekend_premium_total,
-      super_shift_premium_total: (acc.super_shift_premium_total || 0) + b.super_shift_premium_total,
-      short_notice_total: (acc.short_notice_total || 0) + b.short_notice_total,
-      responsibility_total: (acc.responsibility_total || 0) + b.responsibility_total,
-      preceptor_total: (acc.preceptor_total || 0) + b.preceptor_total,
-      on_call_total: (acc.on_call_total || 0) + b.on_call_total,
-      allowance_total: (acc.allowance_total || 0) + b.allowance_total,
-      qualification_total: (acc.qualification_total || 0) + b.qualification_total,
-      union_dues: (acc.union_dues || 0) + b.union_dues,
-      gross_pay: (acc.gross_pay || 0) + b.gross_pay,
-    };
-  }, {}) : null;
+  const monthShiftCount = countShifts(monthPeriods, null);
+  const monthBreakdown = sumBreakdowns(monthPeriods, null);
 
   const monthLabel = now.toLocaleDateString('en-CA', { month: 'long', year: 'numeric' });
+
+  // Next month totals (future — include upcoming shifts)
+  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const nextMonthStart = nextMonth.toISOString().split('T')[0];
+  const nextMonthEnd = new Date(now.getFullYear(), now.getMonth() + 2, 0).toISOString().split('T')[0];
+  const nextMonthPeriods = computedPeriods.filter(p => p.start_date >= nextMonthStart && p.start_date <= nextMonthEnd);
+  const nextMonthShiftCount = countShifts(nextMonthPeriods, null);
+  const nextMonthBreakdown = sumBreakdowns(nextMonthPeriods, null);
+  const nextMonthLabel = nextMonth.toLocaleDateString('en-CA', { month: 'long', year: 'numeric' });
+
+  // This year all periods
+  const yearStart = `${now.getFullYear()}-01-01`;
+  const yearPeriods = computedPeriods.filter(p => p.start_date >= yearStart);
+
+  // Year to Date (shifts up to today only)
+  const ytdShiftCount = countShifts(yearPeriods, todayStr);
+  const ytdBreakdown = sumBreakdowns(yearPeriods, todayStr);
+
+  // This Year Estimated (all shifts including future)
+  const thisYearShiftCount = countShifts(yearPeriods, null);
+  const thisYearBreakdown = sumBreakdowns(yearPeriods, null);
 
   return (
     <div className="space-y-8">
@@ -147,7 +159,7 @@ export default function Dashboard() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <PaySummaryPanel
           title="Current Pay Period"
           subtitle={current ? current.name : 'No pay period yet'}
@@ -165,12 +177,31 @@ export default function Dashboard() {
           shiftCount={monthShiftCount}
         />
         <PaySummaryPanel
+          title="Next Month"
+          subtitle={nextMonthLabel}
+          breakdown={nextMonthBreakdown}
+          loading={loading}
+          taxSettings={settings?.tax_settings}
+          shiftCount={nextMonthShiftCount}
+        />
+        <PaySummaryPanel
           title="Year to Date"
-          subtitle={`Jan 1 – Present (${ytdPeriods.length} periods)`}
+          subtitle={`Jan 1 – Today (${ytdShiftCount} shifts)`}
           breakdown={ytdBreakdown}
           loading={loading}
           taxSettings={settings?.tax_settings}
           shiftCount={ytdShiftCount}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <PaySummaryPanel
+          title="This Year (Estimated)"
+          subtitle={`Jan 1 – Dec 31 (${thisYearShiftCount} shifts)`}
+          breakdown={thisYearBreakdown}
+          loading={loading}
+          taxSettings={settings?.tax_settings}
+          shiftCount={thisYearShiftCount}
         />
       </div>
 

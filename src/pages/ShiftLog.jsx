@@ -337,10 +337,10 @@ export default function ShiftLog() {
   // Check if there are shifts beyond the last visible period
   const hasMoreFuture = allShifts.some(s => s.date > lastVisibleEndStr);
 
-  // YTD breakdown: filter to current year, compute per-period, sum
+  // YTD breakdown: filter to current year up to today, compute per-period, sum
   const currentYear = new Date().getFullYear();
   const yearStart = `${currentYear}-01-01`;
-  const ytdAllShifts = allShifts.filter(s => s.date >= yearStart);
+  const ytdAllShifts = allShifts.filter(s => s.date >= yearStart && s.date <= todayStr);
 
   // Group shifts by actual pay period (from date) and compute per-period breakdown, then sum
   let breakdown = null;
