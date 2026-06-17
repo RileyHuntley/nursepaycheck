@@ -149,7 +149,7 @@ export default function ShiftRow({ shift, premiums, settings, onEdit, onDelete, 
           <PremiumChip label="Night" amount={premiums.night} overridden={overridden.includes('night')} />
           <PremiumChip label="Weekend" amount={premiums.weekend} overridden={overridden.includes('weekend')} />
           <PremiumChip label="Super Shift" amount={premiums.super_shift} overridden={overridden.includes('super_shift')} />
-          <PremiumChip label="Regular Prem." amount={premiums.regular_premium} overridden={overridden.includes('regular_premium')} />
+          <PremiumChip label="Regular" amount={premiums.regular_premium} overridden={overridden.includes('regular_premium')} />
           <PremiumChip label="Short Notice" amount={premiums.short_notice} overridden={overridden.includes('short_notice')} />
           <PremiumChip label="Resp. Pay" amount={premiums.responsibility} overridden={overridden.includes('responsibility')} />
           <PremiumChip label="Preceptor" amount={premiums.preceptor} overridden={overridden.includes('preceptor')} />
