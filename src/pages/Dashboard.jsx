@@ -7,6 +7,13 @@ import { calculatePeriodBreakdown, getCurrentPayPeriodDates } from '@/lib/premiu
 import { Button } from '@/components/ui/button';
 import { CalendarPlus } from 'lucide-react';
 
+// Helper: add 14 days to an ISO date string
+const addDays = (dateStr, days) => {
+  const d = new Date(dateStr + 'T12:00:00');
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split('T')[0];
+};
+
 export default function Dashboard() {
   const [settings, setSettings] = useState(null);
   const [periods, setPeriods] = useState([]);
@@ -49,11 +56,8 @@ export default function Dashboard() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  // Real-time subscriptions with debounce to prevent rate limiting
   const debouncedLoad = useCallback(() => {
-    if (loadRef.current) {
-      clearTimeout(loadRef.current);
-    }
+    if (loadRef.current) clearTimeout(loadRef.current);
     loadRef.current = setTimeout(() => loadData(), 300);
   }, [loadData]);
 
@@ -71,12 +75,21 @@ export default function Dashboard() {
   const now = new Date();
   const todayStr = now.toISOString().split('T')[0];
 
-  // Current pay period
-  const { start_date, end_date } = getCurrentPayPeriodDates();
-  const current = computedPeriods.find(p => p.start_date === start_date && p.end_date === end_date);
-  const currentShiftCount = current?.shifts?.length || 0;
+  // ── Pay Periods ──
+  const { start_date: curStart, end_date: curEnd } = getCurrentPayPeriodDates();
+  const currentPeriod = computedPeriods.find(p => p.start_date === curStart && p.end_date === curEnd);
 
-  // --- Helper: sum breakdowns from a list of periods (optionally filtering shifts) ---
+  // Past: most recently completed (end_date < today), ordered by end_date desc
+  const pastPeriod = computedPeriods
+    .filter(p => p.end_date < todayStr)
+    .sort((a, b) => b.end_date.localeCompare(a.end_date))[0] || null;
+
+  // Next: start_date = current start + 14 days
+  const nextStart = addDays(curStart, 14);
+  const nextEnd = addDays(curEnd, 14);
+  const nextPeriod = computedPeriods.find(p => p.start_date === nextStart && p.end_date === nextEnd) || null;
+
+  // ── Helper: sum breakdowns ──
   const sumBreakdowns = (periodsList, maxDate) => {
     if (periodsList.length === 0 || !settings) return null;
     return periodsList.reduce((acc, p) => {
@@ -113,35 +126,55 @@ export default function Dashboard() {
       return sum + (maxDate ? shifts.filter(s => s.date <= maxDate).length : shifts.length);
     }, 0);
 
-  // Current month totals
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
-  const monthPeriods = computedPeriods.filter(p => p.start_date >= monthStart && p.start_date <= monthEnd);
-  const monthShiftCount = countShifts(monthPeriods, null);
-  const monthBreakdown = sumBreakdowns(monthPeriods, null);
+  // ── Monthly ──
+  const monthStart = (y, m) => new Date(y, m, 1).toISOString().split('T')[0];
+  const monthEnd = (y, m) => new Date(y, m + 1, 0).toISOString().split('T')[0];
 
-  const monthLabel = now.toLocaleDateString('en-CA', { month: 'long', year: 'numeric' });
+  // This month
+  const thisMonthStart = monthStart(now.getFullYear(), now.getMonth());
+  const thisMonthEnd = monthEnd(now.getFullYear(), now.getMonth());
+  const thisMonthPeriods = computedPeriods.filter(p => p.start_date >= thisMonthStart && p.start_date <= thisMonthEnd);
+  const thisMonthBreakdown = sumBreakdowns(thisMonthPeriods, null);
+  const thisMonthShiftCount = countShifts(thisMonthPeriods, null);
+  const thisMonthLabel = now.toLocaleDateString('en-CA', { month: 'long', year: 'numeric' });
 
-  // Next month totals (future — include upcoming shifts)
-  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-  const nextMonthStart = nextMonth.toISOString().split('T')[0];
-  const nextMonthEnd = new Date(now.getFullYear(), now.getMonth() + 2, 0).toISOString().split('T')[0];
+  // Last month
+  const lastMonthY = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+  const lastMonthM = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
+  const lastMonthStart = monthStart(lastMonthY, lastMonthM);
+  const lastMonthEnd = monthEnd(lastMonthY, lastMonthM);
+  const lastMonthPeriods = computedPeriods.filter(p => p.start_date >= lastMonthStart && p.start_date <= lastMonthEnd);
+  const lastMonthBreakdown = sumBreakdowns(lastMonthPeriods, null);
+  const lastMonthShiftCount = countShifts(lastMonthPeriods, null);
+  const lastMonthLabel = new Date(lastMonthY, lastMonthM).toLocaleDateString('en-CA', { month: 'long', year: 'numeric' });
+
+  // Next month
+  const nextMonthY = now.getMonth() === 11 ? now.getFullYear() + 1 : now.getFullYear();
+  const nextMonthM = now.getMonth() === 11 ? 0 : now.getMonth() + 1;
+  const nextMonthStart = monthStart(nextMonthY, nextMonthM);
+  const nextMonthEnd = monthEnd(nextMonthY, nextMonthM);
   const nextMonthPeriods = computedPeriods.filter(p => p.start_date >= nextMonthStart && p.start_date <= nextMonthEnd);
-  const nextMonthShiftCount = countShifts(nextMonthPeriods, null);
   const nextMonthBreakdown = sumBreakdowns(nextMonthPeriods, null);
-  const nextMonthLabel = nextMonth.toLocaleDateString('en-CA', { month: 'long', year: 'numeric' });
+  const nextMonthShiftCount = countShifts(nextMonthPeriods, null);
+  const nextMonthLabel = new Date(nextMonthY, nextMonthM).toLocaleDateString('en-CA', { month: 'long', year: 'numeric' });
 
-  // This year all periods
+  // ── Yearly ──
   const yearStart = `${now.getFullYear()}-01-01`;
   const yearPeriods = computedPeriods.filter(p => p.start_date >= yearStart);
 
-  // Year to Date (shifts up to today only)
   const ytdShiftCount = countShifts(yearPeriods, todayStr);
   const ytdBreakdown = sumBreakdowns(yearPeriods, todayStr);
 
-  // This Year Estimated (all shifts including future)
   const thisYearShiftCount = countShifts(yearPeriods, null);
   const thisYearBreakdown = sumBreakdowns(yearPeriods, null);
+
+  // Last year (if any data exists)
+  const lastYearStart = `${now.getFullYear() - 1}-01-01`;
+  const lastYearEnd = `${now.getFullYear() - 1}-12-31`;
+  const lastYearPeriods = computedPeriods.filter(p => p.start_date >= lastYearStart && p.start_date <= lastYearEnd);
+  const lastYearBreakdown = sumBreakdowns(lastYearPeriods, null);
+  const lastYearShiftCount = countShifts(lastYearPeriods, null);
+  const lastYearLabel = `${now.getFullYear() - 1}`;
 
   return (
     <div className="space-y-8">
@@ -158,22 +191,52 @@ export default function Dashboard() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* ── Pay Period Row ── */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <PaySummaryPanel
-          title="Current Pay Period"
-          subtitle={current ? current.name : 'No pay period yet'}
-          breakdown={current?.computedBreakdown}
+          title="Past Pay Period"
+          subtitle={pastPeriod ? pastPeriod.name : 'No data'}
+          breakdown={pastPeriod?.computedBreakdown}
           loading={loading}
           taxSettings={settings?.tax_settings}
-          shiftCount={currentShiftCount}
+          shiftCount={pastPeriod?.shifts?.length || 0}
+          verifiedDeductions={pastPeriod?.verified_deductions}
+        />
+        <PaySummaryPanel
+          title="Current Pay Period"
+          subtitle={currentPeriod ? currentPeriod.name : 'No pay period yet'}
+          breakdown={currentPeriod?.computedBreakdown}
+          loading={loading}
+          taxSettings={settings?.tax_settings}
+          shiftCount={currentPeriod?.shifts?.length || 0}
+        />
+        <PaySummaryPanel
+          title="Next Pay Period"
+          subtitle={nextPeriod ? nextPeriod.name : 'Not yet created'}
+          breakdown={nextPeriod?.computedBreakdown}
+          loading={loading}
+          taxSettings={settings?.tax_settings}
+          shiftCount={nextPeriod?.shifts?.length || 0}
+        />
+      </div>
+
+      {/* ── Monthly Row ── */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <PaySummaryPanel
+          title="Last Month"
+          subtitle={lastMonthLabel}
+          breakdown={lastMonthBreakdown}
+          loading={loading}
+          taxSettings={settings?.tax_settings}
+          shiftCount={lastMonthShiftCount}
         />
         <PaySummaryPanel
           title="This Month"
-          subtitle={monthLabel}
-          breakdown={monthBreakdown}
+          subtitle={thisMonthLabel}
+          breakdown={thisMonthBreakdown}
           loading={loading}
           taxSettings={settings?.tax_settings}
-          shiftCount={monthShiftCount}
+          shiftCount={thisMonthShiftCount}
         />
         <PaySummaryPanel
           title="Next Month"
@@ -185,7 +248,24 @@ export default function Dashboard() {
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* ── Yearly Row ── */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {lastYearBreakdown ? (
+          <PaySummaryPanel
+            title="Last Year"
+            subtitle={lastYearLabel}
+            breakdown={lastYearBreakdown}
+            loading={loading}
+            taxSettings={settings?.tax_settings}
+            shiftCount={lastYearShiftCount}
+          />
+        ) : (
+          <div className="bg-card border border-border rounded-xl p-6">
+            <h3 className="text-base font-display font-semibold text-foreground">Last Year</h3>
+            <p className="text-xs text-muted-foreground mt-1">{lastYearLabel}</p>
+            <p className="text-sm text-muted-foreground mt-4">No data available for last year.</p>
+          </div>
+        )}
         <PaySummaryPanel
           title="Year to Date"
           subtitle={`Jan 1 – Today (${ytdShiftCount} shifts)`}
@@ -195,7 +275,7 @@ export default function Dashboard() {
           shiftCount={ytdShiftCount}
         />
         <PaySummaryPanel
-          title="This Year (Estimated)"
+          title="This Year"
           subtitle={`Jan 1 – Dec 31 (${thisYearShiftCount} shifts)`}
           breakdown={thisYearBreakdown}
           loading={loading}
@@ -204,7 +284,37 @@ export default function Dashboard() {
         />
       </div>
 
-      <EarningsTrendChart periods={computedPeriods} settings={settings} />
+      {/* ── Past Trend Charts ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <EarningsTrendChart
+          periods={computedPeriods}
+          settings={settings}
+          chartType="months_past"
+          title="Earnings Trend — Last 6 Months"
+        />
+        <EarningsTrendChart
+          periods={computedPeriods}
+          settings={settings}
+          chartType="periods_past"
+          title="Earnings Trend — Last 6 Pay Periods"
+        />
+      </div>
+
+      {/* ── Future Trend Charts ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <EarningsTrendChart
+          periods={computedPeriods}
+          settings={settings}
+          chartType="months_future"
+          title="Earnings Trend — Next 6 Months"
+        />
+        <EarningsTrendChart
+          periods={computedPeriods}
+          settings={settings}
+          chartType="periods_future"
+          title="Earnings Trend — Next 6 Pay Periods"
+        />
+      </div>
     </div>
   );
 }
