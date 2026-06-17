@@ -73,12 +73,14 @@ export default function Dashboard() {
   // Current pay period
   const { start_date, end_date } = getCurrentPayPeriodDates();
   const current = computedPeriods.find(p => p.start_date === start_date && p.end_date === end_date);
+  const currentShiftCount = current?.shifts?.length || 0;
 
   // Current month totals
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
   const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
   const monthPeriods = computedPeriods.filter(p => p.start_date >= monthStart && p.start_date <= monthEnd);
+  const monthShiftCount = monthPeriods.reduce((sum, p) => sum + (p.shifts?.length || 0), 0);
 
   const monthBreakdown = monthPeriods.length > 0 ? monthPeriods.reduce((acc, p) => {
     const b = p.computedBreakdown;
@@ -105,6 +107,7 @@ export default function Dashboard() {
   // Year-to-date totals
   const yearStart = `${now.getFullYear()}-01-01`;
   const ytdPeriods = computedPeriods.filter(p => p.start_date >= yearStart);
+  const ytdShiftCount = ytdPeriods.reduce((sum, p) => sum + (p.shifts?.length || 0), 0);
   const ytdBreakdown = ytdPeriods.length > 0 ? ytdPeriods.reduce((acc, p) => {
     const b = p.computedBreakdown;
     if (!b) return acc;
@@ -151,6 +154,7 @@ export default function Dashboard() {
           breakdown={current?.computedBreakdown}
           loading={loading}
           taxSettings={settings?.tax_settings}
+          shiftCount={currentShiftCount}
         />
         <PaySummaryPanel
           title="Current Month"
@@ -158,6 +162,7 @@ export default function Dashboard() {
           breakdown={monthBreakdown}
           loading={loading}
           taxSettings={settings?.tax_settings}
+          shiftCount={monthShiftCount}
         />
         <PaySummaryPanel
           title="Year to Date"
@@ -165,6 +170,7 @@ export default function Dashboard() {
           breakdown={ytdBreakdown}
           loading={loading}
           taxSettings={settings?.tax_settings}
+          shiftCount={ytdShiftCount}
         />
       </div>
 

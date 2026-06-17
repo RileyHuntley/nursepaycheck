@@ -1,7 +1,7 @@
 import { estimateTaxes, estimateStatutoryDeductions } from '@/lib/taxCalculator';
 import { formatCurrency } from '@/lib/utils';
 
-export default function PaySummaryPanel({ title, subtitle, breakdown, loading, taxSettings }) {
+export default function PaySummaryPanel({ title, subtitle, breakdown, loading, taxSettings, shiftCount }) {
   if (loading) {
     return (
       <div className="bg-card border border-border rounded-xl p-6 animate-pulse">
@@ -21,6 +21,9 @@ export default function PaySummaryPanel({ title, subtitle, breakdown, loading, t
       <div className="bg-card border border-border rounded-xl p-6">
         <h3 className="text-base font-display font-semibold text-foreground">{title}</h3>
         {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
+        {shiftCount != null && (
+          <p className="text-xs text-muted-foreground/70 mt-0.5">{shiftCount} shift{shiftCount !== 1 ? 's' : ''}</p>
+        )}
         <p className="text-sm text-muted-foreground mt-4">No data available for this period.</p>
       </div>
     );
@@ -66,6 +69,9 @@ export default function PaySummaryPanel({ title, subtitle, breakdown, loading, t
     <div className="bg-card border border-border rounded-xl p-6">
       <h3 className="text-base font-display font-semibold text-foreground">{title}</h3>
       {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
+      {shiftCount != null && (
+        <p className="text-xs text-muted-foreground/70 mt-0.5">{shiftCount} shift{shiftCount !== 1 ? 's' : ''}</p>
+      )}
 
       <div className="mt-4 space-y-1.5">
         {rows.map((r, i) => (
