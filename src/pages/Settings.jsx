@@ -1,10 +1,21 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useBlocker } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Save, Loader2, Plus, X } from 'lucide-react';
+import { Save, Loader2, Plus, X, AlertTriangle } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { SHIFT_PATTERNS } from '@/lib/shiftPatterns';
 import {
   Select,
@@ -66,6 +77,30 @@ export default function Settings() {
   const [settings, setSettings] = useState(null);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
+  const savedRef = useRef(null);
+
+  // Track unsaved changes by comparing to last saved snapshot
+  const isDirty = useMemo(() => {
+    if (!settings || !savedRef.current) return false;
+    return JSON.stringify(settings) !== JSON.stringify(savedRef.current);
+  }, [settings]);
+
+  // Block in-app navigation when dirty
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      isDirty && currentLocation.pathname !== nextLocation.pathname
+  );
+
+  // Warn on browser close/refresh when dirty
+  useEffect(() => {
+    if (!isDirty) return;
+    const handler = (e) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [isDirty]);
 
   const loadSettings = useCallback(async () => {
     const list = await base44.entities.Settings.list();
@@ -74,9 +109,11 @@ export default function Settings() {
       const loaded = list[0];
       const merged = { ...defaultSettings, ...loaded };
       setSettings(merged);
+      savedRef.current = JSON.stringify(merged);
     } else {
       const created = await base44.entities.Settings.create(defaultSettings);
       setSettings(created);
+      savedRef.current = JSON.stringify(created);
     }
   }, []);
 
@@ -150,6 +187,7 @@ export default function Settings() {
     setMessage(null);
     try {
       await base44.entities.Settings.update(settings.id, settings);
+      savedRef.current = JSON.stringify(settings);
       setMessage({ type: 'success', text: 'Settings saved.' });
       setTimeout(() => setMessage(null), 3000);
     } catch (e) {
@@ -174,10 +212,18 @@ export default function Settings() {
           <h2 className="text-2xl font-display font-bold text-foreground tracking-tight">Settings</h2>
           <p className="text-sm text-muted-foreground mt-1">Configure wage, premiums, and allowances per your CBA</p>
         </div>
-        <Button onClick={handleSave} disabled={saving} size="sm" className="bg-primary text-primary-foreground">
-          {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-          Save
-        </Button>
+        <div className="flex items-center gap-3">
+          {isDirty && (
+            <span className="text-xs font-medium text-chart-2 bg-chart-2/10 px-2.5 py-1 rounded-full inline-flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-chart-2 animate-pulse" />
+              Unsaved
+            </span>
+          )}
+          <Button onClick={handleSave} disabled={saving} size="sm" className="bg-primary text-primary-foreground">
+            {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+            Save
+          </Button>
+        </div>
       </div>
 
       {message && (
@@ -468,6 +514,27 @@ export default function Settings() {
           </div>
         </div>
       </section>
+
+      {/* Unsaved changes confirmation dialog */}
+      <AlertDialog open={blocker.state === 'blocked'} onOpenChange={() => {}}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-chart-2" />
+              Unsaved Changes
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              You have unsaved changes to your settings. If you leave now, your changes will be lost.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => blocker.reset?.()}>Stay on Page</AlertDialogCancel>
+            <AlertDialogAction onClick={() => blocker.proceed?.()} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Leave Anyway
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
