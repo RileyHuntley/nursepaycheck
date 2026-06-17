@@ -139,12 +139,12 @@ export default function ShiftRow({ shift, premiums, settings, periodEndDate, onE
             </span>
           )}
           {effStatus === 'upcoming' && (
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-muted text-muted-foreground">
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-chart-2/15 text-chart-2">
               Upcoming
             </span>
           )}
           {effStatus === 'pending' && (
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-chart-2/15 text-chart-2">
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-destructive/15 text-destructive">
               Pending
             </span>
           )}
