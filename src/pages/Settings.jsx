@@ -79,13 +79,15 @@ export default function Settings() {
   const [settings, setSettings] = useState(null);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
+  const [savedVersion, setSavedVersion] = useState(0);
   const savedRef = useRef(null);
 
-  // Track unsaved changes by comparing to last saved snapshot
+  // Track unsaved changes by comparing to last saved snapshot.
+  // savedVersion bumps on every save so useMemo recomputes immediately.
   const isDirty = useMemo(() => {
     if (!settings || !savedRef.current) return false;
     return !isEqual(settings, savedRef.current);
-  }, [settings]);
+  }, [settings, savedVersion]);
 
   // Block in-app navigation when dirty
   const blocker = useBlocker(
@@ -190,6 +192,7 @@ export default function Settings() {
     try {
       await base44.entities.Settings.update(settings.id, settings);
       savedRef.current = cloneDeep(settings);
+      setSavedVersion(v => v + 1);
       setMessage({ type: 'success', text: 'Settings saved.' });
       setTimeout(() => setMessage(null), 3000);
     } catch (e) {
