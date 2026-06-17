@@ -181,6 +181,16 @@ export default function ShiftLog() {
     loadData();
   };
 
+  const verifyShift = async (shift) => {
+    const period = periodMap[shift._periodId];
+    if (!period) return;
+    const updatedShifts = (period.shifts || []).map((s, i) =>
+      i === shift._shiftIdx ? { ...s, status: 'verified' } : s
+    );
+    await base44.entities.PayPeriod.update(period.id, { shifts: updatedShifts });
+    loadData();
+  };
+
   const findOrCreatePeriodForDate = async (date) => {
     const existing = Object.values(periodMap).find(p => date >= p.start_date && date <= p.end_date);
     if (existing) return existing;
@@ -196,9 +206,11 @@ export default function ShiftLog() {
     return created;
   };
 
+  const getDefaultStatus = (date) => date > new Date().toISOString().slice(0, 10) ? 'upcoming' : 'pending';
+
   const addShift = async (shiftData) => {
     const period = await findOrCreatePeriodForDate(shiftData.date);
-    const updatedShifts = [...(period.shifts || []), { ...shiftData }];
+    const updatedShifts = [...(period.shifts || []), { ...shiftData, status: shiftData.status || getDefaultStatus(shiftData.date) }];
     const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings) : null;
     await base44.entities.PayPeriod.update(period.id, {
       shifts: updatedShifts,
@@ -214,7 +226,7 @@ export default function ShiftLog() {
     for (const s of shifts) {
       const period = await findOrCreatePeriodForDate(s.date);
       if (!groups[period.id]) groups[period.id] = { period, shifts: [] };
-      groups[period.id].shifts.push({ ...s });
+      groups[period.id].shifts.push({ ...s, status: s.status || getDefaultStatus(s.date) });
     }
     for (const { period, shifts: groupShifts } of Object.values(groups)) {
       const updatedShifts = [...(period.shifts || []), ...groupShifts];
@@ -449,8 +461,10 @@ export default function ShiftLog() {
                               shift={shift}
                               premiums={settings ? calculateShiftPremiums(shift, settings) : null}
                               settings={settings}
+                              periodEndDate={periodMap[shift._periodId]?.end_date}
                               onEdit={(s) => setEditingShift({ data: s, _periodId: shift._periodId, _shiftIdx: shift._shiftIdx })}
                               onDelete={() => deleteShift(shift)}
+                              onVerify={() => verifyShift(shift)}
                             />
                           </div>
                         ))}

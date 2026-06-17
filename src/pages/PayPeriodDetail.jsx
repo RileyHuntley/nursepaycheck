@@ -83,7 +83,10 @@ export default function PayPeriodDetail() {
     return date >= period.start_date && date <= period.end_date;
   };
 
+  const getDefaultStatus = (date) => date > new Date().toISOString().slice(0, 10) ? 'upcoming' : 'pending';
+
   const addShift = async (shiftData) => {
+    shiftData.status = shiftData.status || getDefaultStatus(shiftData.date);
     if (!isValidForPeriod(shiftData.date)) {
       // Allow but warn: if date is outside current period, auto-route to correct period
       const { start_date, end_date } = getPayPeriodForDate(shiftData.date);
@@ -145,7 +148,7 @@ export default function PayPeriodDetail() {
         }
       }
       if (!groups[key].shifts) groups[key].shifts = [];
-      groups[key].shifts.push({ ...s });
+      groups[key].shifts.push({ ...s, status: s.status || getDefaultStatus(s.date) });
     }
     for (const { period, shifts: groupShifts } of Object.values(groups)) {
       const updatedShifts = [...(period.shifts || []), ...groupShifts];
@@ -215,6 +218,14 @@ export default function PayPeriodDetail() {
       shifts: updatedShifts,
       ...(breakdown ? { breakdown } : {}),
     });
+    setPeriod(updated);
+  };
+
+  const verifyShift = async (shift, idx) => {
+    const updatedShifts = (period.shifts || []).map((s, i) =>
+      i === idx ? { ...s, status: 'verified' } : s
+    );
+    const updated = await base44.entities.PayPeriod.update(period.id, { shifts: updatedShifts });
     setPeriod(updated);
   };
 
@@ -353,8 +364,10 @@ export default function PayPeriodDetail() {
               shift={shift}
               premiums={settings ? calculateShiftPremiums(shift, settings) : null}
               settings={settings}
+              periodEndDate={period.end_date}
               onEdit={(s) => setEditingShift({ data: s, index: shift._origIdx })}
               onDelete={() => deleteShift(shift, shift._origIdx)}
+              onVerify={() => verifyShift(shift, shift._origIdx)}
             />
           ))}
         </div>

@@ -94,6 +94,15 @@
           "notes": {
             "type": "string"
           },
+          "status": {
+            "type": "string",
+            "enum": [
+              "upcoming",
+              "pending",
+              "verified"
+            ],
+            "default": "pending"
+          },
           "premium_overrides": {
             "type": "object",
             "description": "Manual dollar-amount overrides for individual premiums on this shift",

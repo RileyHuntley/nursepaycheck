@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { Trash2, Sun, Moon } from 'lucide-react';
+import { Trash2, Sun, Moon, Check } from 'lucide-react';
 
 const TYPE_LABELS = {
   regular:         'Regular (×1.0)',
@@ -55,7 +55,17 @@ function PremiumChip({ label, amount, overridden }) {
   );
 }
 
-export default function ShiftRow({ shift, premiums, settings, onEdit, onDelete, readOnly }) {
+const todayStr = new Date().toISOString().slice(0, 10);
+
+function resolveStatus(shift) {
+  // Verified is persisted; otherwise compute from date vs today
+  if (shift.status === 'verified') return 'verified';
+  if (!shift.date) return 'upcoming';
+  if (shift.date > todayStr) return 'upcoming';
+  return 'pending';
+}
+
+export default function ShiftRow({ shift, premiums, settings, periodEndDate, onEdit, onDelete, onVerify, readOnly }) {
   const overridden = premiums?._overridden || [];
   const hosp = shift.hospital ? (settings?.hospitals || []).find(h => h.name === shift.hospital) : null;
   const unit = shift.unit ? (settings?.units || []).find(u => u.name === shift.unit) : null;
@@ -76,12 +86,16 @@ export default function ShiftRow({ shift, premiums, settings, onEdit, onDelete, 
     ? (premiums.night || 0) > 0
     : shift.start_time >= '18:00' || shift.end_time <= '08:00';
 
+  const effStatus = resolveStatus(shift);
+  const periodEnded = periodEndDate && todayStr > periodEndDate;
+  const showVerify = effStatus === 'pending' && periodEnded;
+
   return (
     <div
       className="px-4 py-3 bg-card hover:bg-muted/20 transition-colors duration-150 cursor-pointer"
       onClick={() => onEdit && onEdit(shift)}
     >
-      {/* Top row: date, time, type, hours, actions */}
+      {/* Top row: date, time, type, hours, status, actions */}
       <div className="flex items-center gap-3 flex-wrap">
         <div className="flex items-center gap-1.5 flex-shrink-0" style={{ minWidth: '8rem' }}>
           {isNight
@@ -117,6 +131,25 @@ export default function ShiftRow({ shift, premiums, settings, onEdit, onDelete, 
           {shift.paid_hours}h
         </div>
 
+        {/* Status badge */}
+        <div className="flex-shrink-0">
+          {effStatus === 'verified' && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-chart-4/15 text-chart-4">
+              <Check className="w-3 h-3" /> Verified
+            </span>
+          )}
+          {effStatus === 'upcoming' && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-muted text-muted-foreground">
+              Upcoming
+            </span>
+          )}
+          {effStatus === 'pending' && !showVerify && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-chart-2/15 text-chart-2">
+              Pending
+            </span>
+          )}
+        </div>
+
         <div className="flex-1" />
 
         {wage > 0 && (
@@ -141,6 +174,17 @@ export default function ShiftRow({ shift, premiums, settings, onEdit, onDelete, 
 
         {!readOnly && (
           <div className="flex items-center gap-1 flex-shrink-0">
+            {showVerify && onVerify && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={(e) => { e.stopPropagation(); onVerify(shift); }}
+                className="h-7 w-7 text-chart-4 hover:text-chart-4 hover:bg-chart-4/10"
+                title="Mark as verified"
+              >
+                <Check className="w-4 h-4" />
+              </Button>
+            )}
             <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); onDelete(shift); }} className="h-7 w-7 text-destructive hover:text-destructive">
               <Trash2 className="w-3.5 h-3.5" />
             </Button>
