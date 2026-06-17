@@ -12,7 +12,11 @@ export default function Dashboard() {
   const [periods, setPeriods] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const loadingRef = useRef(false);
+
   const loadData = useCallback(async () => {
+    if (loadingRef.current) return;
+    loadingRef.current = true;
     setLoading(true);
     try {
       let [settingsList, periodList] = await Promise.all([
@@ -38,6 +42,7 @@ export default function Dashboard() {
       setSettings(settingsList[0]);
       setPeriods(periodList);
     } finally {
+      loadingRef.current = false;
       setLoading(false);
     }
   }, []);

@@ -18,7 +18,11 @@ export default function PayPeriodDetail() {
   const [editingShift, setEditingShift] = useState(null);
   const [sortAsc, setSortAsc] = useState(true);
 
+  const loadingRef = useRef(false);
+
   const loadData = useCallback(async () => {
+    if (loadingRef.current) return;
+    loadingRef.current = true;
     setLoading(true);
     try {
       let [settingsList, periodList] = await Promise.all([
@@ -59,6 +63,7 @@ export default function PayPeriodDetail() {
         setPeriod(created);
       }
     } finally {
+      loadingRef.current = false;
       setLoading(false);
     }
   }, []);

@@ -21,7 +21,11 @@ export default function PayPeriodHistory() {
   const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
+  const loadingRef = useRef(false);
+
   const loadPeriods = useCallback(async () => {
+    if (loadingRef.current) return;
+    loadingRef.current = true;
     setLoading(true);
     const list = await base44.entities.PayPeriod.list('-start_date', 50);
     // Deduplicate by start_date and exclude empty periods
@@ -33,6 +37,7 @@ export default function PayPeriodHistory() {
       return true;
     });
     setPeriods(deduped);
+    loadingRef.current = false;
     setLoading(false);
   }, []);
 

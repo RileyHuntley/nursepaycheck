@@ -9,7 +9,11 @@ export default function ShiftCalendar() {
   const [shiftsMap, setShiftsMap] = useState({});
   const [loading, setLoading] = useState(true);
 
+  const loadingRef = useRef(false);
+
   const loadShifts = useCallback(async () => {
+    if (loadingRef.current) return;
+    loadingRef.current = true;
     setLoading(true);
     try {
       let [settingsList, periods] = await Promise.all([
@@ -45,6 +49,7 @@ export default function ShiftCalendar() {
       }
       setShiftsMap(map);
     } finally {
+      loadingRef.current = false;
       setLoading(false);
     }
   }, []);
