@@ -399,7 +399,7 @@ export default function ShiftLog() {
             <p className="text-sm text-muted-foreground mt-1">
               {statusFilter !== 'all'
                 ? `${sortedShifts.length} shift${sortedShifts.length !== 1 ? 's' : ''} · ${statusFilter}`
-                : `${visibleNextCount + 1} pay period${visibleNextCount > 0 ? 's' : ''} shown — past periods on Calendar or History`
+                : `Current + upcoming periods shown — past periods with pending shifts also visible`
               }
             </p>
           )}
@@ -514,8 +514,12 @@ export default function ShiftLog() {
                   groups[groups.length - 1].shifts.push(shift);
                 }
 
-                // Filter to visible periods: current and N future
-                const visibleGroups = groups.filter(g => g.periodStart >= currentPd.start_date && g.periodStart <= lastVisibleEndStr);
+                // Filter: current + N future always shown; past periods only if they have a pending shift
+                const visibleGroups = groups.filter(g => {
+                  if (g.periodStart >= currentPd.start_date && g.periodStart <= lastVisibleEndStr) return true; // current/future
+                  if (g.periodStart < currentPd.start_date) return g.shifts.some(s => resolveStatus(s) === 'pending'); // past: only if pending
+                  return false;
+                });
                 // Show current period even if empty
                 const hasCurrentGroup = visibleGroups.some(g => g.key === currentPdKey);
                 if (!hasCurrentGroup && currentPdKey) {
