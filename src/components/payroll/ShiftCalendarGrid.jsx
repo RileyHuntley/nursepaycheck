@@ -252,20 +252,22 @@ export default function ShiftCalendarGrid({ settings, shiftsMap, onShiftUpdate, 
             </SelectContent>
           </Select>
 
-          <Select
-            value={haFilter}
-            onValueChange={(v) => { setHaFilter(v); setHospitalFilter('all'); setUnitFilter('all'); }}
-          >
-            <SelectTrigger className="h-8 w-[200px] text-xs">
-              <SelectValue placeholder="All Health Authorities" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Health Authorities</SelectItem>
-              {shiftHAs.map(ha => (
-                <SelectItem key={ha} value={ha}>{HA_FULL_NAMES[ha] || ha}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {shiftHAs.length > 1 && (
+            <Select
+              value={haFilter}
+              onValueChange={(v) => { setHaFilter(v); setHospitalFilter('all'); setUnitFilter('all'); }}
+            >
+              <SelectTrigger className="h-8 w-[200px] text-xs">
+                <SelectValue placeholder="All Health Authorities" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Health Authorities</SelectItem>
+                {shiftHAs.map(ha => (
+                  <SelectItem key={ha} value={ha}>{HA_FULL_NAMES[ha] || ha}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
 
           <Select
             value={unitFilter}
