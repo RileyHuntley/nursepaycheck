@@ -94,7 +94,7 @@ export default function SharedShifts() {
           <h1 className="text-2xl font-display font-bold text-foreground">BCNU Shift Tracker</h1>
           <p className="text-sm text-muted-foreground">
             {payPeriods.length} pay period{payPeriods.length !== 1 ? 's' : ''} ·{' '}
-            Estimated Income This Year&colon; <span className="font-mono font-semibold text-foreground">{formatCurrency(ytdGross)}</span>
+            Estimated Income This Year: <span className="font-mono font-semibold text-foreground">{formatCurrency(ytdGross)}</span>
           </p>
         </header>
 
