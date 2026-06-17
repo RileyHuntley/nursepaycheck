@@ -192,7 +192,7 @@ export function superShiftHours(dateStr, startTime, endTime) {
 export function calculateShiftPremiums(shift, settings) {
   const rates = settings.premium_rates;
   const paidHours = shift.paid_hours || 0;
-  const isStraight = ['regular', 'isn', 'vacation', 'sick', 'pdo_pst', 'other_leave'].includes(shift.shift_type);
+  const isStraight = ['casual', 'regular', 'isn', 'vacation', 'paid_vacation', 'sick', 'paid_sick', 'special_leave', 'pdo_pst', 'other_leave'].includes(shift.shift_type);
   const overrides = shift.premium_overrides || {};
 
   // --- Evening / Night ---
@@ -268,24 +268,17 @@ export function calculateShiftPremiums(shift, settings) {
 }
 
 /**
- * Get the wage multiplier for a shift type (per-shift, per NBA CBA screenshot)
- * regular = ×1.0
- * day_off (working a day off) = ×2.0
- * work_stat (working a regular stat) = ×2.0
- * work_super_stat (working Good Friday / Labour Day / Christmas) = ×2.5
- * ot_stat (OT shift on any stat) = ×3.0
- * overtime = ×1.5
- * isn = ×1.0 (same base as regular, separate category)
- * vacation / sick / pdo_pst / other_leave = ×1.0
+ * Get the base wage multiplier for a shift type (before stat bumps).
+ * casual / regular / isn / vacation / sick / special_leave / pdo_pst / other_leave = ×1.0
+ * day_off = ×2.0 (working a day off)
+ * unpaid_vacation / unpaid_sick = ×0 (no pay)
  */
 export function getShiftMultiplier(shiftType) {
   switch (shiftType) {
-    case 'day_off':         return 2.0;
-    case 'work_stat':       return 2.0;
-    case 'work_super_stat': return 2.5;
-    case 'ot_stat':         return 3.0;
-    case 'overtime':        return 1.5;
-    default:                return 1.0;
+    case 'day_off':          return 2.0;
+    case 'unpaid_vacation':  return 0;
+    case 'unpaid_sick':      return 0;
+    default:                 return 1.0;
   }
 }
 
@@ -326,29 +319,33 @@ export function splitOvernightShift(shift) {
 
 /**
  * Get the effective wage multiplier for a shift segment based on its date.
- * Overnight shifts crossing into a stat holiday get different rates per portion:
- *  - ot_stat: 3× on the stat date, 2× (day_off rate) on the non-stat date
- *  - Straight-time types (regular, isn, etc.): 2× / 2.5× on stat, 1× elsewhere
- *  - Other types (day_off, work_stat, work_super_stat, overtime): keep their base multiplier
+ * Auto-calculates stat/overtime rates without needing separate shift types:
+ *  - day_off: 2× normally, 3× on any stat (replaces old "OT on Stat")
+ *  - Straight types (casual, regular, isn, leave, etc.): ×1.0 normally, ×2.0/×2.5 on stat
+ *  - Unpaid types: ×0 always
  */
 export function getSegmentMultiplier(shiftType, segmentDate) {
   const baseMultiplier = getShiftMultiplier(shiftType);
   const statType = getStatType(segmentDate);
 
-  // OT on Stat: stat portion = 3×, non-stat portion = 2× (day off)
-  if (shiftType === 'ot_stat') {
+  // Unpaid types — no pay regardless of date
+  if (baseMultiplier === 0) return 0;
+
+  // Working Day Off: 2× normally, bumps to 3× on any stat (equivalent to old "OT on Stat")
+  if (shiftType === 'day_off') {
     return statType ? 3.0 : 2.0;
   }
 
-  // Straight-time shift types: bump to stat rate when segment lands on a stat
-  const isStraight = ['regular', 'isn', 'vacation', 'sick', 'pdo_pst', 'other_leave'].includes(shiftType);
-  if (isStraight) {
+  // Straight-time types (casual, regular, isn, vacation, sick, paid types, leave):
+  // bump to stat rate when segment lands on a stat
+  const STRAIGHT = ['casual', 'regular', 'isn', 'vacation', 'paid_vacation', 'sick', 'paid_sick', 'special_leave', 'pdo_pst', 'other_leave'];
+  if (STRAIGHT.includes(shiftType)) {
     if (statType === 'super_stat') return 2.5;
     if (statType === 'stat') return 2.0;
     return 1.0;
   }
 
-  // Other multiplier types keep their base rate regardless of stat
+  // Anything else: keep base multiplier
   return baseMultiplier;
 }
 
@@ -421,8 +418,8 @@ export function calculatePeriodBreakdown(shifts, settings) {
   let preceptorTotal = 0, preceptorHours = 0;
   let specialtyTotal = 0, specialtyHours = 0;
 
-  const STRAIGHT_TYPES = ['regular', 'isn', 'vacation', 'sick', 'pdo_pst', 'other_leave'];
-  const REGULAR_PREMIUM_TYPES = ['regular', 'isn', 'vacation', 'sick', 'pdo_pst', 'other_leave'];
+  const STRAIGHT_TYPES = ['casual', 'regular', 'isn', 'vacation', 'paid_vacation', 'sick', 'paid_sick', 'special_leave', 'pdo_pst', 'other_leave'];
+  const REGULAR_PREMIUM_TYPES = ['casual', 'regular', 'isn'];
 
   for (const shift of shifts) {
     // Per-shift time-window premiums (evening/night/weekend/super_shift are time-based, not date-based)

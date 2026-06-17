@@ -631,17 +631,17 @@ export default function ShiftLog() {
                     <SelectValue placeholder="Change type…" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="casual">Casual Shift</SelectItem>
                     <SelectItem value="regular">Regular (×1.0)</SelectItem>
                     <SelectItem value="day_off">Day Off (×2.0)</SelectItem>
-                    <SelectItem value="work_stat">Work Stat (×2.0)</SelectItem>
-                    <SelectItem value="work_super_stat">Super Stat (×2.5)</SelectItem>
-                    <SelectItem value="ot_stat">OT on Stat (×3.0)</SelectItem>
-                    <SelectItem value="overtime">Overtime (×1.5)</SelectItem>
                     <SelectItem value="isn">ISN</SelectItem>
-                    <SelectItem value="vacation">Vacation</SelectItem>
-                    <SelectItem value="sick">Sick</SelectItem>
+                    <SelectItem value="vacation">Paid Vacation</SelectItem>
+                    <SelectItem value="sick">Paid Sick</SelectItem>
+                    <SelectItem value="unpaid_vacation">Unpaid Vacation</SelectItem>
+                    <SelectItem value="unpaid_sick">Unpaid Sick</SelectItem>
+                    <SelectItem value="special_leave">Special Leave</SelectItem>
                     <SelectItem value="pdo_pst">PDO/PST</SelectItem>
-                    <SelectItem value="other_leave">Leave</SelectItem>
+                    <SelectItem value="other_leave">Other Leave</SelectItem>
                   </SelectContent>
                 </Select>
                 <Button size="sm" variant="destructive" onClick={bulkDelete} className="h-8 text-xs ml-auto">

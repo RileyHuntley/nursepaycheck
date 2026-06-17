@@ -32,15 +32,15 @@
           "shift_type": {
             "type": "string",
             "enum": [
+              "casual",
               "regular",
               "day_off",
-              "work_stat",
-              "work_super_stat",
-              "ot_stat",
-              "overtime",
               "isn",
               "vacation",
               "sick",
+              "unpaid_vacation",
+              "unpaid_sick",
+              "special_leave",
               "pdo_pst",
               "other_leave"
             ]

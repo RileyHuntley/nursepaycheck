@@ -87,16 +87,11 @@ export function generateShiftsFromPattern(startDate, pattern, repetitions, defau
       dayOffset++;
 
       if (step !== null) {
-        // Auto-detect stat holidays
-        const statType = getStatType(dateStr);
-        let shiftType = step.shift_type;
-        if (shiftType === 'regular' && statType === 'super_stat') shiftType = 'work_super_stat';
-        else if (shiftType === 'regular' && statType === 'stat') shiftType = 'work_stat';
-
+        // Stat/overtime multipliers are auto-calculated — type stays as selected
         shifts.push({
           date: dateStr,
           ...step,
-          shift_type: shiftType,
+          shift_type: step.shift_type,
           hospital: defaults.hospital || '',
           unit: defaults.unit || '',
           short_notice: false,

@@ -4,43 +4,43 @@ import { Trash2, Sun, Moon, Check } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 
 const TYPE_LABELS = {
+  casual:          'Casual',
   regular:         'Regular (×1.0)',
   day_off:         'Day Off (×2.0)',
-  work_stat:       'Work Stat (×2.0)',
-  work_super_stat: 'Super Stat (×2.5)',
-  ot_stat:         'OT on Stat (×3.0)',
-  overtime:        'Overtime (×1.5)',
   isn:             'ISN',
-  vacation:        'Vacation',
-  sick:            'Sick',
+  vacation:        'Paid Vacation',
+  sick:            'Paid Sick',
+  unpaid_vacation: 'Unpaid Vacation',
+  unpaid_sick:     'Unpaid Sick',
+  special_leave:   'Special Leave',
   pdo_pst:         'PDO/PST',
-  other_leave:     'Leave',
+  other_leave:     'Other Leave',
 };
 
 const TYPE_COLORS = {
+  casual:          'bg-chart-3/15 text-chart-3',
   regular:         'bg-chart-3/15 text-chart-3',
   day_off:         'bg-chart-2/15 text-chart-2',
-  work_stat:       'bg-chart-5/15 text-chart-5',
-  work_super_stat: 'bg-destructive/15 text-destructive',
-  ot_stat:         'bg-destructive/15 text-destructive',
-  overtime:        'bg-chart-2/15 text-chart-2',
   isn:             'bg-chart-3/15 text-chart-3',
   vacation:        'bg-chart-4/15 text-chart-4',
   sick:            'bg-chart-1/15 text-chart-1',
+  unpaid_vacation: 'bg-muted text-muted-foreground',
+  unpaid_sick:     'bg-muted text-muted-foreground',
+  special_leave:   'bg-chart-5/15 text-chart-5',
   pdo_pst:         'bg-muted text-muted-foreground',
   other_leave:     'bg-muted text-muted-foreground',
 };
 
 const TYPE_MULTIPLIERS = {
+  casual:          1.0,
   regular:         1.0,
   day_off:         2.0,
-  work_stat:       2.0,
-  work_super_stat: 2.5,
-  ot_stat:         3.0,
-  overtime:        1.5,
   isn:             1.0,
   vacation:        1.0,
   sick:            1.0,
+  unpaid_vacation: 0,
+  unpaid_sick:     0,
+  special_leave:   1.0,
   pdo_pst:         1.0,
   other_leave:     1.0,
 };

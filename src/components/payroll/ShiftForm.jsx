@@ -25,19 +25,19 @@ const DEFAULT_RATES = {
   },
 };
 
-// Shift types per NBA CBA screenshot
+// Shift types — stat/overtime multipliers are auto-calculated from date context
 const SHIFT_TYPES = [
-  { value: 'regular',        label: 'Regular Shift (×1.0)' },
-  { value: 'day_off',        label: 'Working Day Off (×2.0)' },
-  { value: 'work_stat',      label: 'Work Stat Holiday (×2.0)' },
-  { value: 'work_super_stat',label: 'Work Super Stat (×2.5)' },
-  { value: 'ot_stat',        label: 'OT Shift on Stat (×3.0)' },
-  { value: 'overtime',       label: 'Overtime Shift (×1.5)' },
-  { value: 'isn',            label: 'ISN Shift' },
-  { value: 'vacation',       label: 'Paid Vacation' },
-  { value: 'sick',           label: 'Paid Sick' },
-  { value: 'pdo_pst',        label: 'PDO / PST' },
-  { value: 'other_leave',    label: 'Other Leave' },
+  { value: 'casual',          label: 'Casual Shift' },
+  { value: 'regular',         label: 'Regular Shift' },
+  { value: 'day_off',         label: 'Working Day Off (×2)' },
+  { value: 'isn',             label: 'ISN Shift' },
+  { value: 'vacation',        label: 'Paid Vacation' },
+  { value: 'sick',            label: 'Paid Sick' },
+  { value: 'unpaid_vacation', label: 'Unpaid Vacation' },
+  { value: 'unpaid_sick',     label: 'Unpaid Sick' },
+  { value: 'special_leave',   label: 'Special Leave' },
+  { value: 'pdo_pst',         label: 'PDO / PST' },
+  { value: 'other_leave',     label: 'Other Leave' },
 ];
 
 const RESPONSIBILITY_OPTIONS = [
@@ -120,9 +120,7 @@ export default function ShiftForm({ onSubmit, onCancel, onDelete, initial, setti
     setShift(s => {
       const statType = getStatType(dateStr);
       let newType = s.shift_type;
-      // Only auto-suggest if still on 'regular' — don't override manual choices
-      if (s.shift_type === 'regular' && statType === 'super_stat') newType = 'work_super_stat';
-      else if (s.shift_type === 'regular' && statType === 'stat') newType = 'work_stat';
+      // Stat/overtime multipliers are auto-calculated — type stays as selected
       return { ...s, date: dateStr, shift_type: newType };
     });
   };
@@ -195,22 +193,22 @@ export default function ShiftForm({ onSubmit, onCancel, onDelete, initial, setti
         const nextStatType = getStatType(nextDateStr);
         const nextStatName = getStatName(nextDateStr);
 
-        // Only show if at least one day is a stat, or the shift type has different rates per date
-        if (!statType && !nextStatType && !['ot_stat', 'day_off', 'work_stat', 'work_super_stat'].includes(shift.shift_type)) return null;
+        const STRAIGHT = ['casual', 'regular', 'isn', 'vacation', 'sick', 'special_leave', 'pdo_pst', 'other_leave'];
+
+        // Only show if at least one day is a stat, or it's a day-off crossing a stat
+        if (!statType && !nextStatType && shift.shift_type !== 'day_off') return null;
 
         let explanation = '';
-        if (shift.shift_type === 'ot_stat') {
-          if (statType && nextStatType) explanation = `Both portions on stat holidays → all hours at 3×`;
-          else if (statType) explanation = `19:00–24:00 (${statName}) → 3× · 00:00–07:00 (next day) → 2× day-off rate`;
+        if (shift.shift_type === 'day_off') {
+          if (statType && nextStatType) explanation = 'Day-off shift on a stat → all hours at 3×';
+          else if (statType) explanation = `19:00–24:00 (${statName}) → 3× · 00:00–07:00 → 2× day-off rate`;
           else explanation = `19:00–24:00 → 2× day-off rate · 00:00–07:00 (${nextStatName}) → 3×`;
-        } else if (['regular', 'isn'].includes(shift.shift_type)) {
+        } else if (STRAIGHT.includes(shift.shift_type)) {
           if (statType && nextStatType) explanation = `Both portions on stat holidays → ${statType === 'super_stat' ? '2.5×' : '2×'} all hours`;
           else if (statType) explanation = `19:00–24:00 (${statName}) → ${statType === 'super_stat' ? '2.5×' : '2×'} · 00:00–07:00 → 1×`;
           else explanation = `19:00–24:00 → 1× · 00:00–07:00 (${nextStatName}) → ${nextStatType === 'super_stat' ? '2.5×' : '2×'}`;
-        } else if (shift.shift_type === 'day_off') {
-          if (statType || nextStatType) explanation = `Day-off shift crossing a stat — both portions stay at 2×`;
-        } else if (shift.shift_type === 'work_stat' || shift.shift_type === 'work_super_stat') {
-          explanation = `Stat shift — multiplier applies to both portions`;
+        } else if (shift.shift_type === 'unpaid_vacation' || shift.shift_type === 'unpaid_sick') {
+          explanation = 'Unpaid — no earnings either portion';
         }
 
         return explanation ? (
