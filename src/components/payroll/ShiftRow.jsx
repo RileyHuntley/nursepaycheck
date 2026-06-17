@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Trash2, Sun, Moon, Check } from 'lucide-react';
+import { formatCurrency } from '@/lib/utils';
 
 const TYPE_LABELS = {
   regular:         'Regular (×1.0)',
@@ -49,7 +50,7 @@ function PremiumChip({ label, amount, overridden }) {
     <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${
       overridden ? 'bg-chart-2/20 text-chart-2 ring-1 ring-chart-2/40' : 'bg-primary/10 text-primary'
     }`}>
-      {label} <span className="font-mono">${amount.toFixed(2)}</span>
+      {label} <span className="font-mono">{formatCurrency(amount)}</span>
       {overridden && <span className="opacity-60">*</span>}
     </span>
   );
@@ -155,19 +156,19 @@ export default function ShiftRow({ shift, premiums, settings, periodEndDate, onE
         {wage > 0 && (
           <div className="flex items-center gap-2 flex-shrink-0">
             <span className="text-[11px] font-mono text-muted-foreground">
-              ${baseGross.toFixed(2)}
+              {formatCurrency(baseGross)}
             </span>
             {premiumTotal > 0 && (
               <>
                 <span className="text-[11px] text-muted-foreground">+</span>
                 <span className="text-[11px] font-mono text-primary">
-                  ${premiumTotal.toFixed(2)}
+                  {formatCurrency(premiumTotal)}
                 </span>
               </>
             )}
             <span className="text-[11px] text-muted-foreground">=</span>
             <span className="text-xs font-mono font-semibold text-foreground">
-              ${totalGross.toFixed(2)}
+              {formatCurrency(totalGross)}
             </span>
           </div>
         )}

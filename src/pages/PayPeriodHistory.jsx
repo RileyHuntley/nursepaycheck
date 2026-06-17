@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Trash2, Eye, Loader2, CalendarPlus } from 'lucide-react';
 import { getVCHPeriodNumber } from '@/lib/statHolidays';
+import { formatCurrency } from '@/lib/utils';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -115,7 +116,7 @@ export default function PayPeriodHistory() {
 
                 {period.breakdown && (
                   <div className="text-right flex-shrink-0">
-                    <span className="text-sm font-mono font-semibold text-primary">${period.breakdown.gross_pay?.toFixed(2) || '0.00'}</span>
+                    <span className="text-sm font-mono font-semibold text-primary">{formatCurrency(period.breakdown.gross_pay || 0)}</span>
                     <p className="text-[10px] text-muted-foreground">gross</p>
                   </div>
                 )}

@@ -1,4 +1,5 @@
 import { estimateTaxes, estimateStatutoryDeductions } from '@/lib/taxCalculator';
+import { formatCurrency } from '@/lib/utils';
 
 export default function PaySummaryPanel({ title, subtitle, breakdown, loading, taxSettings }) {
   if (loading) {
@@ -71,7 +72,7 @@ export default function PaySummaryPanel({ title, subtitle, breakdown, loading, t
           <div key={i} className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">{r.label}</span>
             <span className={`text-sm font-mono font-medium ${r.negative ? 'text-destructive' : 'text-foreground'}`}>
-              {r.negative ? '−' : ''}${r.value.toFixed(2)}
+              {r.negative ? '−' : ''}{formatCurrency(r.value)}
             </span>
           </div>
         ))}
@@ -79,11 +80,11 @@ export default function PaySummaryPanel({ title, subtitle, breakdown, loading, t
 
       <div className="flex items-center justify-between pt-3 mt-2 border-t border-border">
         <span className="text-xs text-muted-foreground font-medium">Gross Pay</span>
-        <span className="text-sm font-mono font-semibold text-foreground">${breakdown.gross_pay.toFixed(2)}</span>
+        <span className="text-sm font-mono font-semibold text-foreground">{formatCurrency(breakdown.gross_pay)}</span>
       </div>
       <div className="flex items-center justify-between pt-2 mt-1 border-t-2 border-primary/30">
         <span className="text-sm font-display font-bold text-foreground">Est. Net Pay</span>
-        <span className="text-2xl font-mono font-bold text-primary">${netPay.toFixed(2)}</span>
+        <span className="text-2xl font-mono font-bold text-primary">{formatCurrency(netPay)}</span>
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Info, X } from 'lucide-react';
 import { estimateTaxes, estimateStatutoryDeductions } from '@/lib/taxCalculator';
+import { formatCurrency } from '@/lib/utils';
 
 const PREMIUM_INFO = {
   evening: {
@@ -135,7 +136,7 @@ function LineItem({ label, amount, sublabel, negative, infoKey, openInfo, onTogg
         )}
       </div>
       <span className={`text-sm font-mono font-medium flex-shrink-0 ml-2 ${negative ? 'text-destructive' : 'text-foreground'}`}>
-        {negative ? '−' : ''}${amount.toFixed(2)}
+        {negative ? '−' : ''}{formatCurrency(amount)}
       </span>
     </div>
   );
@@ -185,7 +186,7 @@ export default function PayBreakdown({ breakdown, wage, title = 'Pay Period Brea
       <LineItem
         label="Straight-Time Pay"
         amount={breakdown.straight_time_pay}
-        sublabel={`${breakdown.regular_hours || 0}h @ $${(wage || breakdown.straight_time_pay / (breakdown.regular_hours || 1)).toFixed(2)}/hr`}
+        sublabel={`${breakdown.regular_hours || 0}h @ ${formatCurrency(wage || breakdown.straight_time_pay / (breakdown.regular_hours || 1))}/hr`}
       />
       <LineItem
         label="Overtime/Stat Pay"
@@ -237,11 +238,11 @@ export default function PayBreakdown({ breakdown, wage, title = 'Pay Period Brea
 
       <div className="flex items-center justify-between pt-3 mt-2 border-t border-border">
         <span className="text-sm font-semibold text-foreground">Expected Gross Pay</span>
-        <span className="text-base font-mono font-semibold text-foreground">${breakdown.gross_pay.toFixed(2)}</span>
+        <span className="text-base font-mono font-semibold text-foreground">{formatCurrency(breakdown.gross_pay)}</span>
       </div>
       <div className="flex items-center justify-between pt-2 mt-1 border-t-2 border-primary/30">
         <span className="text-base font-display font-bold text-foreground">Estimated Net Pay</span>
-        <span className="text-xl font-mono font-bold text-primary">${netPay.toFixed(2)}</span>
+        <span className="text-xl font-mono font-bold text-primary">{formatCurrency(netPay)}</span>
       </div>
     </div>
   );

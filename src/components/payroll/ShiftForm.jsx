@@ -13,6 +13,7 @@ import { Switch } from '@/components/ui/switch';
 import { X, ChevronDown, ChevronUp } from 'lucide-react';
 import { getStatType, getStatName } from '@/lib/statHolidays';
 import { calculateShiftPremiums } from '@/lib/premiumCalculator';
+import { formatCurrency } from '@/lib/utils';
 
 // Default settings used when none provided (for premium preview in form)
 const DEFAULT_RATES = {
@@ -313,7 +314,7 @@ export default function ShiftForm({ onSubmit, onCancel, initial, settings }) {
                 <span className="text-xs font-semibold text-foreground">Calculated Premiums</span>
                 {hasAnyPremium && (
                   <span className="text-xs text-primary font-mono">
-                    ${PREMIUM_FIELDS.reduce((s, f) => s + (premiums[f.key] || 0), 0).toFixed(2)}
+                    {formatCurrency(PREMIUM_FIELDS.reduce((s, f) => s + (premiums[f.key] || 0), 0)).replace('$', '')}
                   </span>
                 )}
                 {!hasAnyPremium && <span className="text-xs text-muted-foreground">None applicable</span>}
@@ -333,7 +334,7 @@ export default function ShiftForm({ onSubmit, onCancel, initial, settings }) {
                     <div key={key} className="flex items-center gap-3">
                       <div className="w-36 text-xs text-muted-foreground flex-shrink-0">{label}</div>
                       <div className="text-xs font-mono text-foreground w-14 text-right flex-shrink-0">
-                        ${calcVal.toFixed(2)}
+                        {formatCurrency(calcVal)}
                       </div>
                       <span className="text-xs text-muted-foreground flex-shrink-0">→</span>
                       <div className="relative">

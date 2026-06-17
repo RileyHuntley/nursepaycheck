@@ -5,6 +5,7 @@ import ShiftForm from '@/components/payroll/ShiftForm';
 import PayBreakdown from '@/components/payroll/PayBreakdown';
 import ShiftCalendarGrid from '@/components/payroll/ShiftCalendarGrid';
 import { calculatePeriodBreakdown, calculateShiftPremiums, getPayPeriodForDate, getPayPeriodName } from '@/lib/premiumCalculator';
+import { formatCurrency } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Loader2, ArrowUpDown, Plus, CalendarPlus, List, CalendarDays, Filter } from 'lucide-react';
 import {
@@ -517,7 +518,7 @@ export default function ShiftLog() {
                             </div>
                             {periodBreakdown && (
                               <span className="text-sm font-mono font-semibold text-primary">
-                                ${periodBreakdown.gross_pay.toFixed(2)}
+                                {formatCurrency(periodBreakdown.gross_pay)}
                               </span>
                             )}
                           </div>
