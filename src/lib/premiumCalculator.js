@@ -221,16 +221,23 @@ export function calculateShiftPremiums(shift, settings) {
   const wkndHrs = weekendHours(shift.date, shift.start_time, shift.end_time);
   const superHrs = superShiftHours(shift.date, shift.start_time, shift.end_time);
 
+  // Cap time-window hours to paid hours (breaks don't earn premiums)
+  const cap = (hrs) => Math.min(hrs, paidHours);
+  eveningHrs = cap(eveningHrs);
+  nightHrs = cap(nightHrs);
+  const cappedWknd = cap(wkndHrs);
+  const cappedSuper = cap(superHrs);
+
   // Build calculated values
   const calc = {
     evening:          round2(eveningHrs * rates.evening),
     evening_hours:    round2(eveningHrs),
     night:            round2(nightHrs * rates.night),
     night_hours:      round2(nightHrs),
-    weekend:          round2(wkndHrs * rates.weekend),
-    weekend_hours:    round2(wkndHrs),
-    super_shift:      round2(superHrs * rates.super_shift),
-    super_shift_hours:round2(superHrs),
+    weekend:          round2(cappedWknd * rates.weekend),
+    weekend_hours:    round2(cappedWknd),
+    super_shift:      round2(cappedSuper * rates.super_shift),
+    super_shift_hours:round2(cappedSuper),
     regular_premium:  isStraight ? round2(paidHours * rates.regular_premium) : 0,
     short_notice:     shift.short_notice ? round2(paidHours * rates.short_notice) : 0,
     responsibility:   shift.responsibility_pay === 'hourly'
