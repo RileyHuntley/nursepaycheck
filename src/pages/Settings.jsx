@@ -296,10 +296,55 @@ export default function Settings() {
         ))}
       </section>
 
+      {/* Shifts */}
+      <section className="bg-card border border-border rounded-xl p-5 space-y-5">
+        <h3 className="text-sm font-semibold text-foreground">Shifts</h3>
+        <p className="text-xs text-muted-foreground">Set defaults to pre-fill new shifts.</p>
+
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">Default Shift Pattern</Label>
+          <Select value={settings.default_shift_pattern || 'DDNN'} onValueChange={v => set('default_shift_pattern', v)}>
+            <SelectTrigger className="h-9 text-sm max-w-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {SHIFT_PATTERNS.map(p => (
+                <SelectItem key={p.name} value={p.name}>{p.name} — {p.description}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-3 pt-1">
+          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Quick Fill Preset Times</h4>
+          <p className="text-xs text-muted-foreground">Customize the start/end times used by the Quick Fill buttons on shift forms.</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {[
+              { label: '12h Day Start', key: 'day_12h_start' },
+              { label: '12h Day End', key: 'day_12h_end' },
+              { label: '12h Night Start', key: 'night_12h_start' },
+              { label: '12h Night End', key: 'night_12h_end' },
+              { label: '8h Day Start', key: 'day_8h_start' },
+              { label: '8h Day End', key: 'day_8h_end' },
+            ].map(({ label, key }) => (
+              <div key={key} className="flex items-center gap-2">
+                <Label className="text-xs text-muted-foreground w-28 flex-shrink-0">{label}</Label>
+                <Input
+                  type="time"
+                  value={settings.preset_times?.[key] || ''}
+                  onChange={e => set(`preset_times.${key}`, e.target.value)}
+                  className="h-9 w-28 text-sm font-mono"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Hospitals & Units */}
       <section className="bg-card border border-border rounded-xl p-5 space-y-5">
         <h3 className="text-sm font-semibold text-foreground">Hospitals & Units</h3>
-        <p className="text-xs text-muted-foreground">Add the hospitals and units you work at. Set defaults to pre-fill new shifts.</p>
+        <p className="text-xs text-muted-foreground">Add the hospitals and units you work at. Manage defaults in the Shifts section above.</p>
 
         {/* Hospitals */}
         <div className="space-y-3">
@@ -384,49 +429,6 @@ export default function Settings() {
           ) : (
             <p className="text-xs text-muted-foreground italic">No units added yet.</p>
           )}
-        </div>
-
-        {/* Defaults */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Default Shift Pattern</Label>
-            <Select value={settings.default_shift_pattern || 'DDNN'} onValueChange={v => set('default_shift_pattern', v)}>
-              <SelectTrigger className="h-9 text-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {SHIFT_PATTERNS.map(p => (
-                  <SelectItem key={p.name} value={p.name}>{p.name} — {p.description}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        {/* Quick Fill Preset Times */}
-        <div className="space-y-3 pt-1">
-          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Quick Fill Preset Times</h4>
-          <p className="text-xs text-muted-foreground">Customize the start/end times used by the Quick Fill buttons on shift forms.</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {[
-              { label: '12h Day Start', key: 'day_12h_start' },
-              { label: '12h Day End', key: 'day_12h_end' },
-              { label: '12h Night Start', key: 'night_12h_start' },
-              { label: '12h Night End', key: 'night_12h_end' },
-              { label: '8h Day Start', key: 'day_8h_start' },
-              { label: '8h Day End', key: 'day_8h_end' },
-            ].map(({ label, key }) => (
-              <div key={key} className="flex items-center gap-2">
-                <Label className="text-xs text-muted-foreground w-28 flex-shrink-0">{label}</Label>
-                <Input
-                  type="time"
-                  value={settings.preset_times?.[key] || ''}
-                  onChange={e => set(`preset_times.${key}`, e.target.value)}
-                  className="h-9 w-28 text-sm font-mono"
-                />
-              </div>
-            ))}
-          </div>
         </div>
 
         {/* Default Hospital / Unit */}
