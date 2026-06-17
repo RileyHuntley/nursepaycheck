@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
 import PaySummaryPanel from '@/components/payroll/PaySummaryPanel';
@@ -28,12 +28,20 @@ export default function Dashboard() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  // Real-time subscriptions
-  useEffect(() => {
-    const unsub1 = base44.entities.Settings.subscribe(() => loadData());
-    const unsub2 = base44.entities.PayPeriod.subscribe(() => loadData());
-    return () => { unsub1(); unsub2(); };
+  // Real-time subscriptions with debounce to prevent rate limiting
+  const loadRef = useRef(null);
+  const debouncedLoad = useCallback(() => {
+    if (loadRef.current) {
+      clearTimeout(loadRef.current);
+    }
+    loadRef.current = setTimeout(() => loadData(), 300);
   }, [loadData]);
+
+  useEffect(() => {
+    const unsub1 = base44.entities.Settings.subscribe(() => debouncedLoad());
+    const unsub2 = base44.entities.PayPeriod.subscribe(() => debouncedLoad());
+    return () => { unsub1(); unsub2(); };
+  }, [debouncedLoad]);
 
   const computedPeriods = periods.map(p => ({
     ...p,

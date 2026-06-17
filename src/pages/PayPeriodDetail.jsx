@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import ShiftForm from '@/components/payroll/ShiftForm';
@@ -51,11 +51,18 @@ export default function PayPeriodDetail() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  useEffect(() => {
-    const unsub1 = base44.entities.Settings.subscribe(() => loadData());
-    const unsub2 = base44.entities.PayPeriod.subscribe(() => loadData());
-    return () => { unsub1(); unsub2(); };
+  // Debounced subscription reload to prevent rate limiting
+  const loadRef = useRef(null);
+  const debouncedLoad = useCallback(() => {
+    if (loadRef.current) clearTimeout(loadRef.current);
+    loadRef.current = setTimeout(() => loadData(), 300);
   }, [loadData]);
+
+  useEffect(() => {
+    const unsub1 = base44.entities.Settings.subscribe(() => debouncedLoad());
+    const unsub2 = base44.entities.PayPeriod.subscribe(() => debouncedLoad());
+    return () => { unsub1(); unsub2(); };
+  }, [debouncedLoad]);
 
   const isValidForPeriod = (date) => {
     if (!period) return false;

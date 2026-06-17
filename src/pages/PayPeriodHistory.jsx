@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -37,10 +37,17 @@ export default function PayPeriodHistory() {
 
   useEffect(() => { loadPeriods(); }, [loadPeriods]);
 
-  useEffect(() => {
-    const unsub = base44.entities.PayPeriod.subscribe(() => loadPeriods());
-    return () => unsub();
+  // Debounced subscription reload to prevent rate limiting
+  const loadRef = useRef(null);
+  const debouncedLoad = useCallback(() => {
+    if (loadRef.current) clearTimeout(loadRef.current);
+    loadRef.current = setTimeout(() => loadPeriods(), 300);
   }, [loadPeriods]);
+
+  useEffect(() => {
+    const unsub = base44.entities.PayPeriod.subscribe(() => debouncedLoad());
+    return () => unsub();
+  }, [debouncedLoad]);
 
   const confirmDelete = async () => {
     if (!deleteTarget) return;

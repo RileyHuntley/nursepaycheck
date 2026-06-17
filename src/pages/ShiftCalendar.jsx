@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { ChevronLeft, ChevronRight, Loader2, Filter, X, Calendar } from 'lucide-react';
 import { getStatType, getStatName, getPayDate } from '@/lib/statHolidays';
@@ -98,11 +98,18 @@ export default function ShiftCalendar() {
 
   useEffect(() => { loadShifts(); }, [loadShifts]);
 
-  useEffect(() => {
-    const unsub1 = base44.entities.Settings.subscribe(() => loadShifts());
-    const unsub2 = base44.entities.PayPeriod.subscribe(() => loadShifts());
-    return () => { unsub1(); unsub2(); };
+  // Debounced subscription reload to prevent rate limiting
+  const loadRef = useRef(null);
+  const debouncedLoad = useCallback(() => {
+    if (loadRef.current) clearTimeout(loadRef.current);
+    loadRef.current = setTimeout(() => loadShifts(), 300);
   }, [loadShifts]);
+
+  useEffect(() => {
+    const unsub1 = base44.entities.Settings.subscribe(() => debouncedLoad());
+    const unsub2 = base44.entities.PayPeriod.subscribe(() => debouncedLoad());
+    return () => { unsub1(); unsub2(); };
+  }, [debouncedLoad]);
 
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
