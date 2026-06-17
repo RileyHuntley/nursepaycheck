@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Trash2, Eye, Loader2, CalendarPlus } from 'lucide-react';
+import PayPeriodDialog from '@/components/payroll/PayPeriodDialog';
 import { getVCHPeriodNumber } from '@/lib/statHolidays';
 import { formatCurrency } from '@/lib/utils';
 import {
@@ -20,6 +21,7 @@ export default function PayPeriodHistory() {
   const [periods, setPeriods] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [viewTarget, setViewTarget] = useState(null);
 
   const loadingRef = useRef(false);
   const loadRef = useRef(null);
@@ -128,11 +130,9 @@ export default function PayPeriodHistory() {
                 )}
 
                 <div className="flex items-center gap-1 flex-shrink-0">
-                  <Link to={`/pay-period?period=${period.id}`}>
-                    <Button variant="ghost" size="icon" className="h-7 w-7">
-                      <Eye className="w-3.5 h-3.5" />
-                    </Button>
-                  </Link>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setViewTarget(period)}>
+                    <Eye className="w-3.5 h-3.5" />
+                  </Button>
                   <Button
                     variant="ghost"
                     size="icon"
@@ -147,6 +147,8 @@ export default function PayPeriodHistory() {
           </div>
         </div>
       )}
+
+      <PayPeriodDialog period={viewTarget} open={!!viewTarget} onClose={() => setViewTarget(null)} />
 
       <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
         <AlertDialogContent>
