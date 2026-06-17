@@ -22,8 +22,9 @@ export function parseTime(timeStr) {
  * Format decimal hours back to "HH:MM"
  */
 export function formatTime(decimal) {
-  const h = Math.floor(decimal);
+  let h = Math.floor(decimal);
   const m = Math.round((decimal - h) * 60);
+  h = h % 24; // wrap hours ≥ 24 back to 00–23
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 
