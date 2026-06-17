@@ -40,7 +40,7 @@ export default function PayPeriodDetail() {
           start_date,
           end_date,
           shifts: [],
-          status: 'draft',
+          
         });
         setPeriod(created);
       }
@@ -80,7 +80,7 @@ export default function PayPeriodDetail() {
         const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings) : null;
         await base44.entities.PayPeriod.update(existing.id, {
           shifts: updatedShifts,
-          ...(breakdown ? { breakdown, status: 'calculated' } : {}),
+          ...(breakdown ? { breakdown } : {}),
         });
       } else {
         await base44.entities.PayPeriod.create({
@@ -88,7 +88,7 @@ export default function PayPeriodDetail() {
           start_date,
           end_date,
           shifts: [{ ...shiftData }],
-          status: 'draft',
+          
         });
       }
       // Reload to refresh the current period view
@@ -101,7 +101,7 @@ export default function PayPeriodDetail() {
     const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings) : null;
     const updated = await base44.entities.PayPeriod.update(period.id, {
       shifts: updatedShifts,
-      ...(breakdown ? { breakdown, status: 'calculated' } : {}),
+      ...(breakdown ? { breakdown } : {}),
     });
     setPeriod(updated);
     setShowForm(false);
@@ -124,7 +124,7 @@ export default function PayPeriodDetail() {
             start_date,
             end_date,
             shifts: [],
-            status: 'draft',
+            
           });
           groups[key] = { period: created, created: true };
           allPeriods.push(created);
@@ -138,7 +138,7 @@ export default function PayPeriodDetail() {
       const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings) : null;
       await base44.entities.PayPeriod.update(period.id, {
         shifts: updatedShifts,
-        ...(breakdown ? { breakdown, status: 'calculated' } : {}),
+        ...(breakdown ? { breakdown } : {}),
       });
     }
     loadData();
@@ -156,7 +156,7 @@ export default function PayPeriodDetail() {
       const thisBreakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings) : null;
       await base44.entities.PayPeriod.update(period.id, {
         shifts: updatedShifts,
-        ...(thisBreakdown ? { breakdown: thisBreakdown, status: 'calculated' } : { status: 'draft' }),
+        ...(thisBreakdown ? { breakdown: thisBreakdown } : {}),
       });
 
       // Add to correct period
@@ -166,7 +166,7 @@ export default function PayPeriodDetail() {
         const targetBreakdown = settings ? calculatePeriodBreakdown(targetShifts, settings) : null;
         await base44.entities.PayPeriod.update(target.id, {
           shifts: targetShifts,
-          ...(targetBreakdown ? { breakdown: targetBreakdown, status: 'calculated' } : {}),
+          ...(targetBreakdown ? { breakdown: targetBreakdown } : {}),
         });
       } else {
         await base44.entities.PayPeriod.create({
@@ -174,7 +174,7 @@ export default function PayPeriodDetail() {
           start_date,
           end_date,
           shifts: [{ ...shiftData }],
-          status: 'draft',
+          
         });
       }
       loadData();
@@ -188,7 +188,7 @@ export default function PayPeriodDetail() {
     const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings) : null;
     const updated = await base44.entities.PayPeriod.update(period.id, {
       shifts: updatedShifts,
-      ...(breakdown ? { breakdown, status: 'calculated' } : {}),
+      ...(breakdown ? { breakdown } : {}),
     });
     setPeriod(updated);
     setEditingShift(null);
@@ -199,7 +199,7 @@ export default function PayPeriodDetail() {
     const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings) : null;
     const updated = await base44.entities.PayPeriod.update(period.id, {
       shifts: updatedShifts,
-      ...(breakdown ? { breakdown, status: 'calculated' } : {}),
+      ...(breakdown ? { breakdown } : {}),
     });
     setPeriod(updated);
   };

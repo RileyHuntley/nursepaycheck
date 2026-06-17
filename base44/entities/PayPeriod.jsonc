@@ -13,14 +13,6 @@
       "type": "string",
       "format": "date"
     },
-    "status": {
-      "type": "string",
-      "enum": [
-        "draft",
-        "calculated"
-      ],
-      "default": "draft"
-    },
     "shifts": {
       "type": "array",
       "default": [],

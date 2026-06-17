@@ -109,13 +109,7 @@ export default function PayPeriodHistory() {
                   <div className="flex items-center gap-3 mt-1">
                     <span className="text-xs text-muted-foreground">{period.start_date} – {period.end_date}</span>
                     <span className="text-xs text-muted-foreground">{period.shifts?.length || 0} shifts</span>
-                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium ${
-                      period.status === 'calculated'
-                        ? 'bg-primary/15 text-primary'
-                        : 'bg-chart-2/15 text-chart-2'
-                    }`}>
-                      {period.status === 'calculated' ? 'Calculated' : 'Draft'}
-                    </span>
+
                   </div>
                 </div>
 
