@@ -3,7 +3,8 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 Deno.serve(async (req) => {
   try {
     const url = new URL(req.url);
-    const token = url.searchParams.get('token');
+    const body = await req.json().catch(() => ({}));
+    const token = body.token || url.searchParams.get('token');
     if (!token) {
       return Response.json({ error: 'Missing share token' }, { status: 400 });
     }
