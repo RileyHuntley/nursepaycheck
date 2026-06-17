@@ -288,7 +288,7 @@ export default function ShiftLog() {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h2 className="text-2xl font-display font-bold text-foreground tracking-tight">Shift Log</h2>
+          <h2 className="text-2xl font-display font-bold text-foreground tracking-tight">Shifts</h2>
           {viewMode === 'list' && (
             <p className="text-sm text-muted-foreground mt-1">
               {ytdAllShifts.length} shift{ytdAllShifts.length !== 1 ? 's' : ''} in {currentYear} across {ytdPeriodKeys.size} pay period{ytdPeriodKeys.size !== 1 ? 's' : ''} — Year-to-Date
