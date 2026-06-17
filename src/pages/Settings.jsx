@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import isEqual from 'lodash/isEqual';
+import cloneDeep from 'lodash/cloneDeep';
 import { useBlocker } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
@@ -82,7 +84,7 @@ export default function Settings() {
   // Track unsaved changes by comparing to last saved snapshot
   const isDirty = useMemo(() => {
     if (!settings || !savedRef.current) return false;
-    return JSON.stringify(settings) !== JSON.stringify(savedRef.current);
+    return !isEqual(settings, savedRef.current);
   }, [settings]);
 
   // Block in-app navigation when dirty
@@ -109,11 +111,11 @@ export default function Settings() {
       const loaded = list[0];
       const merged = { ...defaultSettings, ...loaded };
       setSettings(merged);
-      savedRef.current = JSON.stringify(merged);
+      savedRef.current = cloneDeep(merged);
     } else {
       const created = await base44.entities.Settings.create(defaultSettings);
       setSettings(created);
-      savedRef.current = JSON.stringify(created);
+      savedRef.current = cloneDeep(created);
     }
   }, []);
 
@@ -187,7 +189,7 @@ export default function Settings() {
     setMessage(null);
     try {
       await base44.entities.Settings.update(settings.id, settings);
-      savedRef.current = JSON.stringify(settings);
+      savedRef.current = cloneDeep(settings);
       setMessage({ type: 'success', text: 'Settings saved.' });
       setTimeout(() => setMessage(null), 3000);
     } catch (e) {
