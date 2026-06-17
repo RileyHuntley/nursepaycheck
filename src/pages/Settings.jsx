@@ -298,11 +298,11 @@ export default function Settings() {
         <p className="text-xs text-muted-foreground">Update annually when your CBA wage scale changes.</p>
       </section>
 
- //     {/* OT Multipliers info */}
- //     <section className="bg-muted/50 border border-border rounded-xl p-4">
- //       <h3 className="text-sm font-semibold text-foreground mb-1">Overtime Multipliers</h3>
- //       <p className="text-xs text-muted-foreground">Multipliers are set per-shift when logging time, per the NBA CBA: Regular ×1.0 · Overtime ×1.5 · Working Day Off ×2.0 · Work Stat ×2.0 · Work Super Stat ×2.5 · OT on Stat ×3.0. Super stats are Good Friday, Labour Day, and Christmas Day.</p>
- //     </section>
+      {/* OT Multipliers info */}
+      <section className="bg-muted/50 border border-border rounded-xl p-4">
+        <h3 className="text-sm font-semibold text-foreground mb-1">Overtime Multipliers</h3>
+        <p className="text-xs text-muted-foreground">Multipliers are set per-shift when logging time, per the NBA CBA: Regular ×1.0 · Overtime ×1.5 · Working Day Off ×2.0 · Work Stat ×2.0 · Work Super Stat ×2.5 · OT on Stat ×3.0. Super stats are Good Friday, Labour Day, and Christmas Day.</p>
+      </section>
 
       {/* Premium Rates */}
       <section className="bg-card border border-border rounded-xl p-5 space-y-4">
