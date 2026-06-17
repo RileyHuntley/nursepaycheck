@@ -46,7 +46,7 @@ export default function Sidebar() {
     loadSettings();
     const unsub = base44.entities.Settings.subscribe(() => {
       if (settingsDebounce.current) clearTimeout(settingsDebounce.current);
-      settingsDebounce.current = setTimeout(() => loadSettings(), 300);
+      settingsDebounce.current = setTimeout(() => loadSettings(), 800);
     });
     return () => { unsub(); if (settingsDebounce.current) clearTimeout(settingsDebounce.current); };
   }, []);
@@ -55,7 +55,7 @@ export default function Sidebar() {
     loadPeriods();
     const unsub = base44.entities.PayPeriod.subscribe(() => {
       if (periodsDebounce.current) clearTimeout(periodsDebounce.current);
-      periodsDebounce.current = setTimeout(() => loadPeriods(), 300);
+      periodsDebounce.current = setTimeout(() => loadPeriods(), 800);
     });
     return () => { unsub(); if (periodsDebounce.current) clearTimeout(periodsDebounce.current); };
   }, []);
