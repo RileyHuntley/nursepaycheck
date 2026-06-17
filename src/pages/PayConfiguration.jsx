@@ -302,6 +302,21 @@ export default function PayConfiguration() {
             Add up to 3 shift lines if you work across multiple statuses, hospitals, or units. FTE is auto-set for Full Time (1.0) and Casual (0.0); enter your own for Part Time.
           </p>
         </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {[
+            { label: 'Regular Full-Time', badge: 'FT', color: 'bg-chart-3/15 text-chart-3 border-chart-3/20', desc: '37.5 hours/week · 1,950 hours/year · Includes paid statutory holidays, vacation, and other paid leaves.' },
+            { label: 'Regular Part-Time', badge: 'PT', color: 'bg-chart-2/15 text-chart-2 border-chart-2/20', desc: 'Minimum 15 hours/week up to 1,950 hours/year · FTE calculated as a % of shifts vs. a full-time employee.' },
+            { label: 'Casual', badge: 'CAS', color: 'bg-muted/60 text-muted-foreground border-border', desc: 'No fixed schedule · Relief capacity for sick calls, vacation, LOAs, workload, maternity, and banked OT coverage.' },
+          ].map(({ label, badge, color, desc }) => (
+            <div key={badge} className={`rounded-lg border px-3 py-2.5 ${color}`}>
+              <div className="flex items-center gap-2 mb-1">
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${color}`}>{badge}</span>
+                <span className="text-xs font-semibold">{label}</span>
+              </div>
+              <p className="text-[11px] leading-relaxed opacity-80">{desc}</p>
+            </div>
+          ))}
+        </div>
         {(settings.shift_lines || [{ status: 'full_time', fte: 1.0, hospital: '', unit: '' }]).map((line, idx) => {
           const isFteLocked = line.status === 'full_time' || line.status === 'casual';
           const canRemove = (settings.shift_lines || []).length > 1;
