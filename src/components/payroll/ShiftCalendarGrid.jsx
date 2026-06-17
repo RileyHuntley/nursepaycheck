@@ -19,9 +19,8 @@ import {
 const DAYS_OF_WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const TYPE_COLORS = {
-  regular:         'bg-chart-3/15 text-chart-3 border-chart-3/30',
   day_off:         'bg-chart-2/15 text-chart-2 border-chart-2/30',
-  work_stat:       'bg-chart-5/15 text-chart-5 border-chart-5/30',
+  work_stat:       'bg-destructive/15 text-destructive border-destructive/30',
   work_super_stat: 'bg-destructive/15 text-destructive border-destructive/30',
   ot_stat:         'bg-destructive/15 text-destructive border-destructive/30',
   overtime:        'bg-chart-2/15 text-chart-2 border-chart-2/30',
@@ -31,6 +30,14 @@ const TYPE_COLORS = {
   pdo_pst:         'bg-muted text-muted-foreground border-border',
   other_leave:     'bg-muted text-muted-foreground border-border',
 };
+
+const NIGHT_COLOR = 'bg-chart-3/15 text-chart-3 border-chart-3/30';
+const DAY_COLOR   = 'bg-chart-2/15 text-chart-2 border-chart-2/30';
+
+function getShiftColor(shiftType, isNight) {
+  if (shiftType === 'regular') return isNight ? NIGHT_COLOR : DAY_COLOR;
+  return TYPE_COLORS[shiftType] || DAY_COLOR;
+}
 
 const TYPE_SHORT = {
   regular: 'Reg', day_off: 'DO', work_stat: 'Stat', work_super_stat: 'Super',
@@ -303,8 +310,7 @@ export default function ShiftCalendarGrid({ settings, shiftsMap, onShiftUpdate, 
               <div
                 key={cell.dateStr}
                 className={`min-h-[80px] border-b border-r border-border flex flex-col ${
-                  statType === 'super_stat' ? 'bg-destructive/5' :
-                  statType === 'stat' ? 'bg-chart-5/5' :
+                  statType === 'super_stat' || statType === 'stat' ? 'bg-destructive/5' :
                   isToday ? 'bg-primary/5 ring-1 ring-inset ring-primary/20' : 'bg-card'
                 }`}
               >
@@ -324,7 +330,7 @@ export default function ShiftCalendarGrid({ settings, shiftsMap, onShiftUpdate, 
                       </span>
                     )}
                     {statType === 'stat' && (
-                      <span title={statName} className="text-[9px] font-bold bg-chart-5/80 text-white px-1 py-0.5 rounded leading-none">
+                      <span title={statName} className="text-[9px] font-bold bg-destructive text-destructive-foreground px-1 py-0.5 rounded leading-none">
                         STAT
                       </span>
                     )}
@@ -338,9 +344,9 @@ export default function ShiftCalendarGrid({ settings, shiftsMap, onShiftUpdate, 
                 )}
                 <div className="flex-1 px-1.5 pb-1.5 space-y-0.5">
                   {shifts.map((shift, si) => {
-                    const colors = TYPE_COLORS[shift.shift_type] || TYPE_COLORS.regular;
                     const premiums = settings ? calculateShiftPremiums(shift, settings) : null;
                     const isNight = premiums && premiums.night > 0;
+                    const colors = getShiftColor(shift.shift_type, isNight);
                     return (
                       <button
                         key={si}
@@ -376,12 +382,15 @@ export default function ShiftCalendarGrid({ settings, shiftsMap, onShiftUpdate, 
             <span className="text-[9px] font-bold bg-primary text-primary-foreground px-1 py-0.5 rounded">PAY</span> Pay Day
           </span>
           <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
-            <span className="text-[9px] font-bold bg-chart-5/80 text-white px-1 py-0.5 rounded">STAT</span> Stat Holiday
+            <span className="text-[9px] font-bold bg-destructive text-destructive-foreground px-1 py-0.5 rounded">STAT</span> Stat Holiday / Super Stat
           </span>
-          <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
-            <span className="text-[9px] font-bold bg-destructive text-destructive-foreground px-1 py-0.5 rounded">⭐S-STAT</span> Super Stat
+          <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium border ${NIGHT_COLOR}`}>
+            🌙 Night Shift
           </span>
-          {Object.entries(TYPE_COLORS).filter(([k]) => k !== 'regular').map(([key, colors]) => (
+          <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium border ${DAY_COLOR}`}>
+            ☀️ Day Shift
+          </span>
+          {Object.entries(TYPE_COLORS).map(([key, colors]) => (
             <span key={key} className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium border ${colors}`}>
               {TYPE_SHORT[key]}
             </span>
