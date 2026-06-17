@@ -8,7 +8,7 @@ import { calculatePeriodBreakdown, calculateShiftPremiums, getPayPeriodForDate, 
 import { toast } from '@/components/ui/use-toast';
 import { formatCurrency } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Loader2, ArrowUpDown, Plus, CalendarPlus, List, CalendarDays, Filter } from 'lucide-react';
+import { Loader2, ArrowUpDown, Plus, CalendarPlus, List, CalendarDays, Filter, CheckSquare, X, Check, Trash2 } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/select';
 import BulkAddShift from '@/components/payroll/BulkAddShift';
 import EditShiftDialog from '@/components/payroll/EditShiftDialog';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export default function ShiftLog() {
   const [settings, setSettings] = useState(null);
@@ -31,6 +32,8 @@ export default function ShiftLog() {
   const [viewMode, setViewMode] = useState('list'); // 'list' | 'calendar'
   const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'upcoming' | 'pending' | 'verified'
   const [visibleNextCount, setVisibleNextCount] = useState(1); // show current + N future periods
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedKeys, setSelectedKeys] = useState(new Set()); // Set of "${_periodId}-${_shiftIdx}"
 
   const todayStr = new Date().toISOString().slice(0, 10);
   const resolveStatus = (shift) => {
@@ -241,6 +244,110 @@ export default function ShiftLog() {
     loadData();
   };
 
+  // ── Bulk operations ──
+  const shiftKey = (s) => `${s._periodId}-${s._shiftIdx}`;
+
+  const toggleSelectShift = (shift) => {
+    setSelectedKeys(prev => {
+      const next = new Set(prev);
+      const key = shiftKey(shift);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  };
+
+  const selectAllInGroup = (groupShifts) => {
+    setSelectedKeys(prev => {
+      const next = new Set(prev);
+      const allKeys = groupShifts.map(s => shiftKey(s));
+      const allSelected = allKeys.every(k => next.has(k));
+      if (allSelected) {
+        allKeys.forEach(k => next.delete(k));
+      } else {
+        allKeys.forEach(k => next.add(k));
+      }
+      return next;
+    });
+  };
+
+  const exitSelectionMode = () => {
+    setSelectionMode(false);
+    setSelectedKeys(new Set());
+  };
+
+  const bulkVerify = async () => {
+    // Group selected shifts by period
+    const byPeriod = {};
+    for (const key of selectedKeys) {
+      const shift = allShifts.find(s => shiftKey(s) === key);
+      if (!shift) continue;
+      if (!byPeriod[shift._periodId]) byPeriod[shift._periodId] = [];
+      byPeriod[shift._periodId].push(shift._shiftIdx);
+    }
+    for (const [periodId, indices] of Object.entries(byPeriod)) {
+      const period = periodMap[periodId];
+      if (!period) continue;
+      const indexSet = new Set(indices);
+      const updatedShifts = (period.shifts || []).map((s, i) =>
+        indexSet.has(i) ? { ...s, status: 'verified' } : s
+      );
+      const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings) : null;
+      await base44.entities.PayPeriod.update(period.id, {
+        shifts: updatedShifts,
+        ...(breakdown ? { breakdown } : {}),
+      });
+    }
+    exitSelectionMode();
+    loadData();
+  };
+
+  const bulkChangeType = async (newType) => {
+    const byPeriod = {};
+    for (const key of selectedKeys) {
+      const shift = allShifts.find(s => shiftKey(s) === key);
+      if (!shift) continue;
+      if (!byPeriod[shift._periodId]) byPeriod[shift._periodId] = [];
+      byPeriod[shift._periodId].push(shift._shiftIdx);
+    }
+    for (const [periodId, indices] of Object.entries(byPeriod)) {
+      const period = periodMap[periodId];
+      if (!period) continue;
+      const indexSet = new Set(indices);
+      const updatedShifts = (period.shifts || []).map((s, i) =>
+        indexSet.has(i) ? { ...s, shift_type: newType } : s
+      );
+      const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings) : null;
+      await base44.entities.PayPeriod.update(period.id, {
+        shifts: updatedShifts,
+        ...(breakdown ? { breakdown } : {}),
+      });
+    }
+    exitSelectionMode();
+    loadData();
+  };
+
+  const bulkDelete = async () => {
+    const byPeriod = {};
+    for (const key of selectedKeys) {
+      const shift = allShifts.find(s => shiftKey(s) === key);
+      if (!shift) continue;
+      if (!byPeriod[shift._periodId]) byPeriod[shift._periodId] = new Set();
+      byPeriod[shift._periodId].add(shift._shiftIdx);
+    }
+    for (const [periodId, indexSet] of Object.entries(byPeriod)) {
+      const period = periodMap[periodId];
+      if (!period) continue;
+      const updatedShifts = (period.shifts || []).filter((_, i) => !indexSet.has(i));
+      const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings) : null;
+      await base44.entities.PayPeriod.update(period.id, {
+        shifts: updatedShifts,
+        ...(breakdown ? { breakdown } : {}),
+      });
+    }
+    exitSelectionMode();
+    loadData();
+  };
+
   const findOrCreatePeriodForDate = async (date) => {
     const existing = Object.values(periodMap).find(p => date >= p.start_date && date <= p.end_date);
     if (existing) return existing;
@@ -425,22 +532,35 @@ export default function ShiftLog() {
           </div>
           {viewMode === 'list' && (
             <>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="h-8 w-[130px] text-xs">
-                  <Filter className="w-3 h-3 mr-1" />
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="upcoming">Upcoming</SelectItem>
-                  <SelectItem value="verified">Verified</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button variant="ghost" size="sm" onClick={() => setSortAsc(s => !s)} className="h-8 px-2 text-xs text-muted-foreground">
-                <ArrowUpDown className="w-3.5 h-3.5 mr-1" />
-                {sortAsc ? 'Oldest first' : 'Newest first'}
+              <Button
+                variant={selectionMode ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => { if (selectionMode) exitSelectionMode(); else setSelectionMode(true); }}
+                className={`h-8 px-2.5 text-xs ${selectionMode ? 'bg-primary text-primary-foreground' : ''}`}
+              >
+                <CheckSquare className="w-3.5 h-3.5 mr-1" />
+                {selectionMode ? `Selected (${selectedKeys.size})` : 'Select'}
               </Button>
+              {!selectionMode && (
+                <>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="h-8 w-[130px] text-xs">
+                      <Filter className="w-3 h-3 mr-1" />
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Statuses</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="upcoming">Upcoming</SelectItem>
+                      <SelectItem value="verified">Verified</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button variant="ghost" size="sm" onClick={() => setSortAsc(s => !s)} className="h-8 px-2 text-xs text-muted-foreground">
+                    <ArrowUpDown className="w-3.5 h-3.5 mr-1" />
+                    {sortAsc ? 'Oldest first' : 'Newest first'}
+                  </Button>
+                </>
+              )}
             </>
           )}
         </div>
@@ -499,6 +619,36 @@ export default function ShiftLog() {
               </div>
             )}
 
+            {/* Bulk action toolbar */}
+            {selectionMode && selectedKeys.size > 0 && (
+              <div className="px-5 py-3 border-b border-border bg-primary/5 flex items-center gap-3 flex-wrap">
+                <span className="text-sm font-semibold text-foreground">{selectedKeys.size} selected</span>
+                <Button size="sm" variant="outline" onClick={bulkVerify} className="h-8 text-xs">
+                  <Check className="w-3.5 h-3.5 mr-1" /> Mark Verified
+                </Button>
+                <Select onValueChange={(v) => bulkChangeType(v)}>
+                  <SelectTrigger className="h-8 w-[170px] text-xs">
+                    <SelectValue placeholder="Change type…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="regular">Regular (×1.0)</SelectItem>
+                    <SelectItem value="day_off">Day Off (×2.0)</SelectItem>
+                    <SelectItem value="work_stat">Work Stat (×2.0)</SelectItem>
+                    <SelectItem value="work_super_stat">Super Stat (×2.5)</SelectItem>
+                    <SelectItem value="ot_stat">OT on Stat (×3.0)</SelectItem>
+                    <SelectItem value="overtime">Overtime (×1.5)</SelectItem>
+                    <SelectItem value="isn">ISN</SelectItem>
+                    <SelectItem value="vacation">Vacation</SelectItem>
+                    <SelectItem value="sick">Sick</SelectItem>
+                    <SelectItem value="pdo_pst">PDO/PST</SelectItem>
+                    <SelectItem value="other_leave">Leave</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button size="sm" variant="destructive" onClick={bulkDelete} className="h-8 text-xs ml-auto">
+                  <Trash2 className="w-3.5 h-3.5 mr-1" /> Delete Selected
+                </Button>
+              </div>
+            )}
             <div>
               {(() => {
                 // Group shifts by actual pay period dates (deduplicates across duplicate DB records)
@@ -540,6 +690,18 @@ export default function ShiftLog() {
                         <div key={group.key}>
                           <div className="px-4 py-3 bg-secondary/30 border-b border-border flex items-center justify-between">
                             <div className="flex items-center gap-3">
+                              {selectionMode && group.shifts.length > 0 && (() => {
+                                const allKeys = group.shifts.map(s => shiftKey(s));
+                                const allSelected = allKeys.length > 0 && allKeys.every(k => selectedKeys.has(k));
+                                const someSelected = allKeys.some(k => selectedKeys.has(k));
+                                return (
+                                  <Checkbox
+                                    checked={allSelected}
+                                    className={someSelected && !allSelected ? 'data-[state=checked]:bg-primary/50' : ''}
+                                    onCheckedChange={() => selectAllInGroup(group.shifts)}
+                                  />
+                                );
+                              })()}
                               <h4 className="text-sm font-semibold text-foreground">
                                 {group.periodName}
                               </h4>
@@ -564,6 +726,9 @@ export default function ShiftLog() {
                                   onEdit={(s) => setEditingShift({ data: s, _periodId: shift._periodId, _shiftIdx: shift._shiftIdx })}
                                   onDelete={() => deleteShift(shift)}
                                   onVerify={() => verifyShift(shift)}
+                                  selectable={selectionMode}
+                                  selected={selectedKeys.has(shiftKey(shift))}
+                                  onToggleSelect={toggleSelectShift}
                                 />
                               </div>
                             ))}

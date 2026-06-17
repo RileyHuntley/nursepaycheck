@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Trash2, Sun, Moon, Check } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 
@@ -66,7 +67,7 @@ function resolveStatus(shift) {
   return 'pending';
 }
 
-export default function ShiftRow({ shift, premiums, settings, periodEndDate, onEdit, onDelete, onVerify, readOnly }) {
+export default function ShiftRow({ shift, premiums, settings, periodEndDate, onEdit, onDelete, onVerify, readOnly, selectable, selected, onToggleSelect }) {
   const overridden = premiums?._overridden || [];
   const hosp = shift.hospital ? (settings?.hospitals || []).find(h => h.name === shift.hospital) : null;
   const unit = shift.unit ? (settings?.units || []).find(u => u.name === shift.unit) : null;
@@ -92,13 +93,26 @@ export default function ShiftRow({ shift, premiums, settings, periodEndDate, onE
   const periodEnded = periodEndDate && todayStr > periodEndDate;
   const showVerify = effStatus === 'pending' && periodEnded;
 
+  const handleRowClick = () => {
+    if (selectable && onToggleSelect) {
+      onToggleSelect(shift);
+    } else if (onEdit) {
+      onEdit(shift);
+    }
+  };
+
   return (
     <div
-      className="px-4 py-3 bg-card hover:bg-muted/20 transition-colors duration-150 cursor-pointer"
-      onClick={() => onEdit && onEdit(shift)}
+      className={`px-4 py-3 bg-card hover:bg-muted/20 transition-colors duration-150 cursor-pointer ${selected ? 'bg-primary/5 ring-1 ring-inset ring-primary/30' : ''}`}
+      onClick={handleRowClick}
     >
       {/* Top row: date, time, type, hours, status, actions */}
       <div className="flex items-center gap-3 flex-wrap">
+        {selectable && (
+          <div className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+            <Checkbox checked={selected || false} onCheckedChange={() => onToggleSelect && onToggleSelect(shift)} />
+          </div>
+        )}
         <div className="flex items-center gap-1.5 flex-shrink-0" style={{ minWidth: '8rem' }}>
           {isNight
             ? <Moon className="w-3.5 h-3.5 text-indigo-500 flex-shrink-0" />
@@ -174,7 +188,7 @@ export default function ShiftRow({ shift, premiums, settings, periodEndDate, onE
           </div>
         )}
 
-        {!readOnly && (
+        {!readOnly && !selectable && (
           <div className="flex items-center gap-1 flex-shrink-0">
             {showVerify && onVerify && (
               <Button
