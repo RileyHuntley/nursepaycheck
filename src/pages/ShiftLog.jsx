@@ -61,6 +61,27 @@ export default function ShiftLog() {
       }
       setSettings(settingsList[0]);
 
+      // Deduplicate pay periods by date range — merge shifts into the first record, delete extras
+      const dateGroups = {};
+      for (const period of periodList) {
+        const key = `${period.start_date}|${period.end_date}`;
+        if (!dateGroups[key]) dateGroups[key] = [];
+        dateGroups[key].push(period);
+      }
+      for (const [key, dupes] of Object.entries(dateGroups)) {
+        if (dupes.length > 1) {
+          // Merge all shifts into the first period, delete the rest
+          const [keeper, ...extras] = dupes;
+          const allShifts = extras.reduce((acc, p) => acc.concat(p.shifts || []), keeper.shifts || []);
+          await base44.entities.PayPeriod.update(keeper.id, { shifts: allShifts });
+          for (const extra of extras) {
+            await base44.entities.PayPeriod.delete(extra.id);
+          }
+          // Reload after cleanup
+          periodList = await base44.entities.PayPeriod.list('-start_date', 100);
+        }
+      }
+
       const map = {};
       const merged = [];
       for (const period of periodList) {
@@ -456,21 +477,23 @@ export default function ShiftLog() {
                 </div>
               )}
               {(() => {
-                // Group shifts by _periodId, maintaining sort order
+                // Group shifts by actual pay period dates (deduplicates across duplicate DB records)
                 const groups = [];
                 const seen = new Set();
                 for (const shift of sortedShifts) {
-                  if (!seen.has(shift._periodId)) {
-                    seen.add(shift._periodId);
-                    groups.push({ periodId: shift._periodId, periodName: shift._periodName, shifts: [] });
+                  const pd = getPayPeriodForDate(shift.date);
+                  const key = `${pd.start_date}|${pd.end_date}`;
+                  if (!seen.has(key)) {
+                    seen.add(key);
+                    groups.push({ key, periodName: getPayPeriodName(pd.start_date, pd.end_date), periodStart: pd.start_date, periodEnd: pd.end_date, shifts: [] });
                   }
                   groups[groups.length - 1].shifts.push(shift);
                 }
-                return groups.map((group, gi) => {
+                return groups.map((group) => {
                   // Compute period breakdown for this group
                   const periodBreakdown = settings ? calculatePeriodBreakdown(group.shifts, settings) : null;
                   return (
-                    <div key={group.periodId}>
+                    <div key={group.key}>
                       {/* Period header */}
                       <div className="px-4 py-3 bg-secondary/30 border-b border-border flex items-center justify-between">
                         <div className="flex items-center gap-3">
@@ -495,7 +518,7 @@ export default function ShiftLog() {
                               shift={shift}
                               premiums={settings ? calculateShiftPremiums(shift, settings) : null}
                               settings={settings}
-                              periodEndDate={periodMap[shift._periodId]?.end_date}
+                              periodEndDate={group.periodEnd}
                               onEdit={(s) => setEditingShift({ data: s, _periodId: shift._periodId, _shiftIdx: shift._shiftIdx })}
                               onDelete={() => deleteShift(shift)}
                               onVerify={() => verifyShift(shift)}
