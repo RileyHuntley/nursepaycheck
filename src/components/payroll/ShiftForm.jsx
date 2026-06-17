@@ -144,9 +144,13 @@ export default function ShiftForm({ onSubmit, onCancel, initial, settings }) {
         )}
       </div>
 
-      {/* Preset Buttons */}
-      <div className="flex items-center gap-2">
-        <span className="text-xs text-muted-foreground mr-1">Quick fill:</span>
+      {/* Status Toggle + Preset Buttons */}
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <Switch checked={shift.status === 'verified'} onCheckedChange={(v) => set('status', v ? 'verified' : 'pending')} />
+          <Label className="text-xs text-muted-foreground cursor-pointer">Verified</Label>
+        </div>
+        <span className="text-xs text-muted-foreground">· Quick fill:</span>
         {getPresets(settings).map((preset) => (
           <button
             key={preset.label}
@@ -253,22 +257,6 @@ export default function ShiftForm({ onSubmit, onCancel, initial, settings }) {
               {(settings?.units || []).map(u => (
                 <SelectItem key={u.name} value={u.name}>{u.name} [{u.code}]</SelectItem>
               ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">Status</Label>
-          <Select value={shift.status || 'pending'} onValueChange={(v) => set('status', v)}>
-            <SelectTrigger className="h-9 text-sm">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="upcoming">Upcoming</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="verified">Verified</SelectItem>
             </SelectContent>
           </Select>
         </div>
