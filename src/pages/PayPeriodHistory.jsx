@@ -4,9 +4,9 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Trash2, Eye, Loader2, CalendarPlus, ArrowUpDown } from 'lucide-react';
 import PayPeriodDialog from '@/components/payroll/PayPeriodDialog';
-import { getVCHPeriodNumber } from '@/lib/statHolidays';
+import { getVCHPeriodNumber, getVCHPayDate } from '@/lib/statHolidays';
 import { formatCurrency } from '@/lib/utils';
-import { calculatePeriodBreakdown } from '@/lib/premiumCalculator';
+import { calculatePeriodBreakdown, getPayPeriodName } from '@/lib/premiumCalculator';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -127,7 +127,7 @@ export default function PayPeriodHistory() {
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <h4 className="text-sm font-medium text-foreground truncate">{period.name}</h4>
+                    <h4 className="text-sm font-medium text-foreground truncate">{getPayPeriodName(period.start_date, period.end_date)}</h4>
                     {getVCHPeriodNumber(period.start_date) && (
                       <span className="text-[10px] font-mono font-bold bg-muted text-muted-foreground px-1.5 py-0.5 rounded flex-shrink-0">
                         PP {getVCHPeriodNumber(period.start_date)}
@@ -135,6 +135,11 @@ export default function PayPeriodHistory() {
                     )}
                   </div>
                   <div className="flex items-center gap-3 mt-1">
+                    {getVCHPayDate(period.start_date) && (
+                      <span className="text-xs text-muted-foreground font-medium">
+                        Pay {new Date(getVCHPayDate(period.start_date) + 'T12:00:00').toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </span>
+                    )}
                     <span className="text-xs text-muted-foreground">{period.start_date} – {period.end_date}</span>
                     <span className="text-xs text-muted-foreground">{period.shifts?.length || 0} shifts</span>
 
