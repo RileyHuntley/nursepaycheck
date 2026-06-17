@@ -277,7 +277,9 @@ export default function ShiftLog() {
     loadData();
   };
 
-  if (loading) {
+  // Only show full-page spinner on initial load (no data yet).
+  // During refreshes, keep the calendar/list rendered so view state (month, etc.) persists.
+  if (loading && allShifts.length === 0) {
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
