@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Filter, X, Calendar } from 'lucide-react';
 import { getStatType, getStatName, getPayDate } from '@/lib/statHolidays';
-import ShiftForm from '@/components/payroll/ShiftForm';
+import EditShiftDialog from '@/components/payroll/EditShiftDialog';
 import { calculatePeriodBreakdown, calculateShiftPremiums, getPayPeriodForDate, getPayPeriodName } from '@/lib/premiumCalculator';
 import {
   Select,
@@ -204,16 +204,12 @@ export default function ShiftCalendarGrid({ settings, shiftsMap, onShiftUpdate, 
         </button>
       </div>
 
-      {editingShift && (
-        <div className="bg-card border border-border rounded-xl p-5 mb-4">
-          <ShiftForm
-            initial={editingShift.data}
-            onSubmit={handleUpdateShift}
-            onCancel={() => setEditingShift(null)}
-            settings={settings}
-          />
-        </div>
-      )}
+      <EditShiftDialog
+        editingShift={editingShift}
+        settings={settings}
+        onSubmit={handleUpdateShift}
+        onClose={() => setEditingShift(null)}
+      />
 
       {/* Filters */}
       <div className="bg-card border border-border rounded-xl p-4">
