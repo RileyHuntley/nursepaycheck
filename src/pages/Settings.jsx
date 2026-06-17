@@ -186,7 +186,9 @@ export default function Settings() {
     setSettings(updated);
     setSavedVersion(v => v + 1);
     if (token) {
+      const currentUser = await base44.auth.me();
       const safeSettings = {
+        user_name: currentUser?.full_name || 'Nurse',
         hourly_wage: settings.hourly_wage, premium_rates: settings.premium_rates,
         ot_multipliers: settings.ot_multipliers, active_allowances: settings.active_allowances,
         allowance_rates: settings.allowance_rates, active_qualifications: settings.active_qualifications,
