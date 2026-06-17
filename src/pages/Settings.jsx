@@ -212,18 +212,10 @@ export default function Settings() {
           <h2 className="text-2xl font-display font-bold text-foreground tracking-tight">Settings</h2>
           <p className="text-sm text-muted-foreground mt-1">Configure wage, premiums, and allowances per your CBA</p>
         </div>
-        <div className="flex items-center gap-3">
-          {isDirty && (
-            <span className="text-xs font-medium text-chart-2 bg-chart-2/10 px-2.5 py-1 rounded-full inline-flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-chart-2 animate-pulse" />
-              Unsaved
-            </span>
-          )}
-          <Button onClick={handleSave} disabled={saving} size="sm" className="bg-primary text-primary-foreground">
-            {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-            Save
-          </Button>
-        </div>
+        <Button onClick={handleSave} disabled={saving} size="sm" className="bg-primary text-primary-foreground">
+          {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+          Save
+        </Button>
       </div>
 
       {message && (
@@ -514,6 +506,14 @@ export default function Settings() {
           </div>
         </div>
       </section>
+
+      {/* Floating unsaved indicator */}
+      {isDirty && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-card border border-chart-2/30 shadow-lg rounded-xl px-4 py-2.5 animate-in slide-in-from-right-4 duration-200">
+          <span className="w-2 h-2 rounded-full bg-chart-2 animate-pulse flex-shrink-0" />
+          <span className="text-sm font-medium text-chart-2">Unsaved changes</span>
+        </div>
+      )}
 
       {/* Unsaved changes confirmation dialog */}
       <AlertDialog open={blocker.state === 'blocked'} onOpenChange={() => {}}>
