@@ -285,35 +285,70 @@ export function getShiftMultiplier(shiftType) {
 /**
  * Split an overnight shift into per-date segments.
  * Non-overnight shifts return a single segment.
- * Each segment has { date, hours } where hours is the portion of paid_hours on that date.
+ * Each segment has { date, hours, range } where:
+ *   - hours is the paid portion on that date (after break deduction)
+ *   - range is the paid time range as "HH:MM–HH:MM"
+ *
+ * For shifts ≥5h, the unpaid break is placed at the 5-hour mark from shift start,
+ * not proportionally divided. This ensures payroll-accurate segment hours.
  */
 export function splitOvernightShift(shift) {
   const startH = parseTime(shift.start_time);
   let endH = parseTime(shift.end_time);
+  const unpaidBreak = shift.unpaid_break || 0;
 
   // Not overnight — single segment
   if (endH > startH) {
-    const hours = shift.paid_hours || (endH - startH);
-    return [{ date: shift.date, hours: round2(hours) }];
+    const hours = shift.paid_hours || (endH - startH - unpaidBreak);
+    return [{ date: shift.date, hours: round2(hours), range: `${shift.start_time}–${shift.end_time}` }];
   }
 
   // Overnight: split at midnight (24.0)
   endH += 24;
-  const beforeMidnight = 24 - startH;
-  const afterMidnight = endH - 24;
-  const totalClock = beforeMidnight + afterMidnight;
+  const beforeMidnightClock = 24 - startH;
+  const afterMidnightClock = endH - 24;
 
-  const paidHours = shift.paid_hours || totalClock;
-  const beforePaid = round2((beforeMidnight / totalClock) * paidHours);
-  const afterPaid = round2((afterMidnight / totalClock) * paidHours);
+  let beforePaid, afterPaid, seg1Range, seg2Range;
+
+  if (unpaidBreak > 0 && (beforeMidnightClock + afterMidnightClock) >= 5) {
+    // Break occurs at the 5-hour mark from shift start
+    const breakStartH = startH + 5;
+    const breakEndH = breakStartH + unpaidBreak;
+
+    // How much of the break falls before midnight vs after midnight
+    const breakBefore = Math.max(0, Math.min(breakEndH, 24) - breakStartH);
+    const breakAfter = Math.max(0, breakEndH - Math.max(breakStartH, 24));
+
+    beforePaid = round2(beforeMidnightClock - breakBefore);
+    afterPaid = round2(afterMidnightClock - breakAfter);
+
+    // Paid time range for segment 1 (before midnight)
+    seg1Range = breakBefore > 0
+      ? `${shift.start_time}–${formatTime(breakStartH)}`
+      : `${shift.start_time}–00:00`;
+
+    // Paid time range for segment 2 (after midnight)
+    // Break sits at the start of this segment when it crosses midnight —
+    // paid portion begins after the break ends
+    seg2Range = breakAfter > 0
+      ? `${formatTime(Math.max(breakEndH, 24))}–${shift.end_time}`
+      : `00:00–${shift.end_time}`;
+  } else {
+    // No break (or shift <5h): proportional split of paid_hours
+    const paidHours = shift.paid_hours || (beforeMidnightClock + afterMidnightClock);
+    beforePaid = round2((beforeMidnightClock / (beforeMidnightClock + afterMidnightClock)) * paidHours);
+    afterPaid = round2((afterMidnightClock / (beforeMidnightClock + afterMidnightClock)) * paidHours);
+    seg1Range = `${shift.start_time}–00:00`;
+    seg2Range = `00:00–${shift.end_time}`;
+  }
 
   const nextDate = new Date(shift.date + 'T12:00:00');
   nextDate.setDate(nextDate.getDate() + 1);
   const nextDateStr = nextDate.toISOString().slice(0, 10);
 
   return [
-    { date: shift.date, hours: beforePaid },
-    { date: nextDateStr, hours: afterPaid },
+    { date: shift.date, hours: beforePaid, range: seg1Range },
+    { date: nextDateStr, hours: afterPaid, range: seg2Range },
   ];
 }
 

@@ -12,7 +12,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { X, ChevronDown, ChevronUp } from 'lucide-react';
 import { getStatType, getStatName } from '@/lib/statHolidays';
-import { calculateShiftPremiums, parseTime, splitOvernightShift, getSegmentMultiplier } from '@/lib/premiumCalculator';
+import { calculateShiftPremiums, parseTime, splitOvernightShift, getSegmentMultiplier, formatTime } from '@/lib/premiumCalculator';
 import { formatCurrency } from '@/lib/utils';
 
 // Default settings used when none provided (for premium preview in form)
@@ -343,14 +343,17 @@ export default function ShiftForm({ onSubmit, onCancel, onDelete, initial, setti
         const shiftWithHours = { ...shift, paid_hours: paidHours };
         const segments = splitOvernightShift(shiftWithHours);
         const isOvernight = parseTime(shift.start_time) >= parseTime(shift.end_time);
+        const hasBreak = (shift.unpaid_break || 0) > 0;
+        const totalClock = isOvernight
+          ? (24 - parseTime(shift.start_time)) + parseTime(shift.end_time)
+          : parseTime(shift.end_time) - parseTime(shift.start_time);
 
-        // Compute time range for each segment
-        const segRanges = [];
-        if (isOvernight) {
-          segRanges.push(`${shift.start_time}–24:00`);
-          segRanges.push(`00:00–${shift.end_time}`);
-        } else {
-          segRanges.push(`${shift.start_time}–${shift.end_time}`);
+        // Build break explanation for overnight shifts
+        let breakNote = null;
+        if (isOvernight && hasBreak && totalClock >= 5) {
+          const breakStartH = parseTime(shift.start_time) + 5;
+          const breakEndH = breakStartH + shift.unpaid_break;
+          breakNote = `Unpaid break of ${shift.unpaid_break}h placed at the 5-hour mark: ${formatTime(breakStartH)}–${formatTime(breakEndH)}`;
         }
 
         const groups = {};
@@ -366,7 +369,7 @@ export default function ShiftForm({ onSubmit, onCancel, onDelete, initial, setti
             if (!groups[label]) groups[label] = { hours: 0, total: 0, ranges: [] };
             groups[label].hours += seg.hours;
             groups[label].total += seg.hours * wage * mult;
-            groups[label].ranges.push(segRanges[i] || '');
+            groups[label].ranges.push(`${seg.hours.toFixed(2)}h (${seg.range || ''})`);
           }
         }
 
@@ -374,8 +377,8 @@ export default function ShiftForm({ onSubmit, onCancel, onDelete, initial, setti
         for (const key of Object.keys(groups)) {
           const g = groups[key];
           const multStr = key.match(/×([\d.]+)/)?.[1] || '1';
-          const rangeStr = g.ranges.length === 1 ? ` (${g.ranges[0]})`
-            : g.ranges.length > 1 ? ` (${g.ranges.join(' + ')})`
+          const rangeStr = g.ranges.length === 1 ? ` ${g.ranges[0]}`
+            : g.ranges.length > 1 ? ` ${g.ranges.join(' + ')}`
             : '';
           g.calc = `${g.hours.toFixed(2)}h × ${formatCurrency(wage)} × ${multStr} = ${formatCurrency(g.total)}${rangeStr}`;
         }
@@ -403,18 +406,36 @@ export default function ShiftForm({ onSubmit, onCancel, onDelete, initial, setti
             {showWageCalc && (
               <div className="px-4 py-3 space-y-2 bg-card">
                 <p className="text-[11px] text-muted-foreground mb-2">Per-date segment breakdown — overnight shifts split at midnight for accurate stat/overtime rates.</p>
+                {breakNote && (
+                  <div className="text-[11px] text-muted-foreground font-mono bg-muted/30 px-2.5 py-1.5 rounded-md border border-border mb-1">
+                    {breakNote}
+                  </div>
+                )}
                 {DISPLAY_ORDER.map(label => {
                   const g = groups[label];
                   if (!g) return null;
                   return (
-                    <div key={label} className="flex items-center gap-3">
-                      <div className="w-36 text-xs font-semibold text-foreground flex-shrink-0">{label}</div>
-                      <div className="text-xs font-mono text-foreground">{g.calc}</div>
+                    <div key={label} className="space-y-1">
+                      <div className="flex items-center gap-3">
+                        <div className="w-36 text-xs font-semibold text-foreground flex-shrink-0">{label}</div>
+                        <div className="text-xs font-mono text-foreground">{g.calc}</div>
+                      </div>
+                      {g.ranges.length > 1 && g.ranges.map((rng, idx) => (
+                        <div key={idx} className="text-[10px] text-muted-foreground font-mono pl-6 border-l-2 border-border ml-36">
+                          {rng}
+                        </div>
+                      ))}
                     </div>
                   );
                 })}
                 {Object.keys(groups).length === 0 && (
                   <div className="text-xs text-muted-foreground">No payable hours (unpaid type or zero multiplier).</div>
+                )}
+                {grandTotal > 0 && (
+                  <div className="flex items-center gap-3 pt-1.5 mt-1 border-t border-border">
+                    <div className="w-36 text-xs font-semibold text-foreground flex-shrink-0">Gross Wage Total</div>
+                    <div className="text-xs font-mono font-semibold text-primary">{formatCurrency(grandTotal)}</div>
+                  </div>
                 )}
               </div>
             )}
