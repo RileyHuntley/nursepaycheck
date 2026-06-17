@@ -67,7 +67,7 @@ function resolveStatus(shift) {
   return 'pending';
 }
 
-export default function ShiftRow({ shift, premiums, settings, periodEndDate, onEdit, onDelete, onVerify, readOnly, selectable, selected, onToggleSelect }) {
+export default function ShiftRow({ shift, premiums, settings, periodEndDate, onEdit, onDelete, onVerify, readOnly, selectable, selected, onToggleSelect, hidePending }) {
   const overridden = premiums?._overridden || [];
   const hosp = shift.hospital ? (settings?.hospitals || []).find(h => h.name === shift.hospital) : null;
   const unit = shift.unit ? (settings?.units || []).find(u => u.name === shift.unit) : null;
@@ -159,7 +159,7 @@ export default function ShiftRow({ shift, premiums, settings, periodEndDate, onE
               Upcoming
             </span>
           )}
-          {effStatus === 'pending' && (
+          {effStatus === 'pending' && !hidePending && (
             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-destructive/15 text-destructive">
               Pending
             </span>

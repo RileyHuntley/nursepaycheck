@@ -389,6 +389,7 @@ export default function PayPeriodDetail() {
               premiums={settings ? calculateShiftPremiums(shift, settings) : null}
               settings={settings}
               periodEndDate={period.end_date}
+              hidePending
               onEdit={(s) => setEditingShift({ data: s, index: shift._origIdx })}
               onDelete={() => deleteShift(shift, shift._origIdx)}
               onVerify={() => verifyShift(shift, shift._origIdx)}
