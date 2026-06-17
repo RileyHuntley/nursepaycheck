@@ -222,6 +222,46 @@
     },
     "notes": {
       "type": "string"
+    },
+    "verified_deductions": {
+      "type": "object",
+      "description": "User-transcribed deductions from a pay stub for this period, replacing estimated values",
+      "properties": {
+        "cpp": {
+          "type": "number",
+          "minimum": 0
+        },
+        "cpp2": {
+          "type": "number",
+          "minimum": 0
+        },
+        "ei": {
+          "type": "number",
+          "minimum": 0
+        },
+        "federal_tax": {
+          "type": "number",
+          "minimum": 0
+        },
+        "provincial_tax": {
+          "type": "number",
+          "minimum": 0
+        },
+        "union_dues": {
+          "type": "number",
+          "minimum": 0
+        },
+        "other_deductions": {
+          "type": "number",
+          "minimum": 0
+        },
+        "other_label": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
     }
   },
   "required": [],

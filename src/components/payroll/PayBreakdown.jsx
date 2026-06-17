@@ -151,34 +151,51 @@ function SectionHeader({ title }) {
   return <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider pt-3 pb-1">{title}</h4>;
 }
 
-export default function PayBreakdown({ breakdown, wage, title = 'Pay Period Breakdown', taxSettings }) {
+export default function PayBreakdown({ breakdown, wage, title = 'Pay Period Breakdown', taxSettings, verifiedDeductions }) {
   const [openInfo, setOpenInfo] = useState(null);
   if (!breakdown) return null;
 
   const toggle = (key) => setOpenInfo(prev => prev === key ? null : key);
 
+  const hasVerified = verifiedDeductions && Object.keys(verifiedDeductions).some(k => ['cpp', 'cpp2', 'ei', 'federal_tax', 'provincial_tax'].includes(k) && verifiedDeductions[k] > 0);
+
   const annualIncome = taxSettings
     ? (taxSettings.annual_federal_income || taxSettings.annual_provincial_income || 0)
     : 0;
 
-  const taxes = annualIncome > 0
-    ? estimateTaxes(
-        breakdown.gross_pay,
-        taxSettings.annual_provincial_income || 0,
-        taxSettings.annual_federal_income || 0,
-      )
-    : null;
+  // Use verified deductions when available, otherwise estimate
+  let taxes, statutory;
+  if (hasVerified) {
+    taxes = {
+      federal: verifiedDeductions.federal_tax || 0,
+      provincial: verifiedDeductions.provincial_tax || 0,
+      total: (verifiedDeductions.federal_tax || 0) + (verifiedDeductions.provincial_tax || 0),
+    };
+    statutory = {
+      cpp: verifiedDeductions.cpp || 0,
+      cpp2: verifiedDeductions.cpp2 || 0,
+      ei: verifiedDeductions.ei || 0,
+      total: (verifiedDeductions.cpp || 0) + (verifiedDeductions.cpp2 || 0) + (verifiedDeductions.ei || 0),
+    };
+  } else {
+    taxes = annualIncome > 0
+      ? estimateTaxes(breakdown.gross_pay, taxSettings.annual_provincial_income || 0, taxSettings.annual_federal_income || 0)
+      : null;
+    statutory = annualIncome > 0
+      ? estimateStatutoryDeductions(breakdown.gross_pay, annualIncome, breakdown.straight_time_pay)
+      : null;
+  }
   const hasTaxes = taxes && taxes.total > 0;
-
-  const statutory = annualIncome > 0
-    ? estimateStatutoryDeductions(breakdown.gross_pay, annualIncome, breakdown.straight_time_pay)
-    : null;
   const hasStatutory = statutory && statutory.total > 0;
 
+  // Use verified union dues if available, otherwise calculated
+  const unionDues = hasVerified && verifiedDeductions.union_dues > 0 ? verifiedDeductions.union_dues : (breakdown.union_dues || 0);
+
   const netPay = breakdown.gross_pay
-    - (breakdown.union_dues || 0)
+    - unionDues
     - (hasTaxes ? taxes.total : 0)
-    - (hasStatutory ? statutory.total : 0);
+    - (hasStatutory ? statutory.total : 0)
+    - (hasVerified && verifiedDeductions.other_deductions ? verifiedDeductions.other_deductions : 0);
 
   return (
     <div className="bg-card border border-border rounded-xl p-6 space-y-1" onClick={() => setOpenInfo(null)}>
@@ -225,21 +242,70 @@ export default function PayBreakdown({ breakdown, wage, title = 'Pay Period Brea
       <LineItem label="Qualification Diff." amount={breakdown.qualification_total} sublabel={`$${breakdown.qualification_hourly}/hr × ${breakdown.regular_hours || 0} reg hrs`} infoKey="qualification" openInfo={openInfo} onToggleInfo={toggle} />
 
       <SectionHeader title="Deductions" />
-      <LineItem label="Union Dues (2% of straight-time)" amount={breakdown.union_dues} negative infoKey="union_dues" openInfo={openInfo} onToggleInfo={toggle} />
+      <LineItem
+        label={hasVerified && verifiedDeductions.union_dues > 0 ? 'Union Dues (verified)' : 'Union Dues (2% of straight-time)'}
+        amount={unionDues}
+        negative
+        infoKey="union_dues"
+        openInfo={openInfo}
+        onToggleInfo={toggle}
+      />
       {hasStatutory && (
         <>
-          <LineItem label="CPP Contribution" amount={statutory.cpp} negative infoKey="cpp" openInfo={openInfo} onToggleInfo={toggle} />
+          <LineItem
+            label={hasVerified ? 'CPP (verified)' : 'CPP Contribution'}
+            amount={statutory.cpp}
+            negative
+            infoKey="cpp"
+            openInfo={openInfo}
+            onToggleInfo={toggle}
+          />
           {statutory.cpp2 > 0 && (
-            <LineItem label="CPP2 Contribution" amount={statutory.cpp2} negative infoKey="cpp2" openInfo={openInfo} onToggleInfo={toggle} />
+            <LineItem
+              label={hasVerified ? 'CPP2 (verified)' : 'CPP2 Contribution'}
+              amount={statutory.cpp2}
+              negative
+              infoKey="cpp2"
+              openInfo={openInfo}
+              onToggleInfo={toggle}
+            />
           )}
-          <LineItem label="EI Premium" amount={statutory.ei} negative infoKey="ei" openInfo={openInfo} onToggleInfo={toggle} />
+          <LineItem
+            label={hasVerified ? 'EI (verified)' : 'EI Premium'}
+            amount={statutory.ei}
+            negative
+            infoKey="ei"
+            openInfo={openInfo}
+            onToggleInfo={toggle}
+          />
         </>
       )}
       {hasTaxes && (
         <>
-          <LineItem label="Est. BC Provincial Tax" amount={taxes.provincial} negative infoKey="est_taxes" openInfo={openInfo} onToggleInfo={toggle} />
-          <LineItem label="Est. Federal Tax" amount={taxes.federal} negative infoKey="est_taxes" openInfo={openInfo} onToggleInfo={toggle} />
+          <LineItem
+            label={hasVerified ? 'BC Provincial Tax (verified)' : 'Est. BC Provincial Tax'}
+            amount={taxes.provincial}
+            negative
+            infoKey="est_taxes"
+            openInfo={openInfo}
+            onToggleInfo={toggle}
+          />
+          <LineItem
+            label={hasVerified ? 'Federal Tax (verified)' : 'Est. Federal Tax'}
+            amount={taxes.federal}
+            negative
+            infoKey="est_taxes"
+            openInfo={openInfo}
+            onToggleInfo={toggle}
+          />
         </>
+      )}
+      {hasVerified && verifiedDeductions.other_deductions > 0 && (
+        <LineItem
+          label={verifiedDeductions.other_label || 'Other Deductions'}
+          amount={verifiedDeductions.other_deductions}
+          negative
+        />
       )}
 
       <div className="flex items-center justify-between pt-3 mt-2 border-t border-border">
@@ -247,7 +313,7 @@ export default function PayBreakdown({ breakdown, wage, title = 'Pay Period Brea
         <span className="text-base font-mono font-semibold text-foreground">{formatCurrency(breakdown.gross_pay)}</span>
       </div>
       <div className="flex items-center justify-between pt-2 mt-1 border-t-2 border-primary/30">
-        <span className="text-base font-display font-bold text-foreground">Estimated Net Pay</span>
+        <span className="text-base font-display font-bold text-foreground">{hasVerified ? 'Verified Net Pay' : 'Estimated Net Pay'}</span>
         <span className="text-xl font-mono font-bold text-primary">{formatCurrency(netPay)}</span>
       </div>
     </div>
