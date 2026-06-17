@@ -102,7 +102,7 @@ export default function PayPeriodHistory() {
                     <h4 className="text-sm font-medium text-foreground truncate">{period.name}</h4>
                     {getVCHPeriodNumber(period.start_date) && (
                       <span className="text-[10px] font-mono font-bold bg-muted text-muted-foreground px-1.5 py-0.5 rounded flex-shrink-0">
-                        PP {getVCHPeriodNumber(period.start_date)}
+                        {getVCHPeriodNumber(period.start_date)}
                       </span>
                     )}
                   </div>
