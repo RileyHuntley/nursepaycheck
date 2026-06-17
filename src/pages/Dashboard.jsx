@@ -48,8 +48,9 @@ export default function Dashboard() {
     computedBreakdown: p.breakdown || (settings && p.shifts?.length ? calculatePeriodBreakdown(p.shifts, settings) : null),
   }));
 
-  // Most recent pay period
-  const latest = computedPeriods[0];
+  // Current pay period
+  const { start_date, end_date } = getCurrentPayPeriodDates();
+  const current = computedPeriods.find(p => p.start_date === start_date && p.end_date === end_date);
 
   // Current month totals
   const now = new Date();
@@ -123,9 +124,9 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <PaySummaryPanel
-          title="Latest Pay Period"
-          subtitle={latest ? latest.name : 'No pay periods yet'}
-          breakdown={latest?.computedBreakdown}
+          title="Current Pay Period"
+          subtitle={current ? current.name : 'No pay period yet'}
+          breakdown={current?.computedBreakdown}
           loading={loading}
         />
         <PaySummaryPanel
