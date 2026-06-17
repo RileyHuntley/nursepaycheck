@@ -540,6 +540,37 @@ export default function ShiftForm({ onSubmit, onCancel, onDelete, initial, setti
         );
       })()}
 
+      {/* Gross Shift Total */}
+      {shift.start_time && shift.end_time && paidHours > 0 && shift.date && (() => {
+        const wage = settings?.hourly_wage || 45;
+        const shiftWithHours = { ...shift, paid_hours: paidHours };
+        const segments = splitOvernightShift(shiftWithHours);
+        const calcSettings = settings || DEFAULT_RATES;
+        const premiums = calculateShiftPremiums(shiftWithHours, calcSettings);
+
+        let wageTotal = 0;
+        for (const seg of segments) {
+          const mult = getSegmentMultiplier(shift.shift_type, seg.date);
+          if (mult > 0) wageTotal += seg.hours * wage * mult;
+        }
+
+        const premiumTotal = (premiums.evening || 0) + (premiums.night || 0) + (premiums.weekend || 0) +
+          (premiums.super_shift || 0) + (premiums.regular_premium || 0) +
+          (premiums.short_notice || 0) + (premiums.responsibility || 0) +
+          (premiums.preceptor || 0) + (premiums.specialty || 0);
+
+        const grossTotal = wageTotal + premiumTotal;
+
+        if (grossTotal <= 0) return null;
+
+        return (
+          <div className="flex items-center justify-between px-4 py-3 bg-primary/5 border border-primary/20 rounded-lg">
+            <span className="text-sm font-semibold text-foreground">Gross Shift Total</span>
+            <span className="text-sm font-mono font-bold text-primary">{formatCurrency(grossTotal)}</span>
+          </div>
+        );
+      })()}
+
       <div className="flex gap-2 pt-1">
         <Button type="submit" size="sm" className="bg-primary text-primary-foreground hover:opacity-90">
           {initial ? 'Save Changes' : 'Add Shift'}
