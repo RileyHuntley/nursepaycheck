@@ -55,7 +55,7 @@ const HA_FULL_NAMES = {
   PHC:   'Providence Health Care',
 };
 
-export default function ShiftCalendarGrid({ settings, shiftsMap, onShiftUpdate, onReload, showHeader = true }) {
+export default function ShiftCalendarGrid({ settings, shiftsMap, onShiftUpdate, onReload, showHeader = true, readOnly = false }) {
   const [editingShift, setEditingShift] = useState(null);
   const [hospitalFilter, setHospitalFilter] = useState('all');
   const [haFilter, setHaFilter] = useState('all');
@@ -211,12 +211,14 @@ export default function ShiftCalendarGrid({ settings, shiftsMap, onShiftUpdate, 
         </button>
       </div>
 
-      <EditShiftDialog
-        editingShift={editingShift}
-        settings={settings}
-        onSubmit={handleUpdateShift}
-        onClose={() => setEditingShift(null)}
-      />
+      {!readOnly && (
+        <EditShiftDialog
+          editingShift={editingShift}
+          settings={settings}
+          onSubmit={handleUpdateShift}
+          onClose={() => setEditingShift(null)}
+        />
+      )}
 
       {/* Filters */}
       <div className="bg-card border border-border rounded-xl p-4">
@@ -347,12 +349,8 @@ export default function ShiftCalendarGrid({ settings, shiftsMap, onShiftUpdate, 
                     const premiums = settings ? calculateShiftPremiums(shift, settings) : null;
                     const isNight = premiums && premiums.night > 0;
                     const colors = getShiftColor(shift.shift_type, isNight);
-                    return (
-                      <button
-                        key={si}
-                        onClick={() => setEditingShift({ data: shift, periodId: shift.periodId, periodShiftIdx: shift.periodShiftIdx })}
-                        className={`w-full text-left px-1.5 py-0.5 rounded text-[10px] leading-tight border ${colors} hover:brightness-95 transition-all cursor-pointer`}
-                      >
+                    const content = (
+                      <>
                         <div className="flex items-center gap-1">
                           <span className="text-[11px]">{isNight ? '🌙' : '☀️'}</span>
                           <span className="font-semibold">{TYPE_SHORT[shift.shift_type] || shift.shift_type}</span>
@@ -363,6 +361,19 @@ export default function ShiftCalendarGrid({ settings, shiftsMap, onShiftUpdate, 
                           {shift.extended_shift && <span className="text-destructive font-medium">Ext</span>}
                           {shift.short_notice && <span className="font-medium">Notice</span>}
                         </div>
+                      </>
+                    );
+                    return readOnly ? (
+                      <div key={si} className={`w-full text-left px-1.5 py-0.5 rounded text-[10px] leading-tight border ${colors}`}>
+                        {content}
+                      </div>
+                    ) : (
+                      <button
+                        key={si}
+                        onClick={() => setEditingShift({ data: shift, periodId: shift.periodId, periodShiftIdx: shift.periodShiftIdx })}
+                        className={`w-full text-left px-1.5 py-0.5 rounded text-[10px] leading-tight border ${colors} hover:brightness-95 transition-all cursor-pointer`}
+                      >
+                        {content}
                       </button>
                     );
                   })}

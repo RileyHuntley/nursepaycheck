@@ -102,6 +102,7 @@ export default function SharedShifts() {
           settings={settings}
           shiftsMap={shiftsMap}
           showHeader={false}
+          readOnly={true}
         />
 
         {latestBreakdown && (
