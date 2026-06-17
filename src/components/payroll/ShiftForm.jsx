@@ -224,7 +224,7 @@ export default function ShiftForm({ onSubmit, onCancel, onDelete, initial, setti
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">Date</Label>
-          <Input type="date" value={shift.date} onChange={(e) => handleDateChange(e.target.value)} className="h-9 text-sm" />
+          <Input type="date" value={shift.date} onChange={(e) => handleDateChange(e.target.value)} className="h-9 text-sm min-w-[140px]" />
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">Start Time</Label>

@@ -91,4 +91,11 @@
   body {
     @apply bg-background text-foreground font-body;
   }
+
+  /* Prevent date input's native calendar icon from being clipped */
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 1;
+    display: block !important;
+    margin-left: 0.25rem;
+  }
 }

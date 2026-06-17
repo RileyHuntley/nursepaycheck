@@ -80,7 +80,7 @@ export default function BulkAddShift({ onSubmit, onCancel, settings }) {
             type="date"
             value={startDate}
             onChange={(e) => handleStartDateChange(e.target.value)}
-            className="h-9 text-sm"
+            className="h-9 text-sm min-w-[140px]"
           />
         </div>
         <div className="space-y-1.5">
