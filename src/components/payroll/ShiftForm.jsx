@@ -258,6 +258,22 @@ export default function ShiftForm({ onSubmit, onCancel, initial, settings }) {
         </div>
       </div>
 
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">Status</Label>
+          <Select value={shift.status || 'pending'} onValueChange={(v) => set('status', v)}>
+            <SelectTrigger className="h-9 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="upcoming">Upcoming</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="verified">Verified</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
       <div className="flex flex-wrap items-center gap-6">
         <div className="flex items-center gap-2">
           <Switch checked={shift.short_notice} onCheckedChange={(v) => set('short_notice', v)} />
