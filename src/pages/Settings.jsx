@@ -55,7 +55,12 @@ const defaultSettings = {
   default_hospital: '',
   default_unit: '',
   default_shift_pattern: 'DDNN',
-};
+  preset_times: {
+    day_12h_start: '07:00', day_12h_end: '19:00',
+    night_12h_start: '19:00', night_12h_end: '07:00',
+    day_8h_start: '08:00', day_8h_end: '16:00',
+  },
+  };
 
 export default function Settings() {
   const [settings, setSettings] = useState(null);
@@ -395,6 +400,32 @@ export default function Settings() {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+        </div>
+
+        {/* Quick Fill Preset Times */}
+        <div className="space-y-3 pt-1">
+          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Quick Fill Preset Times</h4>
+          <p className="text-xs text-muted-foreground">Customize the start/end times used by the Quick Fill buttons on shift forms.</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {[
+              { label: '12h Day Start', key: 'day_12h_start' },
+              { label: '12h Day End', key: 'day_12h_end' },
+              { label: '12h Night Start', key: 'night_12h_start' },
+              { label: '12h Night End', key: 'night_12h_end' },
+              { label: '8h Day Start', key: 'day_8h_start' },
+              { label: '8h Day End', key: 'day_8h_end' },
+            ].map(({ label, key }) => (
+              <div key={key} className="flex items-center gap-2">
+                <Label className="text-xs text-muted-foreground w-28 flex-shrink-0">{label}</Label>
+                <Input
+                  type="time"
+                  value={settings.preset_times?.[key] || ''}
+                  onChange={e => set(`preset_times.${key}`, e.target.value)}
+                  className="h-9 w-28 text-sm font-mono"
+                />
+              </div>
+            ))}
           </div>
         </div>
 

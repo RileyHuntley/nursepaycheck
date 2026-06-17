@@ -77,6 +77,35 @@
         }
       }
     },
+    "preset_times": {
+      "type": "object",
+      "properties": {
+        "day_12h_start": {
+          "type": "string",
+          "default": "07:00"
+        },
+        "day_12h_end": {
+          "type": "string",
+          "default": "19:00"
+        },
+        "night_12h_start": {
+          "type": "string",
+          "default": "19:00"
+        },
+        "night_12h_end": {
+          "type": "string",
+          "default": "07:00"
+        },
+        "day_8h_start": {
+          "type": "string",
+          "default": "08:00"
+        },
+        "day_8h_end": {
+          "type": "string",
+          "default": "16:00"
+        }
+      }
+    },
     "active_allowances": {
       "type": "array",
       "items": {

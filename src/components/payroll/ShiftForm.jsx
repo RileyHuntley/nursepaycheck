@@ -44,21 +44,24 @@ const RESPONSIBILITY_OPTIONS = [
   { value: 'flat',   label: 'Flat ($18.75/shift)' },
 ];
 
-// Preset templates
-const PRESETS = [
-  {
-    label: '12h Day',
-    values: { start_time: '07:00', end_time: '19:00', paid_hours: 11, unpaid_break: 1, paid_break: 0.75 },
-  },
-  {
-    label: '12h Night',
-    values: { start_time: '19:00', end_time: '07:00', paid_hours: 11, unpaid_break: 1, paid_break: 0.75 },
-  },
-  {
-    label: '8h Day',
-    values: { start_time: '08:00', end_time: '16:00', paid_hours: 7.5, unpaid_break: 0.5, paid_break: 0 },
-  },
-];
+// Build presets from settings, falling back to defaults
+const getPresets = (settings) => {
+  const pt = settings?.preset_times || {};
+  return [
+    {
+      label: '12h Day',
+      values: { start_time: pt.day_12h_start || '07:00', end_time: pt.day_12h_end || '19:00', paid_hours: 11, unpaid_break: 1, paid_break: 0.75 },
+    },
+    {
+      label: '12h Night',
+      values: { start_time: pt.night_12h_start || '19:00', end_time: pt.night_12h_end || '07:00', paid_hours: 11, unpaid_break: 1, paid_break: 0.75 },
+    },
+    {
+      label: '8h Day',
+      values: { start_time: pt.day_8h_start || '08:00', end_time: pt.day_8h_end || '16:00', paid_hours: 7.5, unpaid_break: 0.5, paid_break: 0 },
+    },
+  ];
+};
 
 const emptyShift = {
   date: '',
@@ -144,7 +147,7 @@ export default function ShiftForm({ onSubmit, onCancel, initial, settings }) {
       {/* Preset Buttons */}
       <div className="flex items-center gap-2">
         <span className="text-xs text-muted-foreground mr-1">Quick fill:</span>
-        {PRESETS.map((preset) => (
+        {getPresets(settings).map((preset) => (
           <button
             key={preset.label}
             type="button"
