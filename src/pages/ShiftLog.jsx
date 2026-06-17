@@ -1,11 +1,12 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import ShiftRow from '@/components/payroll/ShiftRow';
 import ShiftForm from '@/components/payroll/ShiftForm';
 import PayBreakdown from '@/components/payroll/PayBreakdown';
+import ShiftCalendarGrid from '@/components/payroll/ShiftCalendarGrid';
 import { calculatePeriodBreakdown, calculateShiftPremiums, getPayPeriodForDate, getPayPeriodName } from '@/lib/premiumCalculator';
 import { Button } from '@/components/ui/button';
-import { Loader2, ArrowUpDown, Plus, CalendarPlus } from 'lucide-react';
+import { Loader2, ArrowUpDown, Plus, CalendarPlus, List, CalendarDays } from 'lucide-react';
 import BulkAddShift from '@/components/payroll/BulkAddShift';
 
 export default function ShiftLog() {
@@ -17,6 +18,7 @@ export default function ShiftLog() {
   const [editingShift, setEditingShift] = useState(null); // { data, _periodId, _shiftIdx }
   const [showForm, setShowForm] = useState(false);
   const [showBulkForm, setShowBulkForm] = useState(false);
+  const [viewMode, setViewMode] = useState('list'); // 'list' | 'calendar'
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -57,6 +59,57 @@ export default function ShiftLog() {
     const unsub2 = base44.entities.PayPeriod.subscribe(() => debouncedLoad());
     return () => { unsub1(); unsub2(); };
   }, [debouncedLoad]);
+
+  // Build shiftsMap for calendar view
+  const shiftsMap = useMemo(() => {
+    const map = {};
+    for (const shift of allShifts) {
+      if (!shift.date) continue;
+      if (!map[shift.date]) map[shift.date] = [];
+      map[shift.date].push({ ...shift, periodId: shift._periodId, periodName: shift._periodName, periodShiftIdx: shift._shiftIdx });
+    }
+    return map;
+  }, [allShifts]);
+
+  // Calendar shift update handler
+  const calendarUpdateShift = async (shiftData, editingShift) => {
+    const periodId = editingShift.periodId;
+    const shiftIdx = editingShift.periodShiftIdx;
+
+    if (shiftData.date !== editingShift.data.date) {
+      const newPeriod = await findOrCreatePeriodForDate(shiftData.date);
+      // Remove from old period
+      const oldPeriod = periodMap[periodId];
+      if (oldPeriod) {
+        const oldShifts = (oldPeriod.shifts || []).filter((_, i) => i !== shiftIdx);
+        const oldBreakdown = settings ? calculatePeriodBreakdown(oldShifts, settings) : null;
+        await base44.entities.PayPeriod.update(oldPeriod.id, {
+          shifts: oldShifts,
+          ...(oldBreakdown ? { breakdown: oldBreakdown, status: 'calculated' } : { status: 'draft' }),
+        });
+      }
+      // Add to new period
+      const newShifts = [...(newPeriod.shifts || []), { ...shiftData }];
+      const newBreakdown = settings ? calculatePeriodBreakdown(newShifts, settings) : null;
+      await base44.entities.PayPeriod.update(newPeriod.id, {
+        shifts: newShifts,
+        ...(newBreakdown ? { breakdown: newBreakdown, status: 'calculated' } : {}),
+      });
+      return;
+    }
+
+    // Same period update
+    const period = periodMap[periodId];
+    if (!period) return;
+    const updatedShifts = (period.shifts || []).map((s, i) =>
+      i === shiftIdx ? { ...shiftData } : s
+    );
+    const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings) : null;
+    await base44.entities.PayPeriod.update(period.id, {
+      shifts: updatedShifts,
+      ...(breakdown ? { breakdown, status: 'calculated' } : {}),
+    });
+  };
 
   const updateShift = async (shiftData) => {
     const oldPeriod = periodMap[editingShift._periodId];
@@ -236,98 +289,133 @@ export default function ShiftLog() {
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h2 className="text-2xl font-display font-bold text-foreground tracking-tight">Shift Log</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            {ytdAllShifts.length} shift{ytdAllShifts.length !== 1 ? 's' : ''} in {currentYear} across {ytdPeriodKeys.size} pay period{ytdPeriodKeys.size !== 1 ? 's' : ''} — Year-to-Date
-          </p>
+          {viewMode === 'list' && (
+            <p className="text-sm text-muted-foreground mt-1">
+              {ytdAllShifts.length} shift{ytdAllShifts.length !== 1 ? 's' : ''} in {currentYear} across {ytdPeriodKeys.size} pay period{ytdPeriodKeys.size !== 1 ? 's' : ''} — Year-to-Date
+            </p>
+          )}
         </div>
-        <Button variant="ghost" size="sm" onClick={() => setSortAsc(s => !s)} className="h-8 px-2 text-xs text-muted-foreground">
-          <ArrowUpDown className="w-3.5 h-3.5 mr-1" />
-          {sortAsc ? 'Oldest first' : 'Newest first'}
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center bg-muted rounded-lg p-0.5">
+            <button
+              onClick={() => setViewMode('list')}
+              className={`inline-flex items-center gap-1 px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                viewMode === 'list' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <List className="w-3.5 h-3.5" /> List
+            </button>
+            <button
+              onClick={() => setViewMode('calendar')}
+              className={`inline-flex items-center gap-1 px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                viewMode === 'calendar' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <CalendarDays className="w-3.5 h-3.5" /> Calendar
+            </button>
+          </div>
+          {viewMode === 'list' && (
+            <Button variant="ghost" size="sm" onClick={() => setSortAsc(s => !s)} className="h-8 px-2 text-xs text-muted-foreground">
+              <ArrowUpDown className="w-3.5 h-3.5 mr-1" />
+              {sortAsc ? 'Oldest first' : 'Newest first'}
+            </Button>
+          )}
+        </div>
       </div>
 
-      {editingShift && (
-        <div className="bg-card border border-border rounded-xl p-5">
-          <ShiftForm
-            initial={editingShift.data}
-            onSubmit={updateShift}
-            onCancel={() => setEditingShift(null)}
-            settings={settings}
-          />
-        </div>
-      )}
-
-      <div className="bg-card border border-border rounded-xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-foreground">All Shifts</h3>
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => { setShowBulkForm(true); setShowForm(false); setEditingShift(null); }}
-              disabled={showBulkForm}
-            >
-              <CalendarPlus className="w-4 h-4 mr-1.5" /> Bulk Add
-            </Button>
-            <Button
-              size="sm"
-              className="bg-primary text-primary-foreground"
-              onClick={() => { setShowForm(true); setShowBulkForm(false); setEditingShift(null); }}
-              disabled={showForm}
-            >
-              <Plus className="w-4 h-4 mr-1.5" /> Add Shift
-            </Button>
-          </div>
-        </div>
-
-        {showBulkForm && (
-          <div className="px-5 py-4 border-b border-border bg-muted/30">
-            <BulkAddShift
-              onSubmit={bulkAddShifts}
-              onCancel={() => setShowBulkForm(false)}
-              settings={settings}
-            />
-          </div>
-        )}
-
-        {showForm && (
-          <div className="px-5 py-4 border-b border-border bg-muted/30">
-            <ShiftForm
-              onSubmit={addShift}
-              onCancel={() => setShowForm(false)}
-              settings={settings}
-            />
-          </div>
-        )}
-
-        <div className="divide-y divide-border">
-          {allShifts.length === 0 && (
-            <div className="px-5 py-12 text-center">
-              <p className="text-sm text-muted-foreground">No shifts logged yet.</p>
-            </div>
-          )}
-          {sortedShifts.map((shift, idx) => (
-            <div key={`${shift._periodId}-${shift._shiftIdx}`} className="bg-muted/30 border-b border-border">
-              <div className="text-[10px] text-muted-foreground font-mono px-4 pt-2">
-                {(() => {
-                  const pd = getPayPeriodForDate(shift.date);
-                  return getPayPeriodName(pd.start_date, pd.end_date);
-                })()}
-              </div>
-              <ShiftRow
-                shift={shift}
-                premiums={settings ? calculateShiftPremiums(shift, settings) : null}
+      {viewMode === 'calendar' ? (
+        <ShiftCalendarGrid
+          settings={settings}
+          shiftsMap={shiftsMap}
+          onShiftUpdate={calendarUpdateShift}
+          onReload={loadData}
+        />
+      ) : (
+        <>
+          {editingShift && (
+            <div className="bg-card border border-border rounded-xl p-5">
+              <ShiftForm
+                initial={editingShift.data}
+                onSubmit={updateShift}
+                onCancel={() => setEditingShift(null)}
                 settings={settings}
-                onEdit={(s) => setEditingShift({ data: s, _periodId: shift._periodId, _shiftIdx: shift._shiftIdx })}
-                onDelete={() => deleteShift(shift)}
               />
             </div>
-          ))}
-        </div>
-      </div>
+          )}
 
-      {breakdown && (
-        <PayBreakdown breakdown={breakdown} wage={settings?.hourly_wage} title="Year-to-Date Breakdown" />
+          <div className="bg-card border border-border rounded-xl overflow-hidden">
+            <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-foreground">All Shifts</h3>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => { setShowBulkForm(true); setShowForm(false); setEditingShift(null); }}
+                  disabled={showBulkForm}
+                >
+                  <CalendarPlus className="w-4 h-4 mr-1.5" /> Bulk Add
+                </Button>
+                <Button
+                  size="sm"
+                  className="bg-primary text-primary-foreground"
+                  onClick={() => { setShowForm(true); setShowBulkForm(false); setEditingShift(null); }}
+                  disabled={showForm}
+                >
+                  <Plus className="w-4 h-4 mr-1.5" /> Add Shift
+                </Button>
+              </div>
+            </div>
+
+            {showBulkForm && (
+              <div className="px-5 py-4 border-b border-border bg-muted/30">
+                <BulkAddShift
+                  onSubmit={bulkAddShifts}
+                  onCancel={() => setShowBulkForm(false)}
+                  settings={settings}
+                />
+              </div>
+            )}
+
+            {showForm && (
+              <div className="px-5 py-4 border-b border-border bg-muted/30">
+                <ShiftForm
+                  onSubmit={addShift}
+                  onCancel={() => setShowForm(false)}
+                  settings={settings}
+                />
+              </div>
+            )}
+
+            <div className="divide-y divide-border">
+              {allShifts.length === 0 && (
+                <div className="px-5 py-12 text-center">
+                  <p className="text-sm text-muted-foreground">No shifts logged yet.</p>
+                </div>
+              )}
+              {sortedShifts.map((shift, idx) => (
+                <div key={`${shift._periodId}-${shift._shiftIdx}`} className="bg-muted/30 border-b border-border">
+                  <div className="text-[10px] text-muted-foreground font-mono px-4 pt-2">
+                    {(() => {
+                      const pd = getPayPeriodForDate(shift.date);
+                      return getPayPeriodName(pd.start_date, pd.end_date);
+                    })()}
+                  </div>
+                  <ShiftRow
+                    shift={shift}
+                    premiums={settings ? calculateShiftPremiums(shift, settings) : null}
+                    settings={settings}
+                    onEdit={(s) => setEditingShift({ data: s, _periodId: shift._periodId, _shiftIdx: shift._shiftIdx })}
+                    onDelete={() => deleteShift(shift)}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {breakdown && (
+            <PayBreakdown breakdown={breakdown} wage={settings?.hourly_wage} title="Year-to-Date Breakdown" />
+          )}
+        </>
       )}
     </div>
   );
