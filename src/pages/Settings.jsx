@@ -70,7 +70,10 @@ export default function Settings() {
   const loadSettings = useCallback(async () => {
     const list = await base44.entities.Settings.list();
     if (list.length > 0) {
-      setSettings(list[0]);
+      // Merge in defaults for any missing fields (e.g. newly added preset_times)
+      const loaded = list[0];
+      const merged = { ...defaultSettings, ...loaded };
+      setSettings(merged);
     } else {
       const created = await base44.entities.Settings.create(defaultSettings);
       setSettings(created);
