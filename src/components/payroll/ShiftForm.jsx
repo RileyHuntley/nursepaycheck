@@ -12,7 +12,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { X, ChevronDown, ChevronUp } from 'lucide-react';
 import { getStatType, getStatName } from '@/lib/statHolidays';
-import { calculateShiftPremiums, parseTime } from '@/lib/premiumCalculator';
+import { calculateShiftPremiums, parseTime, splitOvernightShift, getSegmentMultiplier } from '@/lib/premiumCalculator';
 import { formatCurrency } from '@/lib/utils';
 
 // Default settings used when none provided (for premium preview in form)
@@ -93,6 +93,7 @@ export default function ShiftForm({ onSubmit, onCancel, onDelete, initial, setti
     };
   });
   const [showOverrides, setShowOverrides] = useState(false);
+  const [showWageCalc, setShowWageCalc] = useState(false);
 
   // Compute total hours from start/end times, then paid hours = total − unpaid break
   const totalHours = (() => {
@@ -335,6 +336,70 @@ export default function ShiftForm({ onSubmit, onCancel, onDelete, initial, setti
         <Label className="text-xs text-muted-foreground">Notes (optional)</Label>
         <Input value={shift.notes} onChange={(e) => set('notes', e.target.value)} placeholder="e.g. covered Jane's shift" className="h-9 text-sm" />
       </div>
+
+      {/* Calculated Wage Breakdown */}
+      {shift.start_time && shift.end_time && paidHours > 0 && shift.date && (() => {
+        const wage = settings?.hourly_wage || DEFAULT_RATES.hourly_wage || 45;
+        const shiftWithHours = { ...shift, paid_hours: paidHours };
+        const segments = splitOvernightShift(shiftWithHours);
+        const groups = {};
+        for (const seg of segments) {
+          const mult = getSegmentMultiplier(shift.shift_type, seg.date);
+          const label = mult === 3.0 ? 'OT on Stat ×3'
+            : mult === 2.5 ? 'Super Stat ×2.5'
+            : mult === 2.0 ? (shift.shift_type === 'day_off' && !getStatType(seg.date) ? 'Day Off ×2' : 'Stat ×2')
+            : mult === 1.0 ? 'Straight-Time Pay ×1'
+            : null;
+          if (label) {
+            if (!groups[label]) groups[label] = { hours: 0, total: 0 };
+            groups[label].hours += seg.hours;
+            groups[label].total += seg.hours * wage * mult;
+          }
+        }
+
+        const grandTotal = Object.values(groups).reduce((s, g) => s + g.total, 0);
+        const DISPLAY_ORDER = ['Straight-Time Pay ×1', 'Day Off ×2', 'Stat ×2', 'Super Stat ×2.5', 'OT on Stat ×3'];
+
+        return (
+          <div className="border border-border rounded-lg overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setShowWageCalc(v => !v)}
+              className="w-full flex items-center justify-between px-4 py-2.5 bg-muted/40 hover:bg-muted/60 transition-colors text-left"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-foreground">Calculated Wage</span>
+                {grandTotal > 0 && (
+                  <span className="text-xs text-primary font-mono">
+                    {formatCurrency(grandTotal).replace('$', '')} / {formatCurrency(wage)}/hr
+                  </span>
+                )}
+              </div>
+              {showWageCalc ? <ChevronUp className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />}
+            </button>
+            {showWageCalc && (
+              <div className="px-4 py-3 space-y-2 bg-card">
+                <p className="text-[11px] text-muted-foreground mb-2">Per-date segment breakdown — overnight shifts split at midnight for accurate stat/overtime rates.</p>
+                {DISPLAY_ORDER.map(label => {
+                  const g = groups[label];
+                  if (!g) return null;
+                  return (
+                    <div key={label} className="flex items-center gap-3">
+                      <div className="w-36 text-xs text-muted-foreground flex-shrink-0">{label}</div>
+                      <div className="text-xs font-mono text-foreground flex-1">
+                        {g.hours.toFixed(2)}h × {formatCurrency(wage)} × {label.match(/×([\d.]+)/)?.[1] || '1'} = {formatCurrency(g.total)}
+                      </div>
+                    </div>
+                  );
+                })}
+                {Object.keys(groups).length === 0 && (
+                  <div className="text-xs text-muted-foreground">No payable hours (unpaid type or zero multiplier).</div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Premium Preview & Override */}
       {shift.start_time && shift.end_time && paidHours > 0 && (() => {
