@@ -82,7 +82,7 @@ export default function EarningsTrendChart({ periods, settings, chartType, title
     for (let i = 0; i < rangeMonths; i++) {
       const m = new Date(now.getFullYear(), now.getMonth() + startOffset + i * direction, 1);
       const key = `${m.getFullYear()}-${String(m.getMonth() + 1).padStart(2, '0')}`;
-      monthlyAccum[key] = { straightTime: 0, overtime: 0, premiums: 0, allowances: 0, hours: 0 };
+      monthlyAccum[key] = { straightTime: 0, overtime: 0, premiums: 0, allowanceMon: 0, qualification: 0, hours: 0 };
     }
 
     const cutoffDate = chartType === 'months_past'
@@ -101,7 +101,7 @@ export default function EarningsTrendChart({ periods, settings, chartType, title
 
       for (const s of shifts) {
         if (!s.date || !s.paid_hours) continue;
-        if (chartType === 'months_past' ? s.date >= cutoffDate : s.date >= cutoffDate) relevant = true;
+        if (s.date >= cutoffDate) relevant = true;
         const m = s.date.substring(0, 7);
         if (monthlyAccum.hasOwnProperty(m)) {
           monthHours[m] = (monthHours[m] || 0) + (s.paid_hours || 0);
@@ -117,7 +117,8 @@ export default function EarningsTrendChart({ periods, settings, chartType, title
         monthlyAccum[m].straightTime += (b.straight_time_pay || 0) * share;
         monthlyAccum[m].overtime    += (b.overtime_pay || 0) * share;
         monthlyAccum[m].premiums    += premiumTotal(b) * share;
-        monthlyAccum[m].allowances  += ((b.allowance_total || 0) + (b.qualification_total || 0)) * share;
+        monthlyAccum[m].allowanceMon += (b.allowance_total || 0) * share;
+        monthlyAccum[m].qualification += (b.qualification_total || 0) * share;
         monthlyAccum[m].hours       += hrs;
       }
     }
@@ -129,10 +130,10 @@ export default function EarningsTrendChart({ periods, settings, chartType, title
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([key, acc]) => {
         const [y, m] = key.split('-');
-        // Replace prorated allowances with full monthly allowance if any shifts
-        const allowance = acc.hours > 0 && monthlyAllowanceRate > 0
-          ? monthlyAllowanceRate + (acc.allowances - (acc.hours > 0 ? monthlyAllowanceRate : 0) || 0) // keep quals
-          : acc.allowances;
+        // Full monthly allowance if any shifts in month, plus prorated qualifications
+        const allowance = acc.hours > 0
+          ? monthlyAllowanceRate + acc.qualification
+          : acc.qualification;
         return {
           label: `${MONTH_NAMES[parseInt(m) - 1]} ${y}`,
           straightTime: Math.round(acc.straightTime * 100) / 100,
