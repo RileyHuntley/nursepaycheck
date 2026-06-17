@@ -6,7 +6,14 @@ import PayBreakdown from '@/components/payroll/PayBreakdown';
 import ShiftCalendarGrid from '@/components/payroll/ShiftCalendarGrid';
 import { calculatePeriodBreakdown, calculateShiftPremiums, getPayPeriodForDate, getPayPeriodName } from '@/lib/premiumCalculator';
 import { Button } from '@/components/ui/button';
-import { Loader2, ArrowUpDown, Plus, CalendarPlus, List, CalendarDays } from 'lucide-react';
+import { Loader2, ArrowUpDown, Plus, CalendarPlus, List, CalendarDays, Filter } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import BulkAddShift from '@/components/payroll/BulkAddShift';
 
 export default function ShiftLog() {
@@ -19,6 +26,15 @@ export default function ShiftLog() {
   const [showForm, setShowForm] = useState(false);
   const [showBulkForm, setShowBulkForm] = useState(false);
   const [viewMode, setViewMode] = useState('list'); // 'list' | 'calendar'
+  const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'upcoming' | 'pending' | 'verified'
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const resolveStatus = (shift) => {
+    if (shift.status === 'verified') return 'verified';
+    if (!shift.date) return 'upcoming';
+    if (shift.date > todayStr) return 'upcoming';
+    return 'pending';
+  };
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -248,12 +264,13 @@ export default function ShiftLog() {
     );
   }
 
-  // Sorted shifts
-  const sortedShifts = [...allShifts];
-  sortedShifts.sort((a, b) => {
-    const diff = (a.date || '').localeCompare(b.date || '');
-    return sortAsc ? diff : -diff;
-  });
+  // Sorted shifts (with optional status filter)
+  const sortedShifts = [...allShifts]
+    .filter(s => statusFilter === 'all' || resolveStatus(s) === statusFilter)
+    .sort((a, b) => {
+      const diff = (a.date || '').localeCompare(b.date || '');
+      return sortAsc ? diff : -diff;
+    });
 
   // YTD breakdown: filter to current year, compute per-period, sum
   const currentYear = new Date().getFullYear();
@@ -319,7 +336,10 @@ export default function ShiftLog() {
           <h2 className="text-2xl font-display font-bold text-foreground tracking-tight">Shifts</h2>
           {viewMode === 'list' && (
             <p className="text-sm text-muted-foreground mt-1">
-              {ytdAllShifts.length} shift{ytdAllShifts.length !== 1 ? 's' : ''} in {currentYear} across {ytdPeriodKeys.size} pay period{ytdPeriodKeys.size !== 1 ? 's' : ''} — Year-to-Date
+              {statusFilter !== 'all'
+                ? `${sortedShifts.length} shift${sortedShifts.length !== 1 ? 's' : ''} · ${statusFilter}`
+                : `${ytdAllShifts.length} shift${ytdAllShifts.length !== 1 ? 's' : ''} in ${currentYear} across ${ytdPeriodKeys.size} pay period${ytdPeriodKeys.size !== 1 ? 's' : ''} — Year-to-Date`
+              }
             </p>
           )}
         </div>
@@ -343,10 +363,24 @@ export default function ShiftLog() {
             </button>
           </div>
           {viewMode === 'list' && (
-            <Button variant="ghost" size="sm" onClick={() => setSortAsc(s => !s)} className="h-8 px-2 text-xs text-muted-foreground">
-              <ArrowUpDown className="w-3.5 h-3.5 mr-1" />
-              {sortAsc ? 'Oldest first' : 'Newest first'}
-            </Button>
+            <>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="h-8 w-[130px] text-xs">
+                  <Filter className="w-3 h-3 mr-1" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="upcoming">Upcoming</SelectItem>
+                  <SelectItem value="verified">Verified</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button variant="ghost" size="sm" onClick={() => setSortAsc(s => !s)} className="h-8 px-2 text-xs text-muted-foreground">
+                <ArrowUpDown className="w-3.5 h-3.5 mr-1" />
+                {sortAsc ? 'Oldest first' : 'Newest first'}
+              </Button>
+            </>
           )}
         </div>
       </div>
