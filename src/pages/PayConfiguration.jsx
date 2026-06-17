@@ -115,7 +115,7 @@ const defaultSettings = {
     special_clinical_prep: 50, bsn: 100, masters: 125,
     rpn_dual: 50, cha_bcit: 25, university_prep: 25,
   },
-  shift_lines: [{ status: 'full_time', fte: 1.0 }],
+  shift_lines: [{ status: 'full_time', fte: 1.0, hospital: '', unit: '' }],
 };
 
 function InfoPopover({ infoKey, infoMap, onClose }) {
@@ -198,7 +198,7 @@ export default function PayConfiguration() {
 
   const setShiftLine = (index, field, value) => {
     setSettings(s => {
-      const lines = [...(s.shift_lines || [{ status: 'full_time', fte: 1.0 }])];
+      const lines = [...(s.shift_lines || [{ status: 'full_time', fte: 1.0, hospital: '', unit: '' }])];
       const updated = { ...lines[index], [field]: value };
       // Auto-set FTE when status changes
       if (field === 'status') {
@@ -212,15 +212,15 @@ export default function PayConfiguration() {
 
   const addShiftLine = () => {
     setSettings(s => {
-      const lines = [...(s.shift_lines || [{ status: 'full_time', fte: 1.0 }])];
+      const lines = [...(s.shift_lines || [{ status: 'full_time', fte: 1.0, hospital: '', unit: '' }])];
       if (lines.length >= 3) return s;
-      return { ...s, shift_lines: [...lines, { status: 'full_time', fte: 1.0 }] };
+      return { ...s, shift_lines: [...lines, { status: 'full_time', fte: 1.0, hospital: '', unit: '' }] };
     });
   };
 
   const removeShiftLine = (index) => {
     setSettings(s => {
-      const lines = [...(s.shift_lines || [{ status: 'full_time', fte: 1.0 }])];
+      const lines = [...(s.shift_lines || [{ status: 'full_time', fte: 1.0, hospital: '', unit: '' }])];
       return { ...s, shift_lines: lines.filter((_, i) => i !== index) };
     });
   };
@@ -299,49 +299,89 @@ export default function PayConfiguration() {
         <div>
           <h3 className="text-sm font-semibold text-foreground">Employment Status &amp; FTE</h3>
           <p className="text-xs text-muted-foreground mt-1">
-            Add up to 3 shift lines if you work across multiple statuses. FTE is auto-set for Full Time (1.0) and Casual (0.0); enter your own for Part Time.
+            Add up to 3 shift lines if you work across multiple statuses, hospitals, or units. FTE is auto-set for Full Time (1.0) and Casual (0.0); enter your own for Part Time.
           </p>
         </div>
-        {(settings.shift_lines || [{ status: 'full_time', fte: 1.0 }]).map((line, idx) => {
+        {(settings.shift_lines || [{ status: 'full_time', fte: 1.0, hospital: '', unit: '' }]).map((line, idx) => {
           const isFteLocked = line.status === 'full_time' || line.status === 'casual';
           const canRemove = (settings.shift_lines || []).length > 1;
+          const hospitals = settings.hospitals || [];
+          const units = settings.units || [];
           return (
-            <div key={idx} className="flex items-center gap-3">
-              <Select
-                value={line.status}
-                onValueChange={(v) => setShiftLine(idx, 'status', v)}
-              >
-                <SelectTrigger className="h-9 w-36 text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="full_time">Full Time</SelectItem>
-                  <SelectItem value="part_time">Part Time</SelectItem>
-                  <SelectItem value="casual">Casual</SelectItem>
-                </SelectContent>
-              </Select>
-              <Label className="text-xs text-muted-foreground flex-shrink-0">FTE</Label>
-              <Input
-                type="number"
-                step="0.01"
-                min="0"
-                max="1"
-                value={line.fte}
-                onChange={e => setShiftLine(idx, 'fte', parseFloat(e.target.value) || 0)}
-                disabled={isFteLocked}
-                className={`h-9 w-20 text-sm font-mono ${isFteLocked ? 'bg-muted/40 text-muted-foreground border-muted-foreground/20 cursor-not-allowed' : ''}`}
-              />
-              {canRemove && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => removeShiftLine(idx)}
-                  className="h-7 w-7 text-muted-foreground hover:text-destructive"
+            <div key={idx} className="space-y-2 p-3 rounded-lg border border-border bg-muted/10">
+              <div className="flex items-center gap-3">
+                <Select
+                  value={line.status}
+                  onValueChange={(v) => setShiftLine(idx, 'status', v)}
                 >
-                  <X className="w-3.5 h-3.5" />
-                </Button>
-              )}
+                  <SelectTrigger className="h-9 w-36 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="full_time">Full Time</SelectItem>
+                    <SelectItem value="part_time">Part Time</SelectItem>
+                    <SelectItem value="casual">Casual</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Label className="text-xs text-muted-foreground flex-shrink-0">FTE</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="1"
+                  value={line.fte}
+                  onChange={e => setShiftLine(idx, 'fte', parseFloat(e.target.value) || 0)}
+                  disabled={isFteLocked}
+                  className={`h-9 w-20 text-sm font-mono ${isFteLocked ? 'bg-muted/40 text-muted-foreground border-muted-foreground/20 cursor-not-allowed' : ''}`}
+                />
+                {canRemove && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeShiftLine(idx)}
+                    className="h-7 w-7 text-muted-foreground hover:text-destructive ml-auto"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </Button>
+                )}
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex-1">
+                  <Label className="text-[10px] text-muted-foreground mb-1 block">Hospital</Label>
+                  <Select
+                    value={line.hospital || ''}
+                    onValueChange={(v) => setShiftLine(idx, 'hospital', v === '_none' ? '' : v)}
+                  >
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue placeholder="Select hospital" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="_none">— None —</SelectItem>
+                      {hospitals.map(h => (
+                        <SelectItem key={h.name} value={h.name}>{h.name} [{h.acronym}] · {h.health_authority}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex-1">
+                  <Label className="text-[10px] text-muted-foreground mb-1 block">Unit</Label>
+                  <Select
+                    value={line.unit || ''}
+                    onValueChange={(v) => setShiftLine(idx, 'unit', v === '_none' ? '' : v)}
+                  >
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue placeholder="Select unit" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="_none">— None —</SelectItem>
+                      {units.map(u => (
+                        <SelectItem key={u.name} value={u.name}>{u.name} [{u.code}]</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </div>
           );
         })}

@@ -251,7 +251,9 @@
       "default": [
         {
           "status": "full_time",
-          "fte": 1.0
+          "fte": 1.0,
+          "hospital": "",
+          "unit": ""
         }
       ],
       "maxItems": 3,
@@ -270,6 +272,12 @@
             "type": "number",
             "minimum": 0,
             "maximum": 1
+          },
+          "hospital": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
           }
         },
         "required": [
