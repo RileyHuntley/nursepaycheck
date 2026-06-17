@@ -389,6 +389,45 @@ export default function Settings() {
         </div>
       </section>
 
+      {/* Tax Estimation */}
+      <section className="bg-card border border-border rounded-xl p-5 space-y-4">
+        <div>
+          <h3 className="text-sm font-semibold text-foreground">Tax Estimation</h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            Enter your estimated annual taxable income to see marginal tax estimates on pay breakdowns.
+            Leave at $0 to disable. These are estimates only — consult a tax professional for exact figures.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">BC Provincial — Est. Annual Taxable Income ($)</Label>
+            <Input
+              type="number" step="1000" min="0"
+              value={settings.tax_settings?.annual_provincial_income || 0}
+              onChange={e => set('tax_settings.annual_provincial_income', parseFloat(e.target.value) || 0)}
+              className="h-9 text-sm font-mono"
+              placeholder="e.g. 100000"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Federal — Est. Annual Taxable Income ($)</Label>
+            <Input
+              type="number" step="1000" min="0"
+              value={settings.tax_settings?.annual_federal_income || 0}
+              onChange={e => set('tax_settings.annual_federal_income', parseFloat(e.target.value) || 0)}
+              className="h-9 text-sm font-mono"
+              placeholder="e.g. 100000"
+            />
+          </div>
+        </div>
+        <div className="bg-muted/50 rounded-lg p-3 space-y-1">
+          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">2026 BC Provincial Marginal Rates</p>
+          <p className="text-xs text-muted-foreground">$0–$50,363: 5.60% · $50,364–$100,728: 7.70% · $100,729–$115,648: 10.50% · $115,649–$140,430: 12.29% · $140,431–$190,405: 14.70% · $190,406–$265,545: 16.80% · Over $265,545: 20.50%</p>
+          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mt-2">2026 Federal Marginal Rates</p>
+          <p className="text-xs text-muted-foreground">$0–$58,523: 14.00% · $58,524–$117,045: 20.50% · $117,046–$181,440: 26.00% · $181,441–$258,482: 29.00% · Over $258,482: 33.00%</p>
+        </div>
+      </section>
+
       {/* Hospitals & Units */}
       <section className="bg-card border border-border rounded-xl p-5 space-y-5">
         <h3 className="text-sm font-semibold text-foreground">Hospitals & Units</h3>

@@ -376,7 +376,7 @@ export default function PayPeriodDetail() {
 
       {/* Breakdown */}
       {(breakdown || period.breakdown) && (
-        <PayBreakdown breakdown={breakdown} wage={settings?.hourly_wage} />
+        <PayBreakdown breakdown={breakdown} wage={settings?.hourly_wage} taxSettings={settings?.tax_settings} />
       )}
     </div>
   );

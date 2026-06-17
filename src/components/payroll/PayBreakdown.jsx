@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Info, X } from 'lucide-react';
+import { estimateTaxes } from '@/lib/taxCalculator';
 
 const PREMIUM_INFO = {
   evening: {
@@ -72,6 +73,11 @@ const PREMIUM_INFO = {
     title: 'Union Dues',
     description: 'Union dues are deducted at 2% of straight-time pay (base wage × regular hours). Overtime, premiums, allowances, and qualifications are excluded from the dues calculation.',
   },
+  est_taxes: {
+    article: 'CRA / BC Gov',
+    title: 'Estimated Taxes',
+    description: 'A rough estimate of provincial (BC) and federal income tax based on your marginal tax rate at your configured annual income threshold. Rates are applied to gross pay for this period. This is an estimate only — actual withholding depends on TD1 credits, deductions, and employer calculations.',
+  },
 };
 
 function InfoPopover({ info, onClose }) {
@@ -124,11 +130,21 @@ function SectionHeader({ title }) {
   return <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider pt-3 pb-1">{title}</h4>;
 }
 
-export default function PayBreakdown({ breakdown, wage, title = 'Pay Period Breakdown' }) {
+export default function PayBreakdown({ breakdown, wage, title = 'Pay Period Breakdown', taxSettings }) {
   const [openInfo, setOpenInfo] = useState(null);
   if (!breakdown) return null;
 
   const toggle = (key) => setOpenInfo(prev => prev === key ? null : key);
+
+  const taxes = taxSettings
+    ? estimateTaxes(
+        breakdown.gross_pay,
+        taxSettings.annual_provincial_income || 0,
+        taxSettings.annual_federal_income || 0,
+      )
+    : null;
+  const hasTaxes = taxes && taxes.total > 0;
+  const netPay = breakdown.gross_pay - (breakdown.union_dues || 0) - (hasTaxes ? taxes.total : 0);
 
   return (
     <div className="bg-card border border-border rounded-xl p-6 space-y-1" onClick={() => setOpenInfo(null)}>
@@ -175,10 +191,20 @@ export default function PayBreakdown({ breakdown, wage, title = 'Pay Period Brea
 
       <SectionHeader title="Deductions" />
       <LineItem label="Union Dues (2% of straight-time)" amount={breakdown.union_dues} negative infoKey="union_dues" openInfo={openInfo} onToggleInfo={toggle} />
+      {hasTaxes && (
+        <>
+          <LineItem label="Est. BC Provincial Tax" amount={taxes.provincial} negative infoKey="est_taxes" openInfo={openInfo} onToggleInfo={toggle} />
+          <LineItem label="Est. Federal Tax" amount={taxes.federal} negative infoKey="est_taxes" openInfo={openInfo} onToggleInfo={toggle} />
+        </>
+      )}
 
-      <div className="flex items-center justify-between pt-4 mt-2 border-t-2 border-primary/30">
-        <span className="text-base font-display font-bold text-foreground">Expected Gross Pay</span>
-        <span className="text-xl font-mono font-bold text-primary">${breakdown.gross_pay.toFixed(2)}</span>
+      <div className="flex items-center justify-between pt-3 mt-2 border-t border-border">
+        <span className="text-sm font-semibold text-foreground">Expected Gross Pay</span>
+        <span className="text-base font-mono font-semibold text-foreground">${breakdown.gross_pay.toFixed(2)}</span>
+      </div>
+      <div className="flex items-center justify-between pt-2 mt-1 border-t-2 border-primary/30">
+        <span className="text-base font-display font-bold text-foreground">Estimated Net Pay</span>
+        <span className="text-xl font-mono font-bold text-primary">${netPay.toFixed(2)}</span>
       </div>
     </div>
   );

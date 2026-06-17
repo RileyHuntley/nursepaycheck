@@ -511,7 +511,7 @@ export default function ShiftLog() {
           </div>
 
           {breakdown && (
-            <PayBreakdown breakdown={breakdown} wage={settings?.hourly_wage} title="Year-to-Date Breakdown" />
+            <PayBreakdown breakdown={breakdown} wage={settings?.hourly_wage} title="Year-to-Date Breakdown" taxSettings={settings?.tax_settings} />
           )}
         </>
       )}

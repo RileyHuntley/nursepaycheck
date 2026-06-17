@@ -144,18 +144,21 @@ export default function Dashboard() {
           subtitle={current ? current.name : 'No pay period yet'}
           breakdown={current?.computedBreakdown}
           loading={loading}
+          taxSettings={settings?.tax_settings}
         />
         <PaySummaryPanel
           title="Current Month"
           subtitle={monthLabel}
           breakdown={monthBreakdown}
           loading={loading}
+          taxSettings={settings?.tax_settings}
         />
         <PaySummaryPanel
           title="Year to Date"
           subtitle={`Jan 1 – Present (${ytdPeriods.length} periods)`}
           breakdown={ytdBreakdown}
           loading={loading}
+          taxSettings={settings?.tax_settings}
         />
       </div>
 

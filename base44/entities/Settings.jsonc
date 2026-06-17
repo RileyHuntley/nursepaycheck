@@ -227,6 +227,20 @@
     "default_shift_pattern": {
       "type": "string",
       "default": "DDNN"
+    },
+    "tax_settings": {
+      "type": "object",
+      "description": "Estimated annual taxable income thresholds for tax bracket estimation",
+      "properties": {
+        "annual_provincial_income": {
+          "type": "number",
+          "default": 0
+        },
+        "annual_federal_income": {
+          "type": "number",
+          "default": 0
+        }
+      }
     }
   },
   "required": [],

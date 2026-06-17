@@ -1,4 +1,6 @@
-export default function PaySummaryPanel({ title, subtitle, breakdown, loading }) {
+import { estimateTaxes } from '@/lib/taxCalculator';
+
+export default function PaySummaryPanel({ title, subtitle, breakdown, loading, taxSettings }) {
   if (loading) {
     return (
       <div className="bg-card border border-border rounded-xl p-6 animate-pulse">
@@ -23,12 +25,22 @@ export default function PaySummaryPanel({ title, subtitle, breakdown, loading })
     );
   }
 
+  const taxes = taxSettings
+    ? estimateTaxes(breakdown.gross_pay, taxSettings.annual_provincial_income || 0, taxSettings.annual_federal_income || 0)
+    : null;
+  const hasTaxes = taxes && taxes.total > 0;
+  const netPay = breakdown.gross_pay - (breakdown.union_dues || 0) - (hasTaxes ? taxes.total : 0);
+
   const rows = [
     { label: 'Straight-Time Pay', value: breakdown.straight_time_pay },
     { label: 'Overtime / Stat Pay', value: breakdown.overtime_pay },
     { label: 'Hourly Premiums', value: (breakdown.regular_premium_total || 0) + (breakdown.evening_premium_total || 0) + (breakdown.night_premium_total || 0) + (breakdown.weekend_premium_total || 0) + (breakdown.super_shift_premium_total || 0) + (breakdown.short_notice_total || 0) + (breakdown.responsibility_total || 0) + (breakdown.preceptor_total || 0) + (breakdown.on_call_total || 0) },
     { label: 'Allowances & Qualifications', value: (breakdown.allowance_total || 0) + (breakdown.qualification_total || 0) },
-    { label: 'Union Dues (−2%)', value: breakdown.union_dues, negative: true },
+    { label: 'Union Dues', value: breakdown.union_dues, negative: true },
+    ...(hasTaxes ? [
+      { label: 'Est. BC Provincial Tax', value: taxes.provincial, negative: true },
+      { label: 'Est. Federal Tax', value: taxes.federal, negative: true },
+    ] : []),
   ].filter(r => r.value !== 0 && r.value != null);
 
   return (
@@ -47,9 +59,13 @@ export default function PaySummaryPanel({ title, subtitle, breakdown, loading })
         ))}
       </div>
 
-      <div className="flex items-center justify-between pt-4 mt-3 border-t-2 border-primary/30">
-        <span className="text-sm font-display font-bold text-foreground">Gross Pay</span>
-        <span className="text-2xl font-mono font-bold text-primary">${breakdown.gross_pay.toFixed(2)}</span>
+      <div className="flex items-center justify-between pt-3 mt-2 border-t border-border">
+        <span className="text-xs text-muted-foreground font-medium">Gross Pay</span>
+        <span className="text-sm font-mono font-semibold text-foreground">${breakdown.gross_pay.toFixed(2)}</span>
+      </div>
+      <div className="flex items-center justify-between pt-2 mt-1 border-t-2 border-primary/30">
+        <span className="text-sm font-display font-bold text-foreground">Est. Net Pay</span>
+        <span className="text-2xl font-mono font-bold text-primary">${netPay.toFixed(2)}</span>
       </div>
     </div>
   );
