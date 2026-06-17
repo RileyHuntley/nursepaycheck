@@ -37,37 +37,51 @@ export default function Sidebar() {
   const { theme, setTheme } = useTheme();
   const isDark = theme === 'dark';
 
-  const settingsRef = useRef(null);
-  const periodsRef = useRef(null);
+  const settingsDebounce = useRef(null);
+  const periodsDebounce = useRef(null);
+  const loadingSettings = useRef(false);
+  const loadingPeriods = useRef(false);
 
   useEffect(() => {
     loadSettings();
     const unsub = base44.entities.Settings.subscribe(() => {
-      if (settingsRef.current) clearTimeout(settingsRef.current);
-      settingsRef.current = setTimeout(() => loadSettings(), 300);
+      if (settingsDebounce.current) clearTimeout(settingsDebounce.current);
+      settingsDebounce.current = setTimeout(() => loadSettings(), 300);
     });
-    return () => { unsub(); if (settingsRef.current) clearTimeout(settingsRef.current); };
+    return () => { unsub(); if (settingsDebounce.current) clearTimeout(settingsDebounce.current); };
   }, []);
 
   useEffect(() => {
     loadPeriods();
     const unsub = base44.entities.PayPeriod.subscribe(() => {
-      if (periodsRef.current) clearTimeout(periodsRef.current);
-      periodsRef.current = setTimeout(() => loadPeriods(), 300);
+      if (periodsDebounce.current) clearTimeout(periodsDebounce.current);
+      periodsDebounce.current = setTimeout(() => loadPeriods(), 300);
     });
-    return () => { unsub(); if (periodsRef.current) clearTimeout(periodsRef.current); };
+    return () => { unsub(); if (periodsDebounce.current) clearTimeout(periodsDebounce.current); };
   }, []);
 
   async function loadSettings() {
-    const list = await base44.entities.Settings.list();
-    if (list.length > 0) {
-      setHealthAuthorities(getUserHealthAuthorities(list[0].hospitals || []));
+    if (loadingSettings.current) return;
+    loadingSettings.current = true;
+    try {
+      const list = await base44.entities.Settings.list();
+      if (list.length > 0) {
+        setHealthAuthorities(getUserHealthAuthorities(list[0].hospitals || []));
+      }
+    } finally {
+      loadingSettings.current = false;
     }
   }
 
   async function loadPeriods() {
-    const periods = await base44.entities.PayPeriod.list();
-    setPendingCount(countPendingVerification(periods));
+    if (loadingPeriods.current) return;
+    loadingPeriods.current = true;
+    try {
+      const periods = await base44.entities.PayPeriod.list();
+      setPendingCount(countPendingVerification(periods));
+    } finally {
+      loadingPeriods.current = false;
+    }
   }
 
   const toggle = () => {
