@@ -78,8 +78,22 @@ export function nightShiftType(startTime, endTime) {
   return 'full'; // majority in window → pay premium on ALL paid hours
 }
 
-export function isEveningShift(startTime, endTime) { return eveningShiftType(startTime, endTime) !== null; }
-export function isNightShift(startTime, endTime) { return nightShiftType(startTime, endTime) !== null; }
+export function isEveningShift(startTime, endTime) {
+  if (shiftSpanHours(startTime, endTime) >= 10) {
+    const start = parseTime(startTime);
+    const end = parseTime(endTime);
+    return hoursInRange(start, end, 15.5, 23.5) > 0;
+  }
+  return eveningShiftType(startTime, endTime) !== null;
+}
+export function isNightShift(startTime, endTime) {
+  if (shiftSpanHours(startTime, endTime) >= 10) {
+    const start = parseTime(startTime);
+    const end = parseTime(endTime);
+    return hoursInRange(start, end, 23.5, 31.5) > 0;
+  }
+  return nightShiftType(startTime, endTime) !== null;
+}
 
 /**
  * Check if a date falls on a weekend (Saturday or Sunday)
@@ -181,15 +195,27 @@ export function calculateShiftPremiums(shift, settings) {
   const isStraight = ['regular', 'isn', 'vacation', 'sick', 'pdo_pst', 'other_leave'].includes(shift.shift_type);
   const overrides = shift.premium_overrides || {};
 
-  // --- Evening / Night (mutually exclusive, majority-rule → all paid hours) ---
-  const evType = eveningShiftType(shift.start_time, shift.end_time);
-  const niType = nightShiftType(shift.start_time, shift.end_time);
+  // --- Evening / Night ---
+  // Extended hour shifts (≥10h): pay premium only on hours within the window.
+  // Both evening and night can apply simultaneously (different portions of the shift).
+  // Regular shifts (<10h): majority rule — pick the dominant window, pay all paid hours.
+  const shiftSpan = shiftSpanHours(shift.start_time, shift.end_time);
+  const isExtended = shiftSpan >= 10;
+  const start = parseTime(shift.start_time);
+  const end = parseTime(shift.end_time);
 
   let eveningHrs = 0, nightHrs = 0;
-  if (evType === 'full') {
-    eveningHrs = paidHours;
-  } else if (niType === 'full') {
-    nightHrs = paidHours;
+  if (isExtended) {
+    eveningHrs = hoursInRange(start, end, 15.5, 23.5);
+    nightHrs = hoursInRange(start, end, 23.5, 31.5);
+  } else {
+    const evType = eveningShiftType(shift.start_time, shift.end_time);
+    const niType = nightShiftType(shift.start_time, shift.end_time);
+    if (evType === 'full') {
+      eveningHrs = paidHours;
+    } else if (niType === 'full') {
+      nightHrs = paidHours;
+    }
   }
 
   const wkndHrs = weekendHours(shift.date, shift.start_time, shift.end_time);
