@@ -400,24 +400,30 @@ export default function Settings() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">BC Provincial — Est. Annual Taxable Income ($)</Label>
-            <Input
-              type="number" step="1000" min="0"
-              value={settings.tax_settings?.annual_provincial_income || 0}
-              onChange={e => set('tax_settings.annual_provincial_income', parseFloat(e.target.value) || 0)}
-              className="h-9 text-sm font-mono"
-              placeholder="e.g. 100000"
-            />
+            <Label className="text-xs text-muted-foreground">BC Provincial — Est. Annual Taxable Income</Label>
+            <div className="relative">
+              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-mono">$</span>
+              <Input
+                type="text"
+                value={(settings.tax_settings?.annual_provincial_income || 0).toLocaleString('en-CA')}
+                onChange={e => set('tax_settings.annual_provincial_income', parseInt(e.target.value.replace(/[^0-9]/g, ''), 10) || 0)}
+                className="h-9 text-sm font-mono pl-6"
+                placeholder="0"
+              />
+            </div>
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Federal — Est. Annual Taxable Income ($)</Label>
-            <Input
-              type="number" step="1000" min="0"
-              value={settings.tax_settings?.annual_federal_income || 0}
-              onChange={e => set('tax_settings.annual_federal_income', parseFloat(e.target.value) || 0)}
-              className="h-9 text-sm font-mono"
-              placeholder="e.g. 100000"
-            />
+            <Label className="text-xs text-muted-foreground">Federal — Est. Annual Taxable Income</Label>
+            <div className="relative">
+              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-mono">$</span>
+              <Input
+                type="text"
+                value={(settings.tax_settings?.annual_federal_income || 0).toLocaleString('en-CA')}
+                onChange={e => set('tax_settings.annual_federal_income', parseInt(e.target.value.replace(/[^0-9]/g, ''), 10) || 0)}
+                className="h-9 text-sm font-mono pl-6"
+                placeholder="0"
+              />
+            </div>
           </div>
         </div>
         <div className="bg-muted/50 rounded-lg p-3 space-y-1">
