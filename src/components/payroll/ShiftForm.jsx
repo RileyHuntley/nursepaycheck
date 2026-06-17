@@ -21,6 +21,7 @@ const DEFAULT_RATES = {
     evening: 1.40, night: 5.00, weekend: 3.50, super_shift: 1.85,
     regular_premium: 2.15, short_notice: 2.00, responsibility_hourly: 2.50,
     responsibility_flat: 18.75, preceptor: 1.50,
+    specialty: 2.00,
   },
 };
 
@@ -79,6 +80,7 @@ const emptyShift = {
   preceptor: false,
   on_call_hours: 0,
   extended_shift: false,
+  specialty_premium: false,
   notes: '',
 };
 
@@ -269,6 +271,10 @@ export default function ShiftForm({ onSubmit, onCancel, initial, settings }) {
           <Label className="text-xs text-muted-foreground cursor-pointer">Short Notice</Label>
         </div>
         <div className="flex items-center gap-2">
+          <Switch checked={shift.specialty_premium} onCheckedChange={(v) => set('specialty_premium', v)} />
+          <Label className="text-xs text-muted-foreground cursor-pointer">Specialty Premium</Label>
+        </div>
+        <div className="flex items-center gap-2">
           <Switch checked={shift.preceptor} onCheckedChange={(v) => set('preceptor', v)} />
           <Label className="text-xs text-muted-foreground cursor-pointer">Preceptor</Label>
         </div>
@@ -301,6 +307,7 @@ export default function ShiftForm({ onSubmit, onCancel, initial, settings }) {
           { key: 'short_notice',    label: 'Short Notice' },
           { key: 'responsibility',  label: 'Responsibility Pay' },
           { key: 'preceptor',       label: 'Preceptor' },
+          { key: 'specialty',       label: 'Specialty Premium' },
         ];
         const hasAnyPremium = PREMIUM_FIELDS.some(f => premiums[f.key] > 0);
         return (

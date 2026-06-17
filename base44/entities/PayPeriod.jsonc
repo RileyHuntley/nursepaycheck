@@ -69,6 +69,10 @@
             "type": "boolean",
             "default": false
           },
+          "specialty_premium": {
+            "type": "boolean",
+            "default": false
+          },
           "responsibility_pay": {
             "type": "string",
             "enum": [
@@ -122,6 +126,9 @@
               "regular_premium": {
                 "type": "number"
               },
+              "specialty": {
+                "type": "number"
+              },
               "short_notice": {
                 "type": "number"
               },
@@ -161,6 +168,12 @@
           "type": "number"
         },
         "super_shift_premium_total": {
+          "type": "number"
+        },
+        "specialty_premium_total": {
+          "type": "number"
+        },
+        "specialty_premium_hours": {
           "type": "number"
         },
         "short_notice_total": {

@@ -30,7 +30,7 @@ export default function Dashboard() {
         const created = await base44.entities.Settings.create({
           hourly_wage: 45,
           ot_multipliers: { overtime: 1.5, overtime_extended: 2, stat_holiday: 1.5, ot_stat_holiday: 3 },
-          premium_rates: { evening: 1.4, night: 5, weekend: 3.5, super_shift: 1.85, regular_premium: 2.15, short_notice: 2, responsibility_hourly: 2.5, responsibility_flat: 18.75, preceptor: 1.5, on_call_first_72: 7, on_call_beyond_72: 7.5 },
+          premium_rates: { evening: 1.4, night: 5, weekend: 3.5, super_shift: 1.85, regular_premium: 2.15, specialty: 2, short_notice: 2, responsibility_hourly: 2.5, responsibility_flat: 18.75, preceptor: 1.5, on_call_first_72: 7, on_call_beyond_72: 7.5 },
           preset_times: { day_12h_start: '07:00', day_12h_end: '19:00', night_12h_start: '19:00', night_12h_end: '07:00', day_8h_start: '08:00', day_8h_end: '16:00' },
           active_allowances: ['isolation'],
           active_qualifications: [],
@@ -98,6 +98,7 @@ export default function Dashboard() {
         short_notice_total: (acc.short_notice_total || 0) + b.short_notice_total,
         responsibility_total: (acc.responsibility_total || 0) + b.responsibility_total,
         preceptor_total: (acc.preceptor_total || 0) + b.preceptor_total,
+        specialty_premium_total: (acc.specialty_premium_total || 0) + b.specialty_premium_total,
         on_call_total: (acc.on_call_total || 0) + b.on_call_total,
         allowance_total: (acc.allowance_total || 0) + b.allowance_total,
         qualification_total: (acc.qualification_total || 0) + b.qualification_total,

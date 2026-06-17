@@ -77,6 +77,7 @@ export default function ShiftRow({ shift, premiums, settings, periodEndDate, onE
   const premiumTotal = premiums
     ? (premiums.evening || 0) + (premiums.night || 0) + (premiums.weekend || 0) +
       (premiums.super_shift || 0) + (premiums.regular_premium || 0) +
+      (premiums.specialty || 0) +
       (premiums.short_notice || 0) + (premiums.responsibility || 0) +
       (premiums.preceptor || 0)
     : 0;
@@ -206,6 +207,7 @@ export default function ShiftRow({ shift, premiums, settings, periodEndDate, onE
           <PremiumChip label="Regular" amount={premiums.regular_premium} overridden={overridden.includes('regular_premium')} />
           <PremiumChip label="Short Notice" amount={premiums.short_notice} overridden={overridden.includes('short_notice')} />
           <PremiumChip label="Resp. Pay" amount={premiums.responsibility} overridden={overridden.includes('responsibility')} />
+          <PremiumChip label="Specialty" amount={premiums.specialty} overridden={overridden.includes('specialty')} />
           <PremiumChip label="Preceptor" amount={premiums.preceptor} overridden={overridden.includes('preceptor')} />
           {shift.on_call_hours > 0 && (
             <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-chart-4/15 text-chart-4">
@@ -221,6 +223,7 @@ export default function ShiftRow({ shift, premiums, settings, periodEndDate, onE
           {shift.extended_shift && <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-destructive/10 text-destructive">Extended</span>}
           {shift.short_notice && <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-chart-1/15 text-chart-1">Short Notice</span>}
           {shift.responsibility_pay !== 'none' && <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-chart-1/15 text-chart-1">Resp. Pay {shift.responsibility_pay === 'flat' ? '(Flat)' : '(Hrly)'}</span>}
+          {shift.specialty_premium && <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-chart-1/15 text-chart-1">Specialty Premium</span>}
           {shift.preceptor && <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-chart-1/15 text-chart-1">Preceptor</span>}
           {shift.on_call_hours > 0 && <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-chart-4/15 text-chart-4">On-Call {shift.on_call_hours}h</span>}
         </div>

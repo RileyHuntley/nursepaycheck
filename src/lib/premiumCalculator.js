@@ -213,6 +213,7 @@ export function calculateShiftPremiums(shift, settings) {
                           ? rates.responsibility_flat
                           : 0,
     preceptor:        shift.preceptor ? round2(paidHours * rates.preceptor) : 0,
+    specialty:        shift.specialty_premium ? round2(paidHours * rates.specialty) : 0,
   };
 
   // Apply any manual overrides — hours are unaffected by dollar overrides
@@ -226,6 +227,7 @@ export function calculateShiftPremiums(shift, settings) {
     short_notice:    overrides.short_notice    != null ? overrides.short_notice    : calc.short_notice,
     responsibility:  overrides.responsibility  != null ? overrides.responsibility  : calc.responsibility,
     preceptor:       overrides.preceptor       != null ? overrides.preceptor       : calc.preceptor,
+    specialty:       overrides.specialty       != null ? overrides.specialty       : calc.specialty,
     evening_hours:   calc.evening_hours,
     night_hours:     calc.night_hours,
     weekend_hours:   calc.weekend_hours,
@@ -234,6 +236,7 @@ export function calculateShiftPremiums(shift, settings) {
     short_notice_hours: calc.short_notice > 0 ? paidHours : 0,
     responsibility_hours: shift.responsibility_pay === 'hourly' ? paidHours : (shift.responsibility_pay === 'flat' ? 1 : 0),
     preceptor_hours: calc.preceptor > 0 ? paidHours : 0,
+    specialty_hours: calc.specialty > 0 ? paidHours : 0,
     _overridden: Object.keys(overrides).filter(k => overrides[k] != null),
   };
 }
@@ -327,6 +330,7 @@ export function calculatePeriodBreakdown(shifts, settings) {
   let shortNoticeTotal = 0, shortNoticeHours = 0;
   let responsibilityTotal = 0, responsibilityHours = 0;
   let preceptorTotal = 0, preceptorHours = 0;
+  let specialtyTotal = 0, specialtyHours = 0;
 
   for (const shift of shifts) {
     const paidHours = shift.paid_hours || 0;
@@ -350,6 +354,7 @@ export function calculatePeriodBreakdown(shifts, settings) {
     shortNoticeTotal += premiums.short_notice;
     responsibilityTotal += premiums.responsibility;
     preceptorTotal += premiums.preceptor;
+    specialtyTotal += premiums.specialty;
     eveningHours += premiums.evening_hours || 0;
     nightHours += premiums.night_hours || 0;
     weekendHours += premiums.weekend_hours || 0;
@@ -358,6 +363,7 @@ export function calculatePeriodBreakdown(shifts, settings) {
     shortNoticeHours += premiums.short_notice_hours || 0;
     responsibilityHours += premiums.responsibility_hours || 0;
     preceptorHours += premiums.preceptor_hours || 0;
+    specialtyHours += premiums.specialty_hours || 0;
   }
 
   // On-call (treat per-period — proxy for monthly; handle month boundaries in dashboard)
@@ -379,6 +385,7 @@ export function calculatePeriodBreakdown(shifts, settings) {
     eveningTotal + nightTotal + weekendTotal + superShiftTotal +
     regularPremiumTotal +
     shortNoticeTotal + responsibilityTotal + preceptorTotal +
+    specialtyTotal +
     onCall.total +
     allowances.per_period +
     qualification.period_total -
@@ -404,6 +411,8 @@ export function calculatePeriodBreakdown(shifts, settings) {
     responsibility_hours: round2(responsibilityHours),
     preceptor_total: round2(preceptorTotal),
     preceptor_hours: round2(preceptorHours),
+    specialty_premium_total: round2(specialtyTotal),
+    specialty_premium_hours: round2(specialtyHours),
     on_call_total: round2(onCall.total),
     on_call_hours: onCall.hours,
     allowance_total: round2(allowances.per_period),

@@ -54,7 +54,7 @@ const defaultSettings = {
   premium_rates: {
     evening: 1.40, night: 5.00, weekend: 3.50, super_shift: 1.85, regular_premium: 2.15,
     short_notice: 2.00, responsibility_hourly: 2.50, responsibility_flat: 18.75,
-    preceptor: 1.50, on_call_first_72: 7.00, on_call_beyond_72: 7.50,
+    preceptor: 1.50, specialty: 2.00, on_call_first_72: 7.00, on_call_beyond_72: 7.50,
   },
   active_allowances: ['isolation'],
   allowance_rates: { isolation: 150, business: 150 },
@@ -318,6 +318,7 @@ export default function Settings() {
             { key: 'short_notice', label: 'Short Notice Call-In', defaultVal: 2.00 },
             { key: 'responsibility_hourly', label: 'Responsibility Pay (hourly)', defaultVal: 2.50 },
             { key: 'preceptor', label: 'Preceptor', defaultVal: 1.50 },
+            { key: 'specialty', label: 'Specialty Premium (OR/PAR/ER/ICU/CCU)', defaultVal: 2.00 },
           ].map(({ key, label }) => (
             <div key={key} className="flex items-center gap-2">
               <Label className="text-xs text-muted-foreground flex-1 min-w-0 truncate">{label}</Label>

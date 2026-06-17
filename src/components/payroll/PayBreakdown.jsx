@@ -44,6 +44,11 @@ const PREMIUM_INFO = {
     title: 'Responsibility Pay',
     description: 'Normally paid to level 3 nurses placed in a position for two or more hours in which they have the duty and responsibility to supervise or direct the ward/unit, see that matters are organized, and make effective operational decisions.\n\nLevel 1 Nurses may also be designated "in charge" duties by the Employer. In-charge duties usually need to be "over and above" what a Level 1/3 nurse would normally do.\n\nMembers cannot receive both the hourly ($2.50/hr) and flat ($18.75/shift) premiums on any given shift.',
   },
+  specialty: {
+    article: 'Article 28.06',
+    title: 'Specialty Premium',
+    description: 'Paid out on all hours worked by regular employees working in specialty areas (OR/PAR/ER/ICU/CCU) — $2.00/hr on all paid hours.',
+  },
   preceptor: {
     article: 'Appendix GG',
     title: 'Preceptor Premium',
@@ -211,6 +216,7 @@ export default function PayBreakdown({ breakdown, wage, title = 'Pay Period Brea
       <LineItem label="Super Shift Premium" amount={breakdown.super_shift_premium_total} sublabel={breakdown.super_shift_premium_hours > 0 ? `${breakdown.super_shift_premium_hours}h × $1.85/hr` : null} infoKey="super_shift" openInfo={openInfo} onToggleInfo={toggle} />
       <LineItem label="Short Notice" amount={breakdown.short_notice_total} sublabel={breakdown.short_notice_hours > 0 ? `${breakdown.short_notice_hours}h × $2.00/hr` : null} infoKey="short_notice" openInfo={openInfo} onToggleInfo={toggle} />
       <LineItem label="Responsibility Pay" amount={breakdown.responsibility_total} sublabel={breakdown.responsibility_hours > 0 ? (breakdown.responsibility_hours >= 1 && breakdown.responsibility_hours < 2 ? '1 shift × $18.75' : `${breakdown.responsibility_hours}h × $2.50/hr`) : null} infoKey="responsibility" openInfo={openInfo} onToggleInfo={toggle} />
+      <LineItem label="Specialty Premium" amount={breakdown.specialty_premium_total} sublabel={breakdown.specialty_premium_hours > 0 ? `${breakdown.specialty_premium_hours}h × $2.00/hr` : null} infoKey="specialty" openInfo={openInfo} onToggleInfo={toggle} />
       <LineItem label="Preceptor" amount={breakdown.preceptor_total} sublabel={breakdown.preceptor_hours > 0 ? `${breakdown.preceptor_hours}h × $1.50/hr` : null} infoKey="preceptor" openInfo={openInfo} onToggleInfo={toggle} />
       <LineItem label="On-Call Pay" amount={breakdown.on_call_total} sublabel={breakdown.on_call_hours ? `${breakdown.on_call_hours}h total` : null} infoKey="on_call" openInfo={openInfo} onToggleInfo={toggle} />
 
