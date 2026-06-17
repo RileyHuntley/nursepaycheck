@@ -450,15 +450,15 @@ export default function ShiftForm({ onSubmit, onCancel, onDelete, initial, setti
         const premiums = calculateShiftPremiums(shiftWithHours, calcSettings);
         const overrides = shift.premium_overrides || {};
         const PREMIUM_FIELDS = [
-          { key: 'evening',         label: 'Evening Premium' },
-          { key: 'night',           label: 'Night Premium' },
-          { key: 'weekend',         label: 'Weekend Premium' },
-          { key: 'super_shift',     label: 'Super Shift Premium' },
-          { key: 'regular_premium', label: 'Regular Premium' },
-          { key: 'short_notice',    label: 'Short Notice' },
-          { key: 'responsibility',  label: 'Responsibility Pay' },
-          { key: 'preceptor',       label: 'Preceptor' },
-          { key: 'specialty',       label: 'Specialty Premium' },
+          { key: 'evening',         label: 'Evening Premium',     hoursKey: 'evening_hours' },
+          { key: 'night',           label: 'Night Premium',       hoursKey: 'night_hours' },
+          { key: 'weekend',         label: 'Weekend Premium',     hoursKey: 'weekend_hours' },
+          { key: 'super_shift',     label: 'Super Shift Premium', hoursKey: 'super_shift_hours' },
+          { key: 'regular_premium', label: 'Regular Premium',     hoursKey: 'regular_premium_hours' },
+          { key: 'short_notice',    label: 'Short Notice',        hoursKey: 'short_notice_hours' },
+          { key: 'responsibility',  label: 'Responsibility Pay',  hoursKey: 'responsibility_hours' },
+          { key: 'preceptor',       label: 'Preceptor',           hoursKey: 'preceptor_hours' },
+          { key: 'specialty',       label: 'Specialty Premium',   hoursKey: 'specialty_hours' },
         ];
         const hasAnyPremium = PREMIUM_FIELDS.some(f => premiums[f.key] > 0);
         return (
@@ -485,14 +485,15 @@ export default function ShiftForm({ onSubmit, onCancel, onDelete, initial, setti
             {showOverrides && (
               <div className="px-4 py-3 space-y-2 bg-card">
                 <p className="text-[11px] text-muted-foreground mb-3">Auto-calculated values shown. Enter an override to replace a value on this shift only. Clear to restore auto-calculation.</p>
-                {PREMIUM_FIELDS.map(({ key, label }) => {
+                {PREMIUM_FIELDS.map(({ key, label, hoursKey }) => {
                   const calcVal = premiums[key] || 0;
+                  const calcHours = premiums[hoursKey] || 0;
                   const isOverridden = overrides[key] != null;
                   return (
                     <div key={key} className="flex items-center gap-3">
                       <div className="w-36 text-xs text-muted-foreground flex-shrink-0">{label}</div>
-                      <div className="text-xs font-mono text-foreground w-14 text-right flex-shrink-0">
-                        {formatCurrency(calcVal)}
+                      <div className="text-xs font-mono text-foreground text-right flex-shrink-0" style={{ minWidth: calcVal > 0 ? '8.5rem' : '4rem' }}>
+                        {calcVal > 0 ? `${formatCurrency(calcVal)} (${calcHours.toFixed(2)} hrs)` : formatCurrency(calcVal)}
                       </div>
                       <span className="text-xs text-muted-foreground flex-shrink-0">→</span>
                       <div className="relative">
