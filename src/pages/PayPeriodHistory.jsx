@@ -150,7 +150,7 @@ export default function PayPeriodHistory() {
                       )}
                     </span>
                     <p className="text-[10px] text-muted-foreground">
-                      {period.breakdown ? 'gross' : 'estimated gross'}
+                      {period.verified_deductions ? 'gross' : 'estimated gross'}
                     </p>
                   </div>
                 )}
