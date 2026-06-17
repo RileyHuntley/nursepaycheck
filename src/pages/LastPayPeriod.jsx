@@ -446,90 +446,111 @@ export default function LastPayPeriod() {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">CPP</Label>
-              <Input
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="Pay stub value"
-                value={deductionsForm?.cpp ?? ''}
-                onChange={e => setDeductionField('cpp', e.target.value)}
-                className="h-9 text-sm font-mono"
-              />
+              <div className="relative">
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-mono">$</span>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="Pay stub value"
+                  value={deductionsForm?.cpp ?? ''}
+                  onChange={e => setDeductionField('cpp', e.target.value)}
+                  className="h-9 text-sm font-mono pl-6"
+                />
+              </div>
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">CPP2</Label>
-              <Input
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="Pay stub value"
-                value={deductionsForm?.cpp2 ?? ''}
-                onChange={e => setDeductionField('cpp2', e.target.value)}
-                className="h-9 text-sm font-mono"
-              />
+              <div className="relative">
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-mono">$</span>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="Pay stub value"
+                  value={deductionsForm?.cpp2 ?? ''}
+                  onChange={e => setDeductionField('cpp2', e.target.value)}
+                  className="h-9 text-sm font-mono pl-6"
+                />
+              </div>
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">EI</Label>
-              <Input
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="Pay stub value"
-                value={deductionsForm?.ei ?? ''}
-                onChange={e => setDeductionField('ei', e.target.value)}
-                className="h-9 text-sm font-mono"
-              />
+              <div className="relative">
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-mono">$</span>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="Pay stub value"
+                  value={deductionsForm?.ei ?? ''}
+                  onChange={e => setDeductionField('ei', e.target.value)}
+                  className="h-9 text-sm font-mono pl-6"
+                />
+              </div>
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Federal Tax</Label>
-              <Input
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="Pay stub value"
-                value={deductionsForm?.federal_tax ?? ''}
-                onChange={e => setDeductionField('federal_tax', e.target.value)}
-                className="h-9 text-sm font-mono"
-              />
+              <div className="relative">
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-mono">$</span>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="Pay stub value"
+                  value={deductionsForm?.federal_tax ?? ''}
+                  onChange={e => setDeductionField('federal_tax', e.target.value)}
+                  className="h-9 text-sm font-mono pl-6"
+                />
+              </div>
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Provincial Tax</Label>
-              <Input
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="Pay stub value"
-                value={deductionsForm?.provincial_tax ?? ''}
-                onChange={e => setDeductionField('provincial_tax', e.target.value)}
-                className="h-9 text-sm font-mono"
-              />
+              <div className="relative">
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-mono">$</span>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="Pay stub value"
+                  value={deductionsForm?.provincial_tax ?? ''}
+                  onChange={e => setDeductionField('provincial_tax', e.target.value)}
+                  className="h-9 text-sm font-mono pl-6"
+                />
+              </div>
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Union Dues</Label>
-              <Input
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="Pay stub value"
-                value={deductionsForm?.union_dues ?? ''}
-                onChange={e => setDeductionField('union_dues', e.target.value)}
-                className="h-9 text-sm font-mono"
-              />
+              <div className="relative">
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-mono">$</span>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="Pay stub value"
+                  value={deductionsForm?.union_dues ?? ''}
+                  onChange={e => setDeductionField('union_dues', e.target.value)}
+                  className="h-9 text-sm font-mono pl-6"
+                />
+              </div>
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Other Deductions</Label>
-              <Input
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="Amount"
-                value={deductionsForm?.other_deductions ?? ''}
-                onChange={e => setDeductionField('other_deductions', e.target.value)}
-                className="h-9 text-sm font-mono"
-              />
+              <div className="relative">
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-mono">$</span>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="Amount"
+                  value={deductionsForm?.other_deductions ?? ''}
+                  onChange={e => setDeductionField('other_deductions', e.target.value)}
+                  className="h-9 text-sm font-mono pl-6"
+                />
+              </div>
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Label (e.g. LTD, Health)</Label>

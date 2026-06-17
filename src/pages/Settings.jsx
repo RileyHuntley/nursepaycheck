@@ -322,23 +322,29 @@ export default function Settings() {
           ].map(({ key, label }) => (
             <div key={key} className="flex items-center gap-2">
               <Label className="text-xs text-muted-foreground flex-1 min-w-0 truncate">{label}</Label>
-              <Input
-                type="number" step="0.01" min="0"
-                value={settings.premium_rates?.[key] || 0}
-                onChange={e => set(`premium_rates.${key}`, parseFloat(e.target.value) || 0)}
-                className="h-9 w-24 text-sm font-mono flex-shrink-0"
-              />
+              <div className="relative flex-shrink-0">
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-mono">$</span>
+                <Input
+                  type="number" step="0.01" min="0"
+                  value={settings.premium_rates?.[key] || 0}
+                  onChange={e => set(`premium_rates.${key}`, parseFloat(e.target.value) || 0)}
+                  className="h-9 w-24 text-sm font-mono flex-shrink-0 pl-6"
+                />
+              </div>
             </div>
           ))}
         </div>
         <div className="flex items-center gap-2 pt-1">
           <Label className="text-xs text-muted-foreground flex-1">Responsibility Pay (flat per shift)</Label>
-          <Input
-            type="number" step="0.01" min="0"
-            value={settings.premium_rates?.responsibility_flat || 0}
-            onChange={e => set('premium_rates.responsibility_flat', parseFloat(e.target.value) || 0)}
-            className="h-9 w-24 text-sm font-mono flex-shrink-0"
-          />
+          <div className="relative flex-shrink-0">
+            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-mono">$</span>
+            <Input
+              type="number" step="0.01" min="0"
+              value={settings.premium_rates?.responsibility_flat || 0}
+              onChange={e => set('premium_rates.responsibility_flat', parseFloat(e.target.value) || 0)}
+              className="h-9 w-24 text-sm font-mono flex-shrink-0 pl-6"
+            />
+          </div>
         </div>
         <div className="grid grid-cols-2 gap-3 pt-1">
           {[
@@ -347,12 +353,15 @@ export default function Settings() {
           ].map(({ key, label }) => (
             <div key={key} className="flex items-center gap-2">
               <Label className="text-xs text-muted-foreground flex-1">{label}</Label>
-              <Input
-                type="number" step="0.01" min="0"
-                value={settings.premium_rates?.[key] || 0}
-                onChange={e => set(`premium_rates.${key}`, parseFloat(e.target.value) || 0)}
-                className="h-9 w-24 text-sm font-mono flex-shrink-0"
-              />
+              <div className="relative flex-shrink-0">
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-mono">$</span>
+                <Input
+                  type="number" step="0.01" min="0"
+                  value={settings.premium_rates?.[key] || 0}
+                  onChange={e => set(`premium_rates.${key}`, parseFloat(e.target.value) || 0)}
+                  className="h-9 w-24 text-sm font-mono flex-shrink-0 pl-6"
+                />
+              </div>
             </div>
           ))}
         </div>
