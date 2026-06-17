@@ -187,6 +187,40 @@ export default function ShiftForm({ onSubmit, onCancel, onDelete, initial, setti
         </div>
       )}
 
+      {/* Overnight split indicator: shows how the shift splits across dates with different multipliers */}
+      {shift.start_time && shift.end_time && shift.date && parseTime(shift.start_time) >= parseTime(shift.end_time) && (() => {
+        const nextDate = new Date(shift.date + 'T12:00:00');
+        nextDate.setDate(nextDate.getDate() + 1);
+        const nextDateStr = nextDate.toISOString().slice(0, 10);
+        const nextStatType = getStatType(nextDateStr);
+        const nextStatName = getStatName(nextDateStr);
+
+        // Only show if at least one day is a stat, or the shift type has different rates per date
+        if (!statType && !nextStatType && !['ot_stat', 'day_off', 'work_stat', 'work_super_stat'].includes(shift.shift_type)) return null;
+
+        let explanation = '';
+        if (shift.shift_type === 'ot_stat') {
+          if (statType && nextStatType) explanation = `Both portions on stat holidays → all hours at 3×`;
+          else if (statType) explanation = `19:00–24:00 (${statName}) → 3× · 00:00–07:00 (next day) → 2× day-off rate`;
+          else explanation = `19:00–24:00 → 2× day-off rate · 00:00–07:00 (${nextStatName}) → 3×`;
+        } else if (['regular', 'isn'].includes(shift.shift_type)) {
+          if (statType && nextStatType) explanation = `Both portions on stat holidays → ${statType === 'super_stat' ? '2.5×' : '2×'} all hours`;
+          else if (statType) explanation = `19:00–24:00 (${statName}) → ${statType === 'super_stat' ? '2.5×' : '2×'} · 00:00–07:00 → 1×`;
+          else explanation = `19:00–24:00 → 1× · 00:00–07:00 (${nextStatName}) → ${nextStatType === 'super_stat' ? '2.5×' : '2×'}`;
+        } else if (shift.shift_type === 'day_off') {
+          if (statType || nextStatType) explanation = `Day-off shift crossing a stat — both portions stay at 2×`;
+        } else if (shift.shift_type === 'work_stat' || shift.shift_type === 'work_super_stat') {
+          explanation = `Stat shift — multiplier applies to both portions`;
+        }
+
+        return explanation ? (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+            <span>🌙 Overnight split:</span>
+            <span>{explanation}</span>
+          </div>
+        ) : null;
+      })()}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">Date</Label>

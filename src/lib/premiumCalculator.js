@@ -2,7 +2,7 @@
  * NBA Collective Agreement Premium & Pay Calculator
  * Pure functions — no side effects, no API calls.
  */
-import { VCH_PAY_PERIODS_2026 } from './statHolidays.js';
+import { VCH_PAY_PERIODS_2026, getStatType } from './statHolidays.js';
 
 function round2(n) {
   return Math.round(n * 100) / 100;
@@ -290,6 +290,69 @@ export function getShiftMultiplier(shiftType) {
 }
 
 /**
+ * Split an overnight shift into per-date segments.
+ * Non-overnight shifts return a single segment.
+ * Each segment has { date, hours } where hours is the portion of paid_hours on that date.
+ */
+export function splitOvernightShift(shift) {
+  const startH = parseTime(shift.start_time);
+  let endH = parseTime(shift.end_time);
+
+  // Not overnight — single segment
+  if (endH > startH) {
+    const hours = shift.paid_hours || (endH - startH);
+    return [{ date: shift.date, hours: round2(hours) }];
+  }
+
+  // Overnight: split at midnight (24.0)
+  endH += 24;
+  const beforeMidnight = 24 - startH;
+  const afterMidnight = endH - 24;
+  const totalClock = beforeMidnight + afterMidnight;
+
+  const paidHours = shift.paid_hours || totalClock;
+  const beforePaid = round2((beforeMidnight / totalClock) * paidHours);
+  const afterPaid = round2((afterMidnight / totalClock) * paidHours);
+
+  const nextDate = new Date(shift.date + 'T12:00:00');
+  nextDate.setDate(nextDate.getDate() + 1);
+  const nextDateStr = nextDate.toISOString().slice(0, 10);
+
+  return [
+    { date: shift.date, hours: beforePaid },
+    { date: nextDateStr, hours: afterPaid },
+  ];
+}
+
+/**
+ * Get the effective wage multiplier for a shift segment based on its date.
+ * Overnight shifts crossing into a stat holiday get different rates per portion:
+ *  - ot_stat: 3× on the stat date, 2× (day_off rate) on the non-stat date
+ *  - Straight-time types (regular, isn, etc.): 2× / 2.5× on stat, 1× elsewhere
+ *  - Other types (day_off, work_stat, work_super_stat, overtime): keep their base multiplier
+ */
+export function getSegmentMultiplier(shiftType, segmentDate) {
+  const baseMultiplier = getShiftMultiplier(shiftType);
+  const statType = getStatType(segmentDate);
+
+  // OT on Stat: stat portion = 3×, non-stat portion = 2× (day off)
+  if (shiftType === 'ot_stat') {
+    return statType ? 3.0 : 2.0;
+  }
+
+  // Straight-time shift types: bump to stat rate when segment lands on a stat
+  const isStraight = ['regular', 'isn', 'vacation', 'sick', 'pdo_pst', 'other_leave'].includes(shiftType);
+  if (isStraight) {
+    if (statType === 'super_stat') return 2.5;
+    if (statType === 'stat') return 2.0;
+    return 1.0;
+  }
+
+  // Other multiplier types keep their base rate regardless of stat
+  return baseMultiplier;
+}
+
+/**
  * Calculate on-call pay for a list of shifts within a given month
  * $7.00/hr first 72 hours, $7.50/hr beyond 72
  */
@@ -358,25 +421,16 @@ export function calculatePeriodBreakdown(shifts, settings) {
   let preceptorTotal = 0, preceptorHours = 0;
   let specialtyTotal = 0, specialtyHours = 0;
 
+  const STRAIGHT_TYPES = ['regular', 'isn', 'vacation', 'sick', 'pdo_pst', 'other_leave'];
+  const REGULAR_PREMIUM_TYPES = ['regular', 'isn', 'vacation', 'sick', 'pdo_pst', 'other_leave'];
+
   for (const shift of shifts) {
-    const paidHours = shift.paid_hours || 0;
-    const multiplier = getShiftMultiplier(shift.shift_type);
-    const isStraight = ['regular', 'isn', 'vacation', 'sick', 'pdo_pst', 'other_leave'].includes(shift.shift_type);
-
-    if (multiplier === 1.0) {
-      straightTimePay += paidHours * wage;
-      if (isStraight) regularHours += paidHours;
-    } else {
-      overtimePay += paidHours * wage * multiplier;
-      otDetail[shift.shift_type] = (otDetail[shift.shift_type] || 0) + paidHours;
-    }
-
+    // Per-shift time-window premiums (evening/night/weekend/super_shift are time-based, not date-based)
     const premiums = calculateShiftPremiums(shift, settings);
     eveningTotal += premiums.evening;
     nightTotal += premiums.night;
     weekendTotal += premiums.weekend;
     superShiftTotal += premiums.super_shift;
-    regularPremiumTotal += premiums.regular_premium;
     shortNoticeTotal += premiums.short_notice;
     responsibilityTotal += premiums.responsibility;
     preceptorTotal += premiums.preceptor;
@@ -385,11 +439,41 @@ export function calculatePeriodBreakdown(shifts, settings) {
     nightHours += premiums.night_hours || 0;
     weekendHours += premiums.weekend_hours || 0;
     superShiftHours += premiums.super_shift_hours || 0;
-    regularPremiumHours += premiums.regular_premium_hours || 0;
     shortNoticeHours += premiums.short_notice_hours || 0;
     responsibilityHours += premiums.responsibility_hours || 0;
     preceptorHours += premiums.preceptor_hours || 0;
     specialtyHours += premiums.specialty_hours || 0;
+
+    // Per-date segments: base pay and regular_premium depend on which day the hours land on
+    const segments = splitOvernightShift(shift);
+    let shiftStraightHours = 0;
+
+    for (const seg of segments) {
+      const segMultiplier = getSegmentMultiplier(shift.shift_type, seg.date);
+
+      if (segMultiplier === 1.0) {
+        straightTimePay += seg.hours * wage;
+        shiftStraightHours += seg.hours;
+        if (STRAIGHT_TYPES.includes(shift.shift_type)) regularHours += seg.hours;
+      } else {
+        overtimePay += seg.hours * wage * segMultiplier;
+        // Track into otDetail by effective rate
+        if (segMultiplier === 3.0) otDetail.ot_stat = (otDetail.ot_stat || 0) + seg.hours;
+        else if (segMultiplier === 2.5) otDetail.work_super_stat = (otDetail.work_super_stat || 0) + seg.hours;
+        else if (segMultiplier === 2.0) {
+          if (getStatType(seg.date)) otDetail.work_stat = (otDetail.work_stat || 0) + seg.hours;
+          else otDetail.day_off = (otDetail.day_off || 0) + seg.hours;
+        }
+        else if (segMultiplier === 1.5) otDetail.overtime = (otDetail.overtime || 0) + seg.hours;
+      }
+    }
+
+    // Regular premium: only on hours that actually stayed at 1× (straight-time)
+    const adjustedRegularPremium = shiftStraightHours > 0 && REGULAR_PREMIUM_TYPES.includes(shift.shift_type)
+      ? round2(shiftStraightHours * settings.premium_rates.regular_premium)
+      : 0;
+    regularPremiumTotal += adjustedRegularPremium;
+    if (adjustedRegularPremium > 0) regularPremiumHours += shiftStraightHours;
   }
 
   // On-call (treat per-period — proxy for monthly; handle month boundaries in dashboard)
