@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Trash2, Sun, Moon, Check } from 'lucide-react';
+import { Trash2, Sun, Moon, Check, Copy } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { splitOvernightShift, getSegmentMultiplier } from '@/lib/premiumCalculator';
 
@@ -42,7 +42,7 @@ function resolveStatus(shift) {
   return 'pending';
 }
 
-export default function ShiftRow({ shift, premiums, settings, periodEndDate, onEdit, onDelete, onVerify, readOnly, selectable, selected, onToggleSelect, hidePending }) {
+export default function ShiftRow({ shift, premiums, settings, periodEndDate, onEdit, onDelete, onVerify, onDuplicate, readOnly, selectable, selected, onToggleSelect, hidePending }) {
   const hosp = shift.hospital ? (settings?.hospitals || []).find(h => h.name === shift.hospital) : null;
   const unit = shift.unit ? (settings?.units || []).find(u => u.name === shift.unit) : null;
 
@@ -152,6 +152,17 @@ export default function ShiftRow({ shift, premiums, settings, periodEndDate, onE
                 title="Mark as verified"
               >
                 <Check className="w-4 h-4" />
+              </Button>
+            )}
+            {onDuplicate && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={(e) => { e.stopPropagation(); onDuplicate(shift); }}
+                className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                title="Duplicate shift"
+              >
+                <Copy className="w-3.5 h-3.5" />
               </Button>
             )}
             <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); onDelete(shift); }} className="h-7 w-7 text-destructive hover:text-destructive">

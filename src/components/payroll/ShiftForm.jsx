@@ -83,7 +83,7 @@ const emptyShift = {
   notes: '',
 };
 
-export default function ShiftForm({ onSubmit, onCancel, onDelete, initial, settings }) {
+export default function ShiftForm({ onSubmit, onCancel, onDelete, initial, settings, isDuplicate }) {
   const [shift, setShift] = useState(() => {
     if (initial) return initial;
     return {
@@ -573,7 +573,7 @@ export default function ShiftForm({ onSubmit, onCancel, onDelete, initial, setti
 
       <div className="flex gap-2 pt-1">
         <Button type="submit" size="sm" className="bg-primary text-primary-foreground hover:opacity-90">
-          {initial ? 'Save Changes' : 'Add Shift'}
+          {isDuplicate ? 'Create Duplicate' : initial ? 'Save Changes' : 'Add Shift'}
         </Button>
         {onCancel && (
           <Button type="button" variant="outline" size="sm" onClick={onCancel}>

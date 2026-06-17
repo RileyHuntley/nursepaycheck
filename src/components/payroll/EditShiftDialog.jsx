@@ -11,7 +11,8 @@ export default function EditShiftDialog({ editingShift, settings, onSubmit, onCl
           initial={editingShift.data}
           onSubmit={onSubmit}
           onCancel={onClose}
-          onDelete={onDelete}
+          onDelete={editingShift.isDuplicate ? null : onDelete}
+          isDuplicate={editingShift.isDuplicate || false}
           settings={settings}
         />
       </DialogContent>

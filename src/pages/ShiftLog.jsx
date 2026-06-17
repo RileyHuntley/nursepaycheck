@@ -26,7 +26,7 @@ export default function ShiftLog() {
   const [periodMap, setPeriodMap] = useState({}); // id -> period
   const [loading, setLoading] = useState(true);
   const [sortAsc, setSortAsc] = useState(true);
-  const [editingShift, setEditingShift] = useState(null); // { data, _periodId, _shiftIdx }
+  const [editingShift, setEditingShift] = useState(null); // { data, _periodId, _shiftIdx, isDuplicate? }
   const [showForm, setShowForm] = useState(false);
   const [showBulkForm, setShowBulkForm] = useState(false);
   const [viewMode, setViewMode] = useState('list'); // 'list' | 'calendar'
@@ -180,7 +180,23 @@ export default function ShiftLog() {
     });
   };
 
+  const duplicateShift = (shift) => {
+    setEditingShift({
+      data: { ...shift, date: '', status: getDefaultStatus('') },
+      _periodId: shift._periodId,
+      _shiftIdx: shift._shiftIdx,
+      isDuplicate: true,
+    });
+  };
+
   const updateShift = async (shiftData) => {
+    // Duplicate mode: create new shift instead of updating
+    if (editingShift.isDuplicate) {
+      await addShift(shiftData);
+      setEditingShift(null);
+      return;
+    }
+
     const oldPeriod = periodMap[editingShift._periodId];
     if (!oldPeriod) return;
 
@@ -727,6 +743,7 @@ export default function ShiftLog() {
                                   onEdit={(s) => setEditingShift({ data: s, _periodId: shift._periodId, _shiftIdx: shift._shiftIdx })}
                                   onDelete={() => deleteShift(shift)}
                                   onVerify={() => verifyShift(shift)}
+                                  onDuplicate={() => duplicateShift(shift)}
                                   selectable={selectionMode}
                                   selected={selectedKeys.has(shiftKey(shift))}
                                   onToggleSelect={toggleSelectShift}
