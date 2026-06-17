@@ -583,9 +583,17 @@ export function calculatePeriodBreakdown(shifts, settings) {
 export function getPayPeriodName(startDate, endDate) {
   const start = new Date(startDate + 'T12:00:00');
   const end = new Date(endDate + 'T12:00:00');
-  const opts = { month: 'short', day: 'numeric' };
-  const s = start.toLocaleDateString('en-CA', opts);
-  const e = end.toLocaleDateString('en-CA', opts);
+  const shortOpts = { month: 'short', day: 'numeric' };
+  const fullOpts = { month: 'short', day: 'numeric', year: 'numeric' };
+  const startYear = start.getFullYear();
+  const endYear = end.getFullYear();
+  if (startYear === endYear) {
+    const s = start.toLocaleDateString('en-CA', shortOpts);
+    const e = end.toLocaleDateString('en-CA', fullOpts);
+    return `${s} – ${e}`;
+  }
+  const s = start.toLocaleDateString('en-CA', fullOpts);
+  const e = end.toLocaleDateString('en-CA', fullOpts);
   return `${s} – ${e}`;
 }
 
