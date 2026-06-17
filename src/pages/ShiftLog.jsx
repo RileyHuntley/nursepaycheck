@@ -41,9 +41,11 @@ export default function ShiftLog() {
   };
 
   const loadingRef = useRef(false);
+  const loadRef = useRef(null);
 
   const loadData = useCallback(async () => {
     if (loadingRef.current) return;
+    if (loadRef.current) { clearTimeout(loadRef.current); loadRef.current = null; }
     loadingRef.current = true;
     setLoading(true);
     try {
@@ -110,7 +112,6 @@ export default function ShiftLog() {
   useEffect(() => { loadData(); }, [loadData]);
 
   // Debounced subscription reload to prevent rate limiting
-  const loadRef = useRef(null);
   const debouncedLoad = useCallback(() => {
     if (loadRef.current) clearTimeout(loadRef.current);
     loadRef.current = setTimeout(() => loadData(), 300);

@@ -10,9 +10,11 @@ export default function ShiftCalendar() {
   const [loading, setLoading] = useState(true);
 
   const loadingRef = useRef(false);
+  const loadRef = useRef(null);
 
   const loadShifts = useCallback(async () => {
     if (loadingRef.current) return;
+    if (loadRef.current) { clearTimeout(loadRef.current); loadRef.current = null; }
     loadingRef.current = true;
     setLoading(true);
     try {
@@ -56,7 +58,6 @@ export default function ShiftCalendar() {
 
   useEffect(() => { loadShifts(); }, [loadShifts]);
 
-  const loadRef = useRef(null);
   const debouncedLoad = useCallback(() => {
     if (loadRef.current) clearTimeout(loadRef.current);
     loadRef.current = setTimeout(() => loadShifts(), 300);

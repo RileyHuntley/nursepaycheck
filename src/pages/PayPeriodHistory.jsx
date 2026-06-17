@@ -22,9 +22,11 @@ export default function PayPeriodHistory() {
   const [deleteTarget, setDeleteTarget] = useState(null);
 
   const loadingRef = useRef(false);
+  const loadRef = useRef(null);
 
   const loadPeriods = useCallback(async () => {
     if (loadingRef.current) return;
+    if (loadRef.current) { clearTimeout(loadRef.current); loadRef.current = null; }
     loadingRef.current = true;
     setLoading(true);
     const list = await base44.entities.PayPeriod.list('-start_date', 50);
@@ -44,7 +46,6 @@ export default function PayPeriodHistory() {
   useEffect(() => { loadPeriods(); }, [loadPeriods]);
 
   // Debounced subscription reload to prevent rate limiting
-  const loadRef = useRef(null);
   const debouncedLoad = useCallback(() => {
     if (loadRef.current) clearTimeout(loadRef.current);
     loadRef.current = setTimeout(() => loadPeriods(), 300);

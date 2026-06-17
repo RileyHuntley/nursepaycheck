@@ -13,9 +13,11 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   const loadingRef = useRef(false);
+  const loadRef = useRef(null);
 
   const loadData = useCallback(async () => {
     if (loadingRef.current) return;
+    if (loadRef.current) { clearTimeout(loadRef.current); loadRef.current = null; }
     loadingRef.current = true;
     setLoading(true);
     try {
@@ -50,7 +52,6 @@ export default function Dashboard() {
   useEffect(() => { loadData(); }, [loadData]);
 
   // Real-time subscriptions with debounce to prevent rate limiting
-  const loadRef = useRef(null);
   const debouncedLoad = useCallback(() => {
     if (loadRef.current) {
       clearTimeout(loadRef.current);
