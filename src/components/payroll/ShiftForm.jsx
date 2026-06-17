@@ -342,8 +342,20 @@ export default function ShiftForm({ onSubmit, onCancel, onDelete, initial, setti
         const wage = settings?.hourly_wage || DEFAULT_RATES.hourly_wage || 45;
         const shiftWithHours = { ...shift, paid_hours: paidHours };
         const segments = splitOvernightShift(shiftWithHours);
+        const isOvernight = parseTime(shift.start_time) >= parseTime(shift.end_time);
+
+        // Compute time range for each segment
+        const segRanges = [];
+        if (isOvernight) {
+          segRanges.push(`${shift.start_time}–24:00`);
+          segRanges.push(`00:00–${shift.end_time}`);
+        } else {
+          segRanges.push(`${shift.start_time}–${shift.end_time}`);
+        }
+
         const groups = {};
-        for (const seg of segments) {
+        for (let i = 0; i < segments.length; i++) {
+          const seg = segments[i];
           const mult = getSegmentMultiplier(shift.shift_type, seg.date);
           const label = mult === 3.0 ? 'OT on Stat ×3'
             : mult === 2.5 ? 'Super Stat ×2.5'
@@ -351,10 +363,21 @@ export default function ShiftForm({ onSubmit, onCancel, onDelete, initial, setti
             : mult === 1.0 ? 'Straight-Time Pay ×1'
             : null;
           if (label) {
-            if (!groups[label]) groups[label] = { hours: 0, total: 0 };
+            if (!groups[label]) groups[label] = { hours: 0, total: 0, ranges: [] };
             groups[label].hours += seg.hours;
             groups[label].total += seg.hours * wage * mult;
+            groups[label].ranges.push(segRanges[i] || '');
           }
+        }
+
+        // Aggregate calc string per group, including time ranges
+        for (const key of Object.keys(groups)) {
+          const g = groups[key];
+          const multStr = key.match(/×([\d.]+)/)?.[1] || '1';
+          const rangeStr = g.ranges.length === 1 ? ` (${g.ranges[0]})`
+            : g.ranges.length > 1 ? ` (${g.ranges.join(' + ')})`
+            : '';
+          g.calc = `${g.hours.toFixed(2)}h × ${formatCurrency(wage)} × ${multStr} = ${formatCurrency(g.total)}${rangeStr}`;
         }
 
         const grandTotal = Object.values(groups).reduce((s, g) => s + g.total, 0);
@@ -385,10 +408,8 @@ export default function ShiftForm({ onSubmit, onCancel, onDelete, initial, setti
                   if (!g) return null;
                   return (
                     <div key={label} className="flex items-center gap-3">
-                      <div className="w-36 text-xs text-muted-foreground flex-shrink-0">{label}</div>
-                      <div className="text-xs font-mono text-foreground flex-1">
-                        {g.hours.toFixed(2)}h × {formatCurrency(wage)} × {label.match(/×([\d.]+)/)?.[1] || '1'} = {formatCurrency(g.total)}
-                      </div>
+                      <div className="w-36 text-xs font-semibold text-foreground flex-shrink-0">{label}</div>
+                      <div className="text-xs font-mono text-foreground">{g.calc}</div>
                     </div>
                   );
                 })}
