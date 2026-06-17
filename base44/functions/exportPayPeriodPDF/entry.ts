@@ -190,7 +190,34 @@ Deno.serve(async (req) => {
         if (shift.on_call_hours > 0) flags.push(`On-Call ${shift.on_call_hours}h`);
 
         const hasLoc = !!(shift.hospital || shift.unit);
-        const rowH = 28; // fixed height: date(5) + time(5) + loc(4) + flags(4) + pay(5) + padding(9)
+
+        // Count how many premium items have value > 0
+        const premItems = [];
+        if (pr.evening > 0) premItems.push('Evening');
+        if (pr.night > 0) premItems.push('Night');
+        if (pr.weekend > 0) premItems.push('Weekend');
+        if (pr.super_shift > 0) premItems.push('Super');
+        if (pr.regular_premium > 0) premItems.push('Reg Prem');
+        if (pr.short_notice > 0) premItems.push('Short');
+        if (pr.responsibility > 0) premItems.push('Resp');
+        if (pr.specialty > 0) premItems.push('Specialty');
+        if (pr.preceptor > 0) premItems.push('Preceptor');
+        const premLineCount = premItems.length; // how many extra lines needed
+
+        // Calculate segments / overtime
+        const segments = splitOvernight(shift);
+        let stPay=0; const otGroups={};
+        for (const seg of segments) {
+          const mult = segMult(shift.shift_type, seg.date);
+          if (mult > 0) {
+            const base = seg.hours * wage;
+            if (mult === 1.0) stPay += base;
+            else { stPay += base; otGroups[mult] = (otGroups[mult]||0) + seg.hours * wage * (mult - 1); }
+          }
+        }
+
+        // Row height: base 20 + loc line(4) + flags line(4) + 1 line per premium item(4 each) + 3 padding
+        const rowH = 24 + (hasLoc ? 4 : 0) + (flags.length > 0 ? 4 : 0) + premLineCount * 4;
         if (y > PAGE_H - rowH - 6) { doc.addPage(); y = M + 4; }
 
         // Row background
@@ -211,9 +238,9 @@ Deno.serve(async (req) => {
 
         // Type badge inline after time
         doc.setFillColor(235,238,242);
-        doc.roundedRect(M + 38, y + 2.5, 20, 5, 1.5, 1.5, 'F');
+        doc.roundedRect(M + 41, y + 2.5, 21, 5, 1.5, 1.5, 'F');
         doc.setFontSize(7).setTextColor(...COL.muted);
-        doc.text(typeLabel, M + 48, y + 6, { align: 'center' });
+        doc.text(typeLabel, M + 51.5, y + 6, { align: 'center' });
 
         let leftY = y + 11;
         if (hasLoc) {
@@ -226,7 +253,7 @@ Deno.serve(async (req) => {
           doc.text(flags.join(' | '), M + 3, leftY);
         }
 
-        // RIGHT COLUMN: status, hours, pay breakdown (right-aligned, no overlap)
+        // RIGHT COLUMN: status, hours at top
         let statusLabel, statusColor;
         const today = new Date().toISOString().slice(0,10);
         if (shift.status === 'verified') { statusLabel = 'Verified'; statusColor = [34,139,34]; }
@@ -238,29 +265,54 @@ Deno.serve(async (req) => {
         doc.setFont('helvetica','bold').setFontSize(8.5).setTextColor(...COL.dark);
         doc.text(`${shift.paid_hours||0}h`, M + PW - 3, y + 6, { align: 'right' });
 
-        // Pay breakdown on its own line at the bottom of the card
-        const segments = splitOvernight(shift);
-        let stPay=0; const otGroups={};
-        for (const seg of segments) {
-          const mult = segMult(shift.shift_type, seg.date);
-          if (mult > 0) {
-            const base = seg.hours * wage;
-            if (mult === 1.0) stPay += base;
-            else { stPay += base; otGroups[mult] = (otGroups[mult]||0) + seg.hours * wage * (mult - 1); }
-          }
-        }
-        const premTot = premSum(pr);
+        // Pay breakdown: base (ST + OT) then individual premiums, then total
         const otMults = Object.keys(otGroups).map(Number).sort((a,b)=>a-b);
-        const shiftGross = r2(stPay + Object.values(otGroups).reduce((s,v)=>s+v,0) + premTot);
+        let payY = y + rowH - 3 - (premLineCount + 1) * 4; // start above where we'll stack
 
-        const payParts = [];
-        if (stPay > 0) payParts.push(`ST ${fm$(stPay)}`);
-        otMults.forEach(m => payParts.push(`OTx${m} ${fm$(otGroups[m])}`));
-        if (premTot > 0) payParts.push(`+ Prem ${fm$(premTot)}`);
-        const payText = payParts.join('  +  ') + `  =  ${fm$(shiftGross)}`;
+        // Line 1: base pay (ST + OT components)
+        const baseParts = [];
+        if (stPay > 0) baseParts.push(`ST ${fm$(stPay)}`);
+        otMults.forEach(m => baseParts.push(`OTx${m} ${fm$(otGroups[m])}`));
+        const baseText = baseParts.join('  +  ');
+        if (baseText) {
+          doc.setFont('helvetica','normal').setFontSize(7.5).setTextColor(...COL.dark);
+          doc.text(baseText, M + PW - 3, payY, { align: 'right' });
+          payY += 4;
+        }
 
-        doc.setFont('helvetica','normal').setFontSize(7.5).setTextColor(...COL.dark);
-        doc.text(payText, M + PW - 3, y + rowH - 6, { align: 'right' });
+        // Individual premium lines
+        const premDetails = [
+          { k: 'evening',          abbr: 'Eve',     v: pr.evening,          h: pr.eveH, r: rates.evening },
+          { k: 'night',            abbr: 'Night',   v: pr.night,            h: pr.nightH, r: rates.night },
+          { k: 'weekend',          abbr: 'Wkd',     v: pr.weekend,          h: pr.wkndH, r: rates.weekend },
+          { k: 'super_shift',      abbr: 'Super',   v: pr.super_shift,      h: pr.superH, r: rates.super_shift },
+          { k: 'regular_premium',  abbr: 'Reg',     v: pr.regular_premium,  h: pr.regular_premium > 0 ? shift.paid_hours : 0, r: rates.regular_premium },
+          { k: 'short_notice',     abbr: 'Short',   v: pr.short_notice,     h: pr.short_notice > 0 ? shift.paid_hours : 0, r: rates.short_notice },
+          { k: 'responsibility',   abbr: 'Resp',    v: pr.responsibility,   h: shift.responsibility_pay === 'hourly' ? shift.paid_hours : 1, r: shift.responsibility_pay === 'hourly' ? rates.responsibility_hourly : null },
+          { k: 'specialty',        abbr: 'Specialty', v: pr.specialty,      h: pr.specialty > 0 ? shift.paid_hours : 0, r: rates.specialty },
+          { k: 'preceptor',        abbr: 'Preceptor', v: pr.preceptor,      h: pr.preceptor > 0 ? shift.paid_hours : 0, r: rates.preceptor },
+        ];
+
+        for (const pd of premDetails) {
+          if (pd.v <= 0) continue;
+          const valStr = fm$(pd.v);
+          const rateStr = pd.r ? ` ${pd.h}h x ${fm$(pd.r)}/hr` : (pd.h > 0 ? ` ${pd.h}h` : '');
+          doc.setFont('helvetica','normal').setFontSize(6.5).setTextColor(...COL.muted);
+          const calcLabel = `+ ${pd.abbr}`;
+          doc.text(calcLabel, M + PW - 3 - doc.getTextWidth(valStr) - doc.getTextWidth(rateStr) - 4, payY, { align: 'left' });
+          doc.setFontSize(7).setTextColor(...COL.dark);
+          doc.text(valStr, M + PW - 3 - doc.getTextWidth(rateStr) - 1, payY, { align: 'left' });
+          if (rateStr) {
+            doc.setFontSize(6.5).setTextColor(...COL.muted);
+            doc.text(rateStr, M + PW - 3, payY, { align: 'right' });
+          }
+          payY += 4;
+        }
+
+        // Total
+        const shiftGross = r2(stPay + Object.values(otGroups).reduce((s,v)=>s+v,0) + premSum(pr));
+        doc.setFont('helvetica','bold').setFontSize(8).setTextColor(...COL.primary);
+        doc.text(`= ${fm$(shiftGross)}`, M + PW - 3, payY, { align: 'right' });
 
         y += rowH + 3;
       }
