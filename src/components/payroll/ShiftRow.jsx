@@ -143,7 +143,7 @@ export default function ShiftRow({ shift, premiums, settings, periodEndDate, onE
               Upcoming
             </span>
           )}
-          {effStatus === 'pending' && !showVerify && (
+          {effStatus === 'pending' && (
             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-chart-2/15 text-chart-2">
               Pending
             </span>
