@@ -159,7 +159,7 @@ export default function Dashboard() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <PaySummaryPanel
           title="Current Pay Period"
           subtitle={current ? current.name : 'No pay period yet'}
@@ -184,6 +184,9 @@ export default function Dashboard() {
           taxSettings={settings?.tax_settings}
           shiftCount={nextMonthShiftCount}
         />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <PaySummaryPanel
           title="Year to Date"
           subtitle={`Jan 1 – Today (${ytdShiftCount} shifts)`}
@@ -192,9 +195,6 @@ export default function Dashboard() {
           taxSettings={settings?.tax_settings}
           shiftCount={ytdShiftCount}
         />
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <PaySummaryPanel
           title="This Year (Estimated)"
           subtitle={`Jan 1 – Dec 31 (${thisYearShiftCount} shifts)`}
