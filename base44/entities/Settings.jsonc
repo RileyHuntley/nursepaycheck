@@ -246,6 +246,38 @@
         }
       }
     },
+    "shift_lines": {
+      "type": "array",
+      "default": [
+        {
+          "status": "full_time",
+          "fte": 1.0
+        }
+      ],
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "full_time",
+              "part_time",
+              "casual"
+            ]
+          },
+          "fte": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        },
+        "required": [
+          "status",
+          "fte"
+        ]
+      }
+    },
     "share_token": {
       "type": "string"
     }

@@ -9,6 +9,13 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Save, Loader2, X, AlertTriangle, Info } from 'lucide-react';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -108,6 +115,7 @@ const defaultSettings = {
     special_clinical_prep: 50, bsn: 100, masters: 125,
     rpn_dual: 50, cha_bcit: 25, university_prep: 25,
   },
+  shift_lines: [{ status: 'full_time', fte: 1.0 }],
 };
 
 function InfoPopover({ infoKey, infoMap, onClose }) {
@@ -188,6 +196,35 @@ export default function PayConfiguration() {
     });
   };
 
+  const setShiftLine = (index, field, value) => {
+    setSettings(s => {
+      const lines = [...(s.shift_lines || [{ status: 'full_time', fte: 1.0 }])];
+      const updated = { ...lines[index], [field]: value };
+      // Auto-set FTE when status changes
+      if (field === 'status') {
+        if (value === 'full_time') updated.fte = 1.0;
+        else if (value === 'casual') updated.fte = 0.0;
+      }
+      lines[index] = updated;
+      return { ...s, shift_lines: lines };
+    });
+  };
+
+  const addShiftLine = () => {
+    setSettings(s => {
+      const lines = [...(s.shift_lines || [{ status: 'full_time', fte: 1.0 }])];
+      if (lines.length >= 3) return s;
+      return { ...s, shift_lines: [...lines, { status: 'full_time', fte: 1.0 }] };
+    });
+  };
+
+  const removeShiftLine = (index) => {
+    setSettings(s => {
+      const lines = [...(s.shift_lines || [{ status: 'full_time', fte: 1.0 }])];
+      return { ...s, shift_lines: lines.filter((_, i) => i !== index) };
+    });
+  };
+
   const toggleQualification = (key) => {
     setSettings(s => {
       const current = s.active_qualifications || [];
@@ -255,6 +292,64 @@ export default function PayConfiguration() {
           </div>
         </div>
         <p className="text-xs text-muted-foreground">Update annually when your CBA wage scale changes.</p>
+      </section>
+
+      {/* Employment Status & FTE */}
+      <section className="bg-card border border-border rounded-xl p-5 space-y-4">
+        <div>
+          <h3 className="text-sm font-semibold text-foreground">Employment Status &amp; FTE</h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            Add up to 3 shift lines if you work across multiple statuses. FTE is auto-set for Full Time (1.0) and Casual (0.0); enter your own for Part Time.
+          </p>
+        </div>
+        {(settings.shift_lines || [{ status: 'full_time', fte: 1.0 }]).map((line, idx) => {
+          const isFteLocked = line.status === 'full_time' || line.status === 'casual';
+          const canRemove = (settings.shift_lines || []).length > 1;
+          return (
+            <div key={idx} className="flex items-center gap-3">
+              <Select
+                value={line.status}
+                onValueChange={(v) => setShiftLine(idx, 'status', v)}
+              >
+                <SelectTrigger className="h-9 w-36 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="full_time">Full Time</SelectItem>
+                  <SelectItem value="part_time">Part Time</SelectItem>
+                  <SelectItem value="casual">Casual</SelectItem>
+                </SelectContent>
+              </Select>
+              <Label className="text-xs text-muted-foreground flex-shrink-0">FTE</Label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                max="1"
+                value={line.fte}
+                onChange={e => setShiftLine(idx, 'fte', parseFloat(e.target.value) || 0)}
+                disabled={isFteLocked}
+                className={`h-9 w-20 text-sm font-mono ${isFteLocked ? 'bg-muted/40 text-muted-foreground border-muted-foreground/20 cursor-not-allowed' : ''}`}
+              />
+              {canRemove && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => removeShiftLine(idx)}
+                  className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </Button>
+              )}
+            </div>
+          );
+        })}
+        {(settings.shift_lines || []).length < 3 && (
+          <Button type="button" variant="outline" size="sm" onClick={addShiftLine} className="text-xs">
+            + Add another line
+          </Button>
+        )}
       </section>
 
       {/* Overtime Multipliers */}
