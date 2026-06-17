@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Save, Loader2, Plus, X, AlertTriangle, Link2, Copy, RefreshCw } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -189,6 +190,7 @@ export default function Settings() {
       const currentUser = await base44.auth.me();
       const safeSettings = {
         user_name: currentUser?.full_name || 'Nurse',
+        show_pay_info: settings.share_show_pay_info || false,
         hourly_wage: settings.hourly_wage, premium_rates: settings.premium_rates,
         ot_multipliers: settings.ot_multipliers, active_allowances: settings.active_allowances,
         allowance_rates: settings.allowance_rates, active_qualifications: settings.active_qualifications,
@@ -360,6 +362,17 @@ export default function Settings() {
             Generate a unique link to let anyone view your shift calendar and pay period summaries — no login required.
           </p>
         </div>
+        <div className="flex items-center gap-3">
+          <Switch
+            checked={settings.share_show_pay_info || false}
+            onCheckedChange={(v) => set('share_show_pay_info', v)}
+          />
+          <div>
+            <Label className="text-xs text-foreground cursor-pointer">Include pay information in shared view</Label>
+            <p className="text-[10px] text-muted-foreground">When off, only the shift calendar is visible — no dollar amounts.</p>
+          </div>
+        </div>
+
         {settings.share_token ? (
           <div className="space-y-3">
             <div className="flex items-center gap-2 bg-muted rounded-lg p-3">

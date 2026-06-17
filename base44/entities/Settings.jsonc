@@ -288,6 +288,11 @@
     },
     "share_token": {
       "type": "string"
+    },
+    "share_show_pay_info": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether to include pay information in the shared view"
     }
   },
   "required": [],
