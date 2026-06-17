@@ -241,6 +241,9 @@
           "default": 0
         }
       }
+    },
+    "share_token": {
+      "type": "string"
     }
   },
   "required": [],

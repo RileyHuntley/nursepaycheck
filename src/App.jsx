@@ -18,6 +18,7 @@ import PayPeriodHistory from '@/pages/PayPeriodHistory';
 import Settings from '@/pages/Settings';
 import ShiftCalendar from '@/pages/ShiftCalendar';
 import ShiftLog from '@/pages/ShiftLog';
+import SharedShifts from '@/pages/SharedShifts';
 
 const router = createBrowserRouter([
   {
@@ -27,6 +28,7 @@ const router = createBrowserRouter([
       { path: "/register", element: <Register /> },
       { path: "/forgot-password", element: <ForgotPassword /> },
       { path: "/reset-password", element: <ResetPassword /> },
+      { path: "/share", element: <SharedShifts /> },
       {
         element: <ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />,
         children: [

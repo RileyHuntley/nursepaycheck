@@ -1,0 +1,136 @@
+import { useState, useEffect } from 'react';
+import { Loader2, AlertCircle } from 'lucide-react';
+import ShiftCalendarGrid from '@/components/payroll/ShiftCalendarGrid';
+import PayBreakdown from '@/components/payroll/PayBreakdown';
+import { calculatePeriodBreakdown } from '@/lib/premiumCalculator';
+import { formatCurrency } from '@/lib/utils';
+
+export default function SharedShifts() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    if (!token) {
+      setError('No share token provided.');
+      setLoading(false);
+      return;
+    }
+    fetch(`/functions/getSharedShifts?token=${encodeURIComponent(token)}`)
+      .then(res => res.json())
+      .then(json => {
+        if (json.error) {
+          setError(json.error);
+        } else {
+          setData(json);
+        }
+        setLoading(false);
+      })
+      .catch(() => {
+        setError('This share link is invalid or has been revoked.');
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="bg-card border border-border rounded-xl p-8 max-w-md text-center space-y-3">
+          <AlertCircle className="w-8 h-8 text-destructive mx-auto" />
+          <h2 className="text-lg font-semibold text-foreground">Unavailable</h2>
+          <p className="text-sm text-muted-foreground">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  const { settings, payPeriods } = data;
+
+  // Build shiftsMap for calendar
+  const shiftsMap = {};
+  payPeriods.forEach(period => {
+    (period.shifts || []).forEach(shift => {
+      if (!shiftsMap[shift.date]) shiftsMap[shift.date] = [];
+      shiftsMap[shift.date].push(shift);
+    });
+  });
+
+  // Calculate breakdown for most recent period
+  const latestPeriod = payPeriods[0];
+  const latestBreakdown = latestPeriod && settings
+    ? calculatePeriodBreakdown({ shifts: latestPeriod.shifts || [] }, settings)
+    : null;
+
+  // Year-to-date gross sum
+  const ytdGross = payPeriods.reduce((sum, p) => sum + (p.breakdown?.gross_pay || 0), 0);
+
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
+        <header className="text-center space-y-2">
+          <h1 className="text-2xl font-display font-bold text-foreground">BCNU Shift Tracker</h1>
+          <p className="text-sm text-muted-foreground">
+            {payPeriods.length} pay period{payPeriods.length !== 1 ? 's' : ''} ·{' '}
+            <span className="font-mono font-semibold text-foreground">{formatCurrency(ytdGross)}</span> YTD gross
+          </p>
+        </header>
+
+        <ShiftCalendarGrid
+          settings={settings}
+          shiftsMap={shiftsMap}
+          showHeader={false}
+        />
+
+        {latestBreakdown && (
+          <section className="bg-card border border-border rounded-xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">Latest Period</h3>
+                <p className="text-xs text-muted-foreground">{latestPeriod.name} · {latestPeriod.start_date} – {latestPeriod.end_date}</p>
+              </div>
+            </div>
+            <PayBreakdown
+              breakdown={latestBreakdown}
+              wage={settings.hourly_wage}
+              taxSettings={settings.tax_settings}
+            />
+          </section>
+        )}
+
+        {/* Period history */}
+        <section className="space-y-3">
+          <h3 className="text-sm font-semibold text-foreground">All Pay Periods</h3>
+          <div className="bg-card border border-border rounded-xl divide-y divide-border">
+            {payPeriods.map(period => (
+              <div key={period.id} className="flex items-center gap-4 px-5 py-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground">{period.name}</p>
+                  <p className="text-xs text-muted-foreground">{period.start_date} – {period.end_date} · {period.shifts?.length || 0} shifts</p>
+                </div>
+                {period.breakdown && (
+                  <span className="text-sm font-mono font-semibold text-primary flex-shrink-0">
+                    {formatCurrency(period.breakdown.gross_pay || 0)}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <footer className="text-center text-xs text-muted-foreground pb-8">
+          View-only share link · Generated by BCNU Shift Tracker
+        </footer>
+      </div>
+    </div>
+  );
+}

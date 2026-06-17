@@ -1,0 +1,51 @@
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+
+Deno.serve(async (req) => {
+  try {
+    const url = new URL(req.url);
+    const token = url.searchParams.get('token');
+    if (!token) {
+      return Response.json({ error: 'Missing share token' }, { status: 400 });
+    }
+
+    const base44 = createClientFromRequest(req);
+
+    // Look up settings by share_token using service role (RLS bypass)
+    const settingsList = await base44.asServiceRole.entities.Settings.filter({ share_token: token });
+    if (settingsList.length === 0) {
+      return Response.json({ error: 'Invalid or expired share link' }, { status: 404 });
+    }
+
+    const settings = settingsList[0];
+    const userId = settings.created_by_id;
+
+    // Fetch pay periods for this user using service role
+    const payPeriods = await base44.asServiceRole.entities.PayPeriod.filter(
+      { created_by_id: userId },
+      '-start_date',
+      50
+    );
+
+    // Remove sensitive/private fields from settings
+    const safeSettings = {
+      hourly_wage: settings.hourly_wage,
+      premium_rates: settings.premium_rates,
+      ot_multipliers: settings.ot_multipliers,
+      active_allowances: settings.active_allowances,
+      allowance_rates: settings.allowance_rates,
+      active_qualifications: settings.active_qualifications,
+      qualification_rates: settings.qualification_rates,
+      hospitals: settings.hospitals,
+      units: settings.units,
+      preset_times: settings.preset_times,
+      tax_settings: settings.tax_settings,
+    };
+
+    return Response.json({
+      settings: safeSettings,
+      payPeriods: payPeriods.filter(p => p.shifts && p.shifts.length > 0),
+    });
+  } catch (error) {
+    return Response.json({ error: error.message }, { status: 500 });
+  }
+});

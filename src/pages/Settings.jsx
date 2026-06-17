@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Save, Loader2, Plus, X, AlertTriangle } from 'lucide-react';
+import { Save, Loader2, Plus, X, AlertTriangle, Link2, Copy, RefreshCw } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -149,6 +149,9 @@ export default function Settings() {
       return { ...s, active_qualifications: next };
     });
   };
+
+  const [shareCopied, setShareCopied] = useState(false);
+  const [generating, setGenerating] = useState(false);
 
   const [newHospitalName, setNewHospitalName] = useState('');
   const [newHospitalAcronym, setNewHospitalAcronym] = useState('');
@@ -452,6 +455,83 @@ export default function Settings() {
             <p>EI: 1.63% up to $68,900 (max $1,123.07/yr)</p>
           </div>
         </div>
+      </section>
+
+      {/* Share Link */}
+      <section className="bg-card border border-border rounded-xl p-5 space-y-4">
+        <div>
+          <h3 className="text-sm font-semibold text-foreground">Share Link</h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            Generate a unique link to let anyone view your shift calendar and pay period summaries — no login required.
+          </p>
+        </div>
+
+        {settings.share_token ? (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 bg-muted rounded-lg p-3">
+              <code className="text-xs font-mono text-foreground flex-1 break-all select-all">
+                {`${window.location.origin}/share?token=${settings.share_token}`}
+              </code>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  navigator.clipboard.writeText(`${window.location.origin}/share?token=${settings.share_token}`);
+                  setShareCopied(true);
+                  setTimeout(() => setShareCopied(false), 2000);
+                }}
+                className="h-8 flex-shrink-0"
+              >
+                <Copy className="w-3.5 h-3.5 mr-1" />
+                {shareCopied ? 'Copied!' : 'Copy'}
+              </Button>
+            </div>
+            <div className="flex items-center gap-3">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setGenerating(true);
+                  const newToken = crypto.randomUUID();
+                  set('share_token', newToken);
+                  setGenerating(false);
+                }}
+                disabled={generating}
+                className="text-xs"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 mr-1 ${generating ? 'animate-spin' : ''}`} />
+                Regenerate
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => set('share_token', '')}
+                className="text-xs text-destructive hover:text-destructive"
+              >
+                <X className="w-3.5 h-3.5 mr-1" />
+                Revoke Link
+              </Button>
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Regenerating invalidates the old link. Revoking stops all anonymous access.
+            </p>
+          </div>
+        ) : (
+          <Button
+            size="sm"
+            onClick={() => {
+              setGenerating(true);
+              const newToken = crypto.randomUUID();
+              set('share_token', newToken);
+              setGenerating(false);
+            }}
+            disabled={generating}
+            className="bg-primary text-primary-foreground"
+          >
+            <Link2 className="w-4 h-4 mr-2" />
+            {generating ? 'Generating...' : 'Generate Share Link'}
+          </Button>
+        )}
       </section>
 
       {/* Hospitals & Units */}
