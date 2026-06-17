@@ -12,7 +12,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { X, ChevronDown, ChevronUp } from 'lucide-react';
 import { getStatType, getStatName } from '@/lib/statHolidays';
-import { calculateShiftPremiums } from '@/lib/premiumCalculator';
+import { calculateShiftPremiums, parseTime } from '@/lib/premiumCalculator';
 import { formatCurrency } from '@/lib/utils';
 
 // Default settings used when none provided (for premium preview in form)
@@ -52,15 +52,15 @@ const getPresets = (settings) => {
   return [
     {
       label: '12h Day',
-      values: { start_time: pt.day_12h_start || '07:00', end_time: pt.day_12h_end || '19:00', paid_hours: 11, unpaid_break: 1, paid_break: 0.75 },
+      values: { start_time: pt.day_12h_start || '07:00', end_time: pt.day_12h_end || '19:00', unpaid_break: 1, paid_break: 0.75 },
     },
     {
       label: '12h Night',
-      values: { start_time: pt.night_12h_start || '19:00', end_time: pt.night_12h_end || '07:00', paid_hours: 11, unpaid_break: 1, paid_break: 0.75 },
+      values: { start_time: pt.night_12h_start || '19:00', end_time: pt.night_12h_end || '07:00', unpaid_break: 1, paid_break: 0.75 },
     },
     {
       label: '8h Day',
-      values: { start_time: pt.day_8h_start || '08:00', end_time: pt.day_8h_end || '16:00', paid_hours: 7.5, unpaid_break: 0.5, paid_break: 0 },
+      values: { start_time: pt.day_8h_start || '08:00', end_time: pt.day_8h_end || '16:00', unpaid_break: 0.5, paid_break: 0 },
     },
   ];
 };
@@ -70,7 +70,6 @@ const emptyShift = {
   start_time: '',
   end_time: '',
   shift_type: 'regular',
-  paid_hours: 11,
   unpaid_break: 1,
   paid_break: 0.75,
   hospital: '',
@@ -94,6 +93,16 @@ export default function ShiftForm({ onSubmit, onCancel, initial, settings }) {
     };
   });
   const [showOverrides, setShowOverrides] = useState(false);
+
+  // Compute total hours from start/end times, then paid hours = total − unpaid break
+  const totalHours = (() => {
+    if (!shift.start_time || !shift.end_time) return 0;
+    const start = parseTime(shift.start_time);
+    let end = parseTime(shift.end_time);
+    if (end <= start) end += 24;
+    return Math.round((end - start) * 100) / 100;
+  })();
+  const paidHours = Math.max(0, totalHours - (shift.unpaid_break || 0));
 
   const set = (field, value) => setShift((s) => ({ ...s, [field]: value }));
   const setOverride = (field, value) => setShift(s => ({
@@ -124,8 +133,8 @@ export default function ShiftForm({ onSubmit, onCancel, initial, settings }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!shift.date || !shift.start_time || !shift.end_time || !shift.paid_hours) return;
-    onSubmit(shift);
+    if (!shift.date || !shift.start_time || !shift.end_time || paidHours <= 0) return;
+    onSubmit({ ...shift, paid_hours: paidHours });
   };
 
   // Show stat indicator if date is a stat
@@ -208,8 +217,10 @@ export default function ShiftForm({ onSubmit, onCancel, initial, settings }) {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">Paid Hours</Label>
-          <Input type="number" step="0.25" min="0" value={shift.paid_hours} onChange={(e) => set('paid_hours', parseFloat(e.target.value) || 0)} className="h-9 text-sm" />
+          <Label className="text-xs text-muted-foreground">Total Hours</Label>
+          <div className="h-9 flex items-center px-3 rounded-md border border-input bg-muted/30 text-sm font-mono text-foreground">
+            {totalHours > 0 ? `${totalHours}h` : <span className="text-muted-foreground">—</span>}
+          </div>
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">Unpaid Break (hrs)</Label>
@@ -294,9 +305,10 @@ export default function ShiftForm({ onSubmit, onCancel, initial, settings }) {
       </div>
 
       {/* Premium Preview & Override */}
-      {shift.start_time && shift.end_time && shift.paid_hours > 0 && (() => {
+      {shift.start_time && shift.end_time && paidHours > 0 && (() => {
         const calcSettings = settings || DEFAULT_RATES;
-        const premiums = calculateShiftPremiums(shift, calcSettings);
+        const shiftWithHours = { ...shift, paid_hours: paidHours };
+        const premiums = calculateShiftPremiums(shiftWithHours, calcSettings);
         const overrides = shift.premium_overrides || {};
         const PREMIUM_FIELDS = [
           { key: 'evening',         label: 'Evening Premium' },
