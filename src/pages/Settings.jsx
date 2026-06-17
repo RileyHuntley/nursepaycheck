@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Save, Loader2, Plus, X, AlertTriangle, Link2, Copy, RefreshCw } from 'lucide-react';
+import { Save, Loader2, Plus, X, AlertTriangle, Link2, Copy, RefreshCw, Info } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -153,11 +153,33 @@ export default function Settings() {
   const [shareCopied, setShareCopied] = useState(false);
   const [generating, setGenerating] = useState(false);
 
+  const [openInfo, setOpenInfo] = useState(null);
+
   const [newHospitalName, setNewHospitalName] = useState('');
   const [newHospitalAcronym, setNewHospitalAcronym] = useState('');
   const [newHospitalHA, setNewHospitalHA] = useState('');
   const [newUnitName, setNewUnitName] = useState('');
   const [newUnitCode, setNewUnitCode] = useState('');
+
+  const PREMIUM_INFO = {
+    evening: { article: 'Art. 28.01', title: 'Evening Shift Premium', desc: 'Paid for shifts where >½ of hours fall between 15:30–23:30. Extended-hour nurses: paid only for hours actually within 15:30–23:30.' },
+    night: { article: 'Art. 28.01', title: 'Night Shift Premium', desc: 'Paid for shifts where >½ of hours fall between 23:30–07:30. Extended-hour nurses: paid only for hours actually within 23:30–07:30.' },
+    weekend: { article: 'Art. 28.02', title: 'Weekend Premium', desc: 'Paid for each hour worked between 23:00 Friday and 23:00 Sunday.' },
+    super_shift: { article: 'Art. 28.03', title: 'Super Shift Premium', desc: 'Paid for Fri night + Sat night shifts: 23:30 Fri–07:30 Sat and 23:30 Sat–07:30 Sun.' },
+    regular_premium: { article: 'Art. 28.05', title: 'Regular Premium', desc: 'Paid on all straight-time hours worked by regular employees (excluding overtime).' },
+    short_notice: { article: 'Art. 28.04', title: 'Short Notice Premium', desc: 'Paid when called in within 24 hours of a shift start, on all hours worked.' },
+    responsibility_hourly: { article: 'Art. 30', title: 'Responsibility Pay (Hourly)', desc: 'Paid to nurses designated in-charge of a ward/unit for ≥2 hours. Cannot combine hourly + flat on same shift.' },
+    responsibility_flat: { article: 'Art. 30', title: 'Responsibility Pay (Flat)', desc: 'Flat $18.75 per shift for nurses designated in-charge. Cannot combine hourly + flat on same shift.' },
+    preceptor: { article: 'App. GG', title: 'Preceptor Premium', desc: 'Paid for the entire shift when designated as a preceptor supervising a preceptee.' },
+    specialty: { article: 'Art. 28.06', title: 'Specialty Premium', desc: 'Paid on all hours worked in specialty areas: OR, PAR, ER, ICU, CCU.' },
+    on_call_first_72: { article: 'Art. 29.03', title: 'On-Call (≤72 hrs/mo)', desc: 'Paid for all on-call hours within the first 72 hours in a calendar month.' },
+    on_call_beyond_72: { article: 'Art. 29.03', title: 'On-Call (>72 hrs/mo)', desc: 'Paid for all on-call hours beyond 72 hours within the same calendar month.' },
+  };
+
+  const ALLOWANCE_INFO = {
+    isolation: { article: 'Art. 54', title: 'Isolation Allowance', desc: 'Monthly lump-sum for nurses working in isolated communities identified in Article 54. Pro-rated for PT & casual.' },
+    business: { article: 'Art. 57.06', title: 'Business Allowance', desc: 'Monthly allowance for regular nurses in community-based services. Excludes clinic-type services aligned with acute care.' },
+  };
 
   const addHospital = () => {
     const name = newHospitalName.trim();
@@ -305,9 +327,11 @@ export default function Settings() {
       </section>
 
       {/* Premium Rates */}
-      <section className="bg-card border border-border rounded-xl p-5 space-y-4">
-        <h3 className="text-sm font-semibold text-foreground">Hourly Premium Rates ($/hr)</h3>
-        <p className="text-xs text-muted-foreground">Auto-applied rates. Update when CBA rates change annually.</p>
+      <section className="bg-card border border-border rounded-xl p-5 space-y-4" onClick={() => setOpenInfo(null)}>
+        <div>
+          <h3 className="text-sm font-semibold text-foreground">Hourly Premium Rates ($/hr)</h3>
+          <p className="text-xs text-muted-foreground mt-1">NBA CBA rates as of April 1, 2025. These rarely change — update only when a new CBA is ratified.</p>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {[
             { key: 'evening', label: 'Evening Shift (15:30–23:30)', defaultVal: 1.40 },
@@ -321,28 +345,76 @@ export default function Settings() {
             { key: 'specialty', label: 'Specialty Premium (OR/PAR/ER/ICU/CCU)', defaultVal: 2.00 },
           ].map(({ key, label }) => (
             <div key={key} className="flex items-center gap-2">
-              <Label className="text-xs text-muted-foreground flex-1 min-w-0 truncate">{label}</Label>
+              <div className="flex items-center gap-1 flex-1 min-w-0">
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setOpenInfo(openInfo === key ? null : key); }}
+                  className={`flex-shrink-0 p-0.5 rounded transition-colors ${openInfo === key ? 'text-primary' : 'text-muted-foreground/60 hover:text-muted-foreground'}`}
+                  title="View description"
+                >
+                  <Info className="w-3.5 h-3.5" />
+                </button>
+                <Label className="text-xs text-muted-foreground truncate">{label}</Label>
+              </div>
               <div className="relative flex-shrink-0">
-                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-mono">$</span>
+                {openInfo === key && PREMIUM_INFO[key] && (
+                  <div className="absolute z-50 left-0 bottom-full mb-2 w-64 bg-popover border border-border rounded-lg shadow-lg p-3 text-left" onClick={e => e.stopPropagation()}>
+                    <div className="flex items-start justify-between gap-2 mb-1.5">
+                      <div>
+                        <p className="text-xs font-semibold text-foreground leading-tight">{PREMIUM_INFO[key].title}</p>
+                        <p className="text-[10px] text-primary font-mono mt-0.5">{PREMIUM_INFO[key].article}</p>
+                      </div>
+                      <button onClick={() => setOpenInfo(null)} className="text-muted-foreground hover:text-foreground flex-shrink-0 mt-0.5">
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">{PREMIUM_INFO[key].desc}</p>
+                  </div>
+                )}
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground/50 font-mono">$</span>
                 <Input
                   type="number" step="0.01" min="0"
                   value={settings.premium_rates?.[key] || 0}
                   onChange={e => set(`premium_rates.${key}`, parseFloat(e.target.value) || 0)}
-                  className="h-9 w-24 text-sm font-mono flex-shrink-0 pl-6"
+                  className="h-9 w-24 text-sm font-mono flex-shrink-0 pl-6 bg-muted/40 text-muted-foreground border-muted-foreground/20 hover:bg-muted/60 focus:bg-card focus:text-foreground transition-colors"
                 />
               </div>
             </div>
           ))}
         </div>
         <div className="flex items-center gap-2 pt-1">
-          <Label className="text-xs text-muted-foreground flex-1">Responsibility Pay (flat per shift)</Label>
+          <div className="flex items-center gap-1 flex-1">
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setOpenInfo(openInfo === 'responsibility_flat' ? null : 'responsibility_flat'); }}
+              className={`flex-shrink-0 p-0.5 rounded transition-colors ${openInfo === 'responsibility_flat' ? 'text-primary' : 'text-muted-foreground/60 hover:text-muted-foreground'}`}
+              title="View description"
+            >
+              <Info className="w-3.5 h-3.5" />
+            </button>
+            <Label className="text-xs text-muted-foreground">Responsibility Pay (flat per shift)</Label>
+          </div>
           <div className="relative flex-shrink-0">
-            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-mono">$</span>
+            {openInfo === 'responsibility_flat' && (
+              <div className="absolute z-50 left-0 bottom-full mb-2 w-64 bg-popover border border-border rounded-lg shadow-lg p-3 text-left" onClick={e => e.stopPropagation()}>
+                <div className="flex items-start justify-between gap-2 mb-1.5">
+                  <div>
+                    <p className="text-xs font-semibold text-foreground leading-tight">Responsibility Pay (Flat)</p>
+                    <p className="text-[10px] text-primary font-mono mt-0.5">Art. 30</p>
+                  </div>
+                  <button onClick={() => setOpenInfo(null)} className="text-muted-foreground hover:text-foreground flex-shrink-0 mt-0.5">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">Flat $18.75 per shift for nurses designated in-charge. Cannot combine hourly + flat on same shift.</p>
+              </div>
+            )}
+            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground/50 font-mono">$</span>
             <Input
               type="number" step="0.01" min="0"
               value={settings.premium_rates?.responsibility_flat || 0}
               onChange={e => set('premium_rates.responsibility_flat', parseFloat(e.target.value) || 0)}
-              className="h-9 w-24 text-sm font-mono flex-shrink-0 pl-6"
+              className="h-9 w-24 text-sm font-mono flex-shrink-0 pl-6 bg-muted/40 text-muted-foreground border-muted-foreground/20 hover:bg-muted/60 focus:bg-card focus:text-foreground transition-colors"
             />
           </div>
         </div>
@@ -352,14 +424,38 @@ export default function Settings() {
             { key: 'on_call_beyond_72', label: 'On-Call (beyond 72 hrs/mo)', defaultVal: 7.50 },
           ].map(({ key, label }) => (
             <div key={key} className="flex items-center gap-2">
-              <Label className="text-xs text-muted-foreground flex-1">{label}</Label>
+              <div className="flex items-center gap-1 flex-1 min-w-0">
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setOpenInfo(openInfo === key ? null : key); }}
+                  className={`flex-shrink-0 p-0.5 rounded transition-colors ${openInfo === key ? 'text-primary' : 'text-muted-foreground/60 hover:text-muted-foreground'}`}
+                  title="View description"
+                >
+                  <Info className="w-3.5 h-3.5" />
+                </button>
+                <Label className="text-xs text-muted-foreground truncate">{label}</Label>
+              </div>
               <div className="relative flex-shrink-0">
-                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-mono">$</span>
+                {openInfo === key && PREMIUM_INFO[key] && (
+                  <div className="absolute z-50 left-0 bottom-full mb-2 w-64 bg-popover border border-border rounded-lg shadow-lg p-3 text-left" onClick={e => e.stopPropagation()}>
+                    <div className="flex items-start justify-between gap-2 mb-1.5">
+                      <div>
+                        <p className="text-xs font-semibold text-foreground leading-tight">{PREMIUM_INFO[key].title}</p>
+                        <p className="text-[10px] text-primary font-mono mt-0.5">{PREMIUM_INFO[key].article}</p>
+                      </div>
+                      <button onClick={() => setOpenInfo(null)} className="text-muted-foreground hover:text-foreground flex-shrink-0 mt-0.5">
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">{PREMIUM_INFO[key].desc}</p>
+                  </div>
+                )}
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground/50 font-mono">$</span>
                 <Input
                   type="number" step="0.01" min="0"
                   value={settings.premium_rates?.[key] || 0}
                   onChange={e => set(`premium_rates.${key}`, parseFloat(e.target.value) || 0)}
-                  className="h-9 w-24 text-sm font-mono flex-shrink-0 pl-6"
+                  className="h-9 w-24 text-sm font-mono flex-shrink-0 pl-6 bg-muted/40 text-muted-foreground border-muted-foreground/20 hover:bg-muted/60 focus:bg-card focus:text-foreground transition-colors"
                 />
               </div>
             </div>
@@ -368,22 +464,48 @@ export default function Settings() {
       </section>
 
       {/* Monthly Allowances */}
-      <section className="bg-card border border-border rounded-xl p-5 space-y-4">
-        <h3 className="text-sm font-semibold text-foreground">Monthly Allowances</h3>
-        <p className="text-xs text-muted-foreground">Prorated per bi-weekly pay period: monthly ÷ (26/12)</p>
+      <section className="bg-card border border-border rounded-xl p-5 space-y-4" onClick={() => setOpenInfo(null)}>
+        <div>
+          <h3 className="text-sm font-semibold text-foreground">Monthly Allowances</h3>
+          <p className="text-xs text-muted-foreground mt-1">Prorated per bi-weekly pay period: monthly ÷ (26/12)</p>
+        </div>
         {[
           { key: 'isolation', label: 'Isolation Allowance', rate: 150 },
           { key: 'business', label: 'Business Allowance', rate: 150 },
         ].map(({ key, label, rate }) => (
-          <div key={key} className="flex items-center gap-4">
+          <div key={key} className="flex items-center gap-4 relative">
             <Switch
               checked={(settings.active_allowances || []).includes(key)}
               onCheckedChange={() => toggleAllowance(key)}
             />
             <div className="flex-1">
-              <Label className="text-sm text-foreground">{label}</Label>
+              <div className="flex items-center gap-1">
+                <Label className="text-sm text-foreground">{label}</Label>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setOpenInfo(openInfo === `allow_${key}` ? null : `allow_${key}`); }}
+                  className={`flex-shrink-0 p-0.5 rounded transition-colors ${openInfo === `allow_${key}` ? 'text-primary' : 'text-muted-foreground/60 hover:text-muted-foreground'}`}
+                  title="View description"
+                >
+                  <Info className="w-3.5 h-3.5" />
+                </button>
+              </div>
               <p className="text-xs text-muted-foreground">${rate.toFixed(2)}/month = ${(rate * 12 / 26).toFixed(2)}/period</p>
             </div>
+            {openInfo === `allow_${key}` && ALLOWANCE_INFO[key] && (
+              <div className="absolute z-50 left-0 bottom-full mb-2 w-64 bg-popover border border-border rounded-lg shadow-lg p-3 text-left" onClick={e => e.stopPropagation()}>
+                <div className="flex items-start justify-between gap-2 mb-1.5">
+                  <div>
+                    <p className="text-xs font-semibold text-foreground leading-tight">{ALLOWANCE_INFO[key].title}</p>
+                    <p className="text-[10px] text-primary font-mono mt-0.5">{ALLOWANCE_INFO[key].article}</p>
+                  </div>
+                  <button onClick={() => setOpenInfo(null)} className="text-muted-foreground hover:text-foreground flex-shrink-0 mt-0.5">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">{ALLOWANCE_INFO[key].desc}</p>
+              </div>
+            )}
           </div>
         ))}
       </section>
