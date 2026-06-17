@@ -345,6 +345,8 @@ export default function ShiftCalendarGrid({ settings, shiftsMap, onShiftUpdate, 
                 <div className="flex-1 px-1.5 pb-1.5 space-y-0.5">
                   {shifts.map((shift, si) => {
                     const colors = TYPE_COLORS[shift.shift_type] || TYPE_COLORS.regular;
+                    const premiums = settings ? calculateShiftPremiums(shift, settings) : null;
+                    const isNight = premiums && premiums.night > 0;
                     return (
                       <button
                         key={si}
@@ -352,6 +354,7 @@ export default function ShiftCalendarGrid({ settings, shiftsMap, onShiftUpdate, 
                         className={`w-full text-left px-1.5 py-0.5 rounded text-[10px] leading-tight border ${colors} hover:brightness-95 transition-all cursor-pointer`}
                       >
                         <div className="flex items-center gap-1">
+                          <span className="text-[11px]">{isNight ? '🌙' : '☀️'}</span>
                           <span className="font-semibold">{TYPE_SHORT[shift.shift_type] || shift.shift_type}</span>
                           <span className="opacity-70 font-mono">{shift.start_time}–{shift.end_time}</span>
                         </div>
