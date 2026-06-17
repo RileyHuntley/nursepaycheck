@@ -7,6 +7,10 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ScrollToTop from './components/ScrollToTop';
 // Add page imports here
+import Login from '@/pages/Login';
+import Register from '@/pages/Register';
+import ForgotPassword from '@/pages/ForgotPassword';
+import ResetPassword from '@/pages/ResetPassword';
 import Layout from '@/components/payroll/Layout';
 import Dashboard from '@/pages/Dashboard';
 import PayPeriodDetail from '@/pages/PayPeriodDetail';
@@ -41,6 +45,10 @@ const AuthenticatedApp = () => {
   // Render the main app
   return (
     <Routes>
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       {/* Add your page Route elements here */}
       <Route element={<Layout />}>
         <Route path="/" element={<Dashboard />} />
