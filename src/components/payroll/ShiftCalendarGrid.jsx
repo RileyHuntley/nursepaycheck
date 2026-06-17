@@ -106,10 +106,16 @@ export default function ShiftCalendarGrid({ settings, shiftsMap, onShiftUpdate, 
     if (onReload) onReload();
   };
 
-  // Derive filter options
+  // Derive filter options + abbreviation visibility
   const allShifts = Object.values(shiftsMap).flat();
   const hospitals = settings?.hospitals || [];
   const units = settings?.units || [];
+
+  // Show hospital/unit abbreviations only when shifts span more than one
+  const uniqueHospitals = new Set(allShifts.map(s => s.hospital).filter(Boolean));
+  const uniqueUnits = new Set(allShifts.map(s => s.unit).filter(Boolean));
+  const showHospitalAbbr = uniqueHospitals.size > 1;
+  const showUnitAbbr = uniqueUnits.size > 1;
 
   const shiftHospitals = [...new Set(allShifts.map(s => s.hospital).filter(Boolean))];
 
@@ -361,6 +367,14 @@ export default function ShiftCalendarGrid({ settings, shiftsMap, onShiftUpdate, 
                           {shift.extended_shift && <span className="text-destructive font-medium">Ext</span>}
                           {shift.short_notice && <span className="font-medium">Notice</span>}
                         </div>
+                        {(showHospitalAbbr && shift.hospital) || (showUnitAbbr && shift.unit) ? (
+                          <div className="text-[8px] opacity-60 mt-0.5">
+                            {[
+                              showHospitalAbbr && shift.hospital ? (hospitals.find(h => h.name === shift.hospital)?.acronym || shift.hospital) : null,
+                              showUnitAbbr && shift.unit ? (units.find(u => u.name === shift.unit)?.code || shift.unit) : null,
+                            ].filter(Boolean).join(' · ')}
+                          </div>
+                        ) : null}
                       </>
                     );
                     return readOnly ? (
