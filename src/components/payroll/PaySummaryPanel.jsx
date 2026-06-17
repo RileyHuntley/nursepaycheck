@@ -35,7 +35,7 @@ export default function PaySummaryPanel({ title, subtitle, breakdown, loading, t
   const hasTaxes = taxes && taxes.total > 0;
 
   const statutory = annualIncome > 0
-    ? estimateStatutoryDeductions(breakdown.gross_pay, annualIncome)
+    ? estimateStatutoryDeductions(breakdown.gross_pay, annualIncome, breakdown.straight_time_pay)
     : null;
   const hasStatutory = statutory && statutory.total > 0;
 

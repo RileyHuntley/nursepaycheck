@@ -64,14 +64,18 @@ export function estimateTaxes(periodGross, annualProvincialIncome, annualFederal
  * Estimate statutory deductions (CPP, CPP2, EI) for a pay period.
  * Calculates annual contribution at the given annual income, then prorates to the period.
  *
- * @param {number} periodGross - gross pay for this period
+ * @param {number} periodGross - total gross pay for this period (used for EI proration)
  * @param {number} annualIncome - estimated annual taxable income (federal)
+ * @param {number} [pensionableEarnings] - pensionable earnings for CPP (excludes overtime/stat pay). Defaults to periodGross.
  * @returns {{ cpp: number, cpp2: number, ei: number, total: number }}
  */
-export function estimateStatutoryDeductions(periodGross, annualIncome) {
+export function estimateStatutoryDeductions(periodGross, annualIncome, pensionableEarnings) {
   if (!periodGross || periodGross <= 0 || !annualIncome || annualIncome <= 0) {
     return { cpp: 0, cpp2: 0, ei: 0, total: 0 };
   }
+
+  // Overtime is NOT pensionable for CPP — use pensionableEarnings (straight-time pay) if provided
+  const pensionableGross = pensionableEarnings != null ? pensionableEarnings : periodGross;
 
   // CPP: 5.95% on pensionable earnings between $3,500 and $74,600
   const CPP_RATE = 0.0595;
@@ -86,7 +90,7 @@ export function estimateStatutoryDeductions(periodGross, annualIncome) {
     annualCpp = Math.min(pensionable * CPP_RATE, CPP_MAX);
   }
 
-  // CPP2: 4.0% on earnings between $74,600 and $85,000
+  // CPP2: 4.0% on earnings between $74,600 and $85,000 (also pensionable earnings only, no overtime)
   const CPP2_RATE = 0.04;
   const CPP2_FLOOR = 74600;
   const CPP2_CEILING = 85000;
@@ -98,7 +102,7 @@ export function estimateStatutoryDeductions(periodGross, annualIncome) {
     annualCpp2 = Math.min(cpp2Earnings * CPP2_RATE, CPP2_MAX);
   }
 
-  // EI: 1.63% on insurable earnings up to $68,900
+  // EI: 1.63% on all insurable earnings up to $68,900 (includes overtime)
   const EI_RATE = 0.0163;
   const EI_CEILING = 68900;
   const EI_MAX = 1123.07;
@@ -106,14 +110,15 @@ export function estimateStatutoryDeductions(periodGross, annualIncome) {
   const insurable = Math.min(annualIncome, EI_CEILING);
   const annualEi = Math.min(insurable * EI_RATE, EI_MAX);
 
-  // Pro-rate to this pay period
-  const ratio = periodGross / annualIncome;
+  // Pro-rate to this pay period — CPP/CPP2 use pensionable ratio; EI uses gross ratio
+  const cppRatio = pensionableGross / annualIncome;
+  const eiRatio = periodGross / annualIncome;
 
   return {
-    cpp: Math.round(annualCpp * ratio * 100) / 100,
-    cpp2: Math.round(annualCpp2 * ratio * 100) / 100,
-    ei: Math.round(annualEi * ratio * 100) / 100,
-    total: Math.round((annualCpp + annualCpp2 + annualEi) * ratio * 100) / 100,
+    cpp: Math.round(annualCpp * cppRatio * 100) / 100,
+    cpp2: Math.round(annualCpp2 * cppRatio * 100) / 100,
+    ei: Math.round(annualEi * eiRatio * 100) / 100,
+    total: Math.round((annualCpp * cppRatio + annualCpp2 * cppRatio + annualEi * eiRatio) * 100) / 100,
   };
 }
 
