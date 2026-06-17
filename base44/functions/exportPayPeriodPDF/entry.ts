@@ -2,198 +2,113 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { jsPDF } from 'npm:jspdf@4.0.0';
 
 // ── Constants ──
-const M = 18;
+const M = 16;
 const PW = 210 - M * 2;
 const PAGE_H = 297;
-const COLORS = {
-  primary: [23, 162, 140], muted: [140, 150, 160], dark: [30, 35, 40],
-  light: [245, 247, 250], border: [220, 225, 230],
-};
+const COL = { primary: [23,162,140], muted: [140,150,160], dark: [30,35,40], light: [245,247,250], border: [220,225,230], accent: [220,38,38] };
 
-// ── Helpers ──
-function round2(n) { return Math.round(n * 100) / 100; }
-function fmtCurrency(n) {
-  const abs = Math.abs(n || 0);
-  return (n < 0 ? '-' : '') + '$' + abs.toLocaleString('en-CA', { minimumFractionDigits: 2 });
-}
-function safe(str) {
-  if (!str) return '';
-  return String(str).replace(/\u2013|\u2014/g, '-').replace(/\u00b7/g, '.').replace(/\u2019|\u2018/g, "'").replace(/[^\x00-\xFF]/g, '?');
-}
+// ── Utilities ──
+function r2(n) { return Math.round(n * 100) / 100; }
+function fm$(n) { return (n < 0 ? '-' : '') + '$' + Math.abs(n || 0).toLocaleString('en-CA', { minimumFractionDigits: 2 }); }
+function safe(s) { if (!s) return ''; return String(s).replace(/\u2013|\u2014/g,'-').replace(/\u00b7/g,'.').replace(/\u2019|\u2018/g,"'").replace(/[^\x00-\xFF]/g,'?'); }
+function pt(t) { if (!t) return 0; const [h,m] = t.replace('.',':').split(':').map(Number); return h + (m||0)/60; }
+function fmtTime(d) { let h = Math.floor(d) % 24; return `${String(h).padStart(2,'0')}:${String(Math.round((d-Math.floor(d))*60)).padStart(2,'0')}`; }
+function hrsInRange(sS,sE,rS,rE) { if(sS>=sE)sE+=24; if(rS>=rE)rE+=24; const oS=Math.max(sS,rS),oE=Math.min(sE,rE); return oS<oE?oE-oS:0; }
+function span(s,e) { const st=pt(s); let en=pt(e); if(en<=st)en+=24; return en-st; }
 
-function parseTime(timeStr) {
-  if (!timeStr) return 0;
-  const [h, m] = timeStr.replace('.', ':').split(':').map(Number);
-  return h + (m || 0) / 60;
-}
-function formatTime(decimal) {
-  let h = Math.floor(decimal) % 24;
-  return `${String(h).padStart(2, '0')}:${String(Math.round((decimal - Math.floor(decimal)) * 60)).padStart(2, '0')}`;
-}
-function hoursInRange(sStart, sEnd, rStart, rEnd) {
-  if (sStart >= sEnd) sEnd += 24;
-  if (rStart >= rEnd) rEnd += 24;
-  const oStart = Math.max(sStart, rStart), oEnd = Math.min(sEnd, rEnd);
-  return oStart < oEnd ? oEnd - oStart : 0;
-}
-function shiftSpan(s, e) { const start = parseTime(s); let end = parseTime(e); if (end <= start) end += 24; return end - start; }
+// ── Stat holidays ──
+const SUPER_2026 = ['2026-01-01','2026-04-03','2026-04-06','2026-05-18','2026-07-01','2026-09-07','2026-10-12','2026-11-11','2026-12-25','2026-12-26'];
+const STAT_2026 = ['2026-02-16','2026-08-03'];
+const SUPER_2027 = ['2027-01-01','2027-03-26','2027-03-29','2027-05-24','2027-07-01','2027-09-06','2027-10-11','2027-11-11','2027-12-25','2027-12-27'];
+const STAT_2027 = ['2027-02-15','2027-08-02'];
+function statType(d) { for(const x of SUPER_2026) if(d===x) return 'super'; for(const x of SUPER_2027) if(d===x) return 'super'; for(const x of STAT_2026) if(d===x) return 'regular'; for(const x of STAT_2027) if(d===x) return 'regular'; return null; }
 
-// ── Stat holidays (inline for backend) ──
-const SUPER_STATS_2026 = ['2026-01-01','2026-04-03','2026-04-06','2026-05-18','2026-07-01','2026-09-07','2026-10-12','2026-11-11','2026-12-25','2026-12-26'];
-const STATS_2026 = ['2026-02-16','2026-08-03'];
-const ALL_STATS_2026 = [...SUPER_STATS_2026, ...STATS_2026];
-const SUPER_STATS_2027 = ['2027-01-01','2027-03-26','2027-03-29','2027-05-24','2027-07-01','2027-09-06','2027-10-11','2027-11-11','2027-12-25','2027-12-27'];
-const STATS_2027 = ['2027-02-15','2027-08-02'];
-const ALL_STATS_2027 = [...SUPER_STATS_2027, ...STATS_2027];
-function getStatType(dateStr) {
-  for (const d of SUPER_STATS_2026) if (dateStr === d) return 'super_stat';
-  for (const d of SUPER_STATS_2027) if (dateStr === d) return 'super_stat';
-  for (const d of STATS_2026) if (dateStr === d) return 'stat';
-  for (const d of STATS_2027) if (dateStr === d) return 'stat';
-  return null;
+// ── Overnight split ──
+function splitOvernight(shift) {
+  const startH = pt(shift.start_time); let endH = pt(shift.end_time);
+  const ub = shift.unpaid_break || 0;
+  if (endH > startH) { const h = shift.paid_hours || (endH - startH - ub); return [{ date: shift.date, hours: r2(h) }]; }
+  endH += 24; const bc = 24 - startH, ac = endH - 24; let bp, ap;
+  if (ub > 0 && (bc + ac) >= 5) { const bs = startH + 5, be = bs + ub; bp = r2(bc - Math.max(0, Math.min(be,24) - bs)); ap = r2(ac - Math.max(0, be - Math.max(bs,24))); }
+  else { const ph = shift.paid_hours || (bc + ac); bp = r2((bc/(bc+ac))*ph); ap = r2((ac/(bc+ac))*ph); }
+  const next = new Date(shift.date + 'T12:00:00'); next.setDate(next.getDate()+1);
+  return [{ date: shift.date, hours: bp }, { date: next.toISOString().slice(0,10), hours: ap }];
 }
 
-// ── Per-shift segment multiplier ──
-function getSegMultiplier(shiftType, segmentDate) {
-  const baseMap = { day_off: 2.0, unpaid_vacation: 0, unpaid_sick: 0 };
-  const base = baseMap[shiftType] ?? 1.0;
+// ── Segment multiplier ──
+function segMult(stype, sdate) {
+  const bm = { day_off: 2.0, unpaid_vacation: 0, unpaid_sick: 0 }; const base = bm[stype] ?? 1.0;
   if (base === 0) return 0;
-  const statType = getStatType(segmentDate);
-  if (shiftType === 'day_off') return statType ? 3.0 : 2.0;
+  const st = statType(sdate);
+  if (stype === 'day_off') return st ? 3.0 : 2.0;
   const straight = ['casual','regular','isn','vacation','paid_vacation','sick','paid_sick','special_leave','pdo_pst','other_leave'];
-  if (straight.includes(shiftType)) {
-    if (statType === 'super_stat') return 2.5;
-    if (statType === 'stat') return 2.0;
-    return 1.0;
-  }
+  if (straight.includes(stype)) { if (st === 'super') return 2.5; if (st === 'regular') return 2.0; return 1.0; }
   return base;
 }
 
-// ── Split overnight shift into per-date segments ──
-function splitOvernight(shift) {
-  const startH = parseTime(shift.start_time);
-  let endH = parseTime(shift.end_time);
-  const unpaidBreak = shift.unpaid_break || 0;
-  if (endH > startH) {
-    const hours = shift.paid_hours || (endH - startH - unpaidBreak);
-    return [{ date: shift.date, hours: round2(hours) }];
-  }
-  endH += 24;
-  const beforeClock = 24 - startH;
-  const afterClock = endH - 24;
-  let beforePaid, afterPaid;
-  if (unpaidBreak > 0 && (beforeClock + afterClock) >= 5) {
-    const breakStart = startH + 5, breakEnd = breakStart + unpaidBreak;
-    beforePaid = round2(beforeClock - Math.max(0, Math.min(breakEnd, 24) - breakStart));
-    afterPaid = round2(afterClock - Math.max(0, breakEnd - Math.max(breakStart, 24)));
-  } else {
-    const ph = shift.paid_hours || (beforeClock + afterClock);
-    beforePaid = round2((beforeClock / (beforeClock + afterClock)) * ph);
-    afterPaid = round2((afterClock / (beforeClock + afterClock)) * ph);
-  }
-  const next = new Date(shift.date + 'T12:00:00'); next.setDate(next.getDate() + 1);
-  return [{ date: shift.date, hours: beforePaid }, { date: next.toISOString().slice(0, 10), hours: afterPaid }];
-}
-
-// ── Per-shift premium calculation ──
+// ── Shift premiums ──
 function shiftPremiums(shift, rates) {
-  const paidHours = shift.paid_hours || 0;
-  const isStraight = ['casual','regular','isn','vacation','paid_vacation','sick','paid_sick','special_leave','pdo_pst','other_leave'].includes(shift.shift_type);
-  const span = shiftSpan(shift.start_time, shift.end_time);
-  const extended = span >= 10;
-  const start = parseTime(shift.start_time);
-  const end = parseTime(shift.end_time);
-
-  let eveH = 0, nightH = 0;
-  if (extended) {
-    eveH = hoursInRange(start, end, 15.5, 23.5);
-    nightH = hoursInRange(start, end, 23.5, 31.5);
-  } else {
-    const eveTotal = hoursInRange(start, end, 15.5, 23.5);
-    const nightTotal = hoursInRange(start, end, 23.5, 31.5);
-    if (eveTotal > nightTotal && eveTotal > span / 2) eveH = paidHours;
-    else if (nightTotal > eveTotal && nightTotal > span / 2) nightH = paidHours;
-  }
-
-  // Weekend hours
-  const dayOfWeek = new Date(shift.date + 'T12:00:00').getUTCDay();
-  let wkndH = 0;
-  const cap = (h) => Math.min(h, paidHours);
-  if (dayOfWeek === 5) wkndH = hoursInRange(start, end, 23, 47);
-  else if (dayOfWeek === 6) wkndH = hoursInRange(start, end, 0, 47);
-  else if (dayOfWeek === 0) wkndH = hoursInRange(start, end, 0, 23);
-
-  // Super shift hours
-  let superH = 0;
-  if (dayOfWeek === 5) superH = hoursInRange(start, end, 23.5, 31.5);
-  else if (dayOfWeek === 6) superH = hoursInRange(start, end, 23.5, 31.5);
-
-  eveH = cap(eveH); nightH = cap(nightH); wkndH = cap(wkndH); superH = cap(superH);
-
-  const overrides = shift.premium_overrides || {};
+  const ph = shift.paid_hours || 0;
+  const isSt = ['casual','regular','isn','vacation','paid_vacation','sick','paid_sick','special_leave','pdo_pst','other_leave'].includes(shift.shift_type);
+  const sp = span(shift.start_time, shift.end_time);
+  const ext = sp >= 10;
+  const s = pt(shift.start_time), e = pt(shift.end_time);
+  let eveH=0, nightH=0;
+  if (ext) { eveH = hrsInRange(s,e,15.5,23.5); nightH = hrsInRange(s,e,23.5,31.5); }
+  else { const et = hrsInRange(s,e,15.5,23.5), nt = hrsInRange(s,e,23.5,31.5); if (et>nt && et>sp/2) eveH=ph; else if (nt>et && nt>sp/2) nightH=ph; }
+  const dow = new Date(shift.date + 'T12:00:00').getUTCDay();
+  let wkndH=0; const cap = h => Math.min(h, ph);
+  if (dow===5) wkndH = hrsInRange(s,e,23,47); else if (dow===6) wkndH = hrsInRange(s,e,0,47); else if (dow===0) wkndH = hrsInRange(s,e,0,23);
+  let superH=0; if (dow===5) superH = hrsInRange(s,e,23.5,31.5); else if (dow===6) superH = hrsInRange(s,e,23.5,31.5);
+  eveH=cap(eveH); nightH=cap(nightH); wkndH=cap(wkndH); superH=cap(superH);
+  const ov = shift.premium_overrides || {};
   return {
-    evening: overrides.evening != null ? overrides.evening : round2(eveH * (rates.evening || 0)),
-    night:   overrides.night != null   ? overrides.night   : round2(nightH * (rates.night || 0)),
-    weekend: overrides.weekend != null ? overrides.weekend : round2(wkndH * (rates.weekend || 0)),
-    super_shift: overrides.super_shift != null ? overrides.super_shift : round2(superH * (rates.super_shift || 0)),
-    regular_premium: overrides.regular_premium != null ? overrides.regular_premium
-      : (isStraight ? round2(paidHours * (rates.regular_premium || 0)) : 0),
-    short_notice: overrides.short_notice != null ? overrides.short_notice
-      : (shift.short_notice ? round2(paidHours * (rates.short_notice || 0)) : 0),
-    responsibility: overrides.responsibility != null ? overrides.responsibility
-      : (shift.responsibility_pay === 'hourly' ? round2(paidHours * (rates.responsibility_hourly || 0))
-        : shift.responsibility_pay === 'flat' ? (rates.responsibility_flat || 0) : 0),
-    preceptor: overrides.preceptor != null ? overrides.preceptor
-      : (shift.preceptor ? round2(paidHours * (rates.preceptor || 0)) : 0),
-    specialty: overrides.specialty != null ? overrides.specialty
-      : (shift.specialty_premium ? round2(paidHours * (rates.specialty || 0)) : 0),
+    evening: ov.evening!=null?ov.evening:r2(eveH*(rates.evening||0)), eveH: r2(eveH),
+    night: ov.night!=null?ov.night:r2(nightH*(rates.night||0)), nightH: r2(nightH),
+    weekend: ov.weekend!=null?ov.weekend:r2(wkndH*(rates.weekend||0)), wkndH: r2(wkndH),
+    super_shift: ov.super_shift!=null?ov.super_shift:r2(superH*(rates.super_shift||0)), superH: r2(superH),
+    regular_premium: ov.regular_premium!=null?ov.regular_premium:(isSt?r2(ph*(rates.regular_premium||0)):0),
+    short_notice: ov.short_notice!=null?ov.short_notice:(shift.short_notice?r2(ph*(rates.short_notice||0)):0),
+    responsibility: ov.responsibility!=null?ov.responsibility:(shift.responsibility_pay==='hourly'?r2(ph*(rates.responsibility_hourly||0)):shift.responsibility_pay==='flat'?(rates.responsibility_flat||0):0),
+    preceptor: ov.preceptor!=null?ov.preceptor:(shift.preceptor?r2(ph*(rates.preceptor||0)):0),
+    specialty: ov.specialty!=null?ov.specialty:(shift.specialty_premium?r2(ph*(rates.specialty||0)):0),
+  };
+}
+function premSum(p) { return (p.evening||0)+(p.night||0)+(p.weekend||0)+(p.super_shift||0)+(p.regular_premium||0)+(p.short_notice||0)+(p.responsibility||0)+(p.preceptor||0)+(p.specialty||0); }
+
+// ── Tax estimation ──
+const BC_B = [{t:50363,r:.056},{t:100728,r:.077},{t:115648,r:.105},{t:140430,r:.1229},{t:190405,r:.147},{t:265545,r:.168},{t:1/0,r:.205}];
+const FED_B = [{t:58523,r:.14},{t:117045,r:.205},{t:181440,r:.26},{t:258482,r:.29},{t:1/0,r:.33}];
+function mRate(b, inc) { for(const x of b) if(inc<=x.t) return x.r; return b[b.length-1].r; }
+function estDed(bd, ts) {
+  const g = bd.gross_pay||0, pen = bd.straight_time_pay||0, af = ts?.annual_federal_income||0, ap = ts?.annual_provincial_income||0;
+  if (g<=0||af<=0) return null;
+  const cppY = af>3500?Math.min((Math.min(af,74600)-3500)*.0595,4230.45):0;
+  const cpp2Y = af>74600?Math.min((Math.min(af,85000)-74600)*.04,416):0;
+  const eiY = Math.min(Math.min(af,68900)*.0163,1123.07);
+  return {
+    cpp: r2(cppY*(pen/af)), cpp2: r2(cpp2Y*(pen/af)), ei: r2(eiY*(g/af)),
+    fed: r2(g*mRate(FED_B, af)), prov: r2(ap>0?g*mRate(BC_B, ap):0),
   };
 }
 
-function premiumSum(p) {
-  return (p.evening||0)+(p.night||0)+(p.weekend||0)+(p.super_shift||0)
-    +(p.regular_premium||0)+(p.short_notice||0)+(p.responsibility||0)+(p.preceptor||0)+(p.specialty||0);
-}
-
-// ── Tax / statutory estimation (inlined from taxCalculator) ──
-const BC_BRACKETS = [
-  { threshold: 50363, rate: 0.056 },{ threshold: 100728, rate: 0.077 },{ threshold: 115648, rate: 0.105 },
-  { threshold: 140430, rate: 0.1229 },{ threshold: 190405, rate: 0.147 },{ threshold: 265545, rate: 0.168 },{ threshold: Infinity, rate: 0.205 }
+// ── VCH period number lookup ──
+const VCH_2026 = [
+  ['2025-12-29','2026-01-11','2026-01-16'],['2026-01-12','2026-01-25','2026-01-30'],['2026-01-26','2026-02-08','2026-02-13'],
+  ['2026-02-09','2026-02-22','2026-02-27'],['2026-02-23','2026-03-08','2026-03-13'],['2026-03-09','2026-03-22','2026-03-27'],
+  ['2026-03-23','2026-04-05','2026-04-10'],['2026-04-06','2026-04-19','2026-04-24'],['2026-04-20','2026-05-03','2026-05-08'],
+  ['2026-05-04','2026-05-17','2026-05-22'],['2026-05-18','2026-05-31','2026-06-05'],['2026-06-01','2026-06-14','2026-06-19'],
+  ['2026-06-15','2026-06-28','2026-07-03'],['2026-06-29','2026-07-12','2026-07-17'],['2026-07-13','2026-07-26','2026-07-31'],
+  ['2026-07-27','2026-08-09','2026-08-14'],['2026-08-10','2026-08-23','2026-08-28'],['2026-08-24','2026-09-06','2026-09-11'],
+  ['2026-09-07','2026-09-20','2026-09-25'],['2026-09-21','2026-10-04','2026-10-09'],['2026-10-05','2026-10-18','2026-10-23'],
+  ['2026-10-19','2026-11-01','2026-11-06'],['2026-11-02','2026-11-15','2026-11-20'],['2026-11-16','2026-11-29','2026-12-04'],
+  ['2026-11-30','2026-12-13','2026-12-18'],['2026-12-14','2026-12-27','2027-01-01'],
 ];
-const FED_BRACKETS = [
-  { threshold: 58523, rate: 0.14 },{ threshold: 117045, rate: 0.205 },{ threshold: 181440, rate: 0.26 },
-  { threshold: 258482, rate: 0.29 },{ threshold: Infinity, rate: 0.33 }
-];
-function marginalRate(brackets, income) { for (const b of brackets) { if (income <= b.threshold) return b.rate; } return brackets[brackets.length-1].rate; }
+function getPPNum(start) { for(let i=0;i<VCH_2026.length;i++) if(VCH_2026[i][0]===start) return i+1; return null; }
+function getPayDate(start) { for(const p of VCH_2026) if(p[0]===start) return p[2]; return null; }
 
-function estimateDeductions(bd, taxSettings) {
-  const gross = bd.gross_pay || 0;
-  const pensionable = bd.straight_time_pay || 0;
-  const annualFederal = taxSettings?.annual_federal_income || 0;
-  const annualProvincial = taxSettings?.annual_provincial_income || 0;
-  if (gross <= 0 || annualFederal <= 0) return {};
-
-  // CPP
-  const cppAnnual = annualFederal > 3500 ? Math.min((Math.min(annualFederal, 74600) - 3500) * 0.0595, 4230.45) : 0;
-  // CPP2
-  const cpp2Annual = annualFederal > 74600 ? Math.min((Math.min(annualFederal, 85000) - 74600) * 0.04, 416) : 0;
-  // EI
-  const eiAnnual = Math.min(Math.min(annualFederal, 68900) * 0.0163, 1123.07);
-
-  const ratio = pensionable / annualFederal;
-  const eiRatio = gross / annualFederal;
-
-  const provincial = annualProvincial > 0 ? gross * marginalRate(BC_BRACKETS, annualProvincial) : 0;
-  const federal = annualFederal > 0 ? gross * marginalRate(FED_BRACKETS, annualFederal) : 0;
-
-  return {
-    cpp: round2(cppAnnual * ratio),
-    cpp2: round2(cpp2Annual * ratio),
-    ei: round2(eiAnnual * eiRatio),
-    federal_tax: round2(federal),
-    provincial_tax: round2(provincial),
-  };
-}
+// ── Shift type display names ──
+const TYPE_LABELS = { casual:'Casual', regular:'Regular', day_off:'Day Off', isn:'ISN', vacation:'Paid Vacation', sick:'Paid Sick', unpaid_vacation:'Unpaid Vacation', unpaid_sick:'Unpaid Sick', special_leave:'Special Leave', pdo_pst:'PDO/PST', other_leave:'Other Leave' };
 
 // ── Main ──
 Deno.serve(async (req) => {
@@ -201,7 +116,6 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-
     const { periodId } = await req.json();
     if (!periodId) return Response.json({ error: 'Missing periodId' }, { status: 400 });
 
@@ -217,216 +131,304 @@ Deno.serve(async (req) => {
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
     let y = M;
 
-    // ── Header ──
-    doc.setFont('helvetica', 'bold').setFontSize(20).setTextColor(...COLORS.primary);
-    doc.text('Pay Period Summary', M, y); y += 8;
-    doc.setFont('helvetica', 'normal').setFontSize(9).setTextColor(...COLORS.muted);
-    const genDate = new Date().toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' });
-    doc.text(`Generated ${genDate} for ${safe(user.full_name || user.email)}`, M, y);
+    // ── HEADER ──
+    doc.setFont('helvetica','bold').setFontSize(20).setTextColor(...COL.primary);
+    doc.text('Current Pay Period', M, y); y += 8;
+
+    const genDate = new Date().toLocaleDateString('en-CA',{month:'short',day:'numeric',year:'numeric'});
+    doc.setFont('helvetica','normal').setFontSize(9).setTextColor(...COL.muted);
+    doc.text(`Generated ${genDate} for ${safe(user.full_name||user.email)}`, M, y);
     y += 12;
 
-    // ── Period Info Box ──
-    doc.setFillColor(...COLORS.light).setDrawColor(...COLORS.border).setLineWidth(0.3);
-    doc.roundedRect(M, y, PW, 18, 3, 3, 'FD');
-    const startFmt = new Date(period.start_date + 'T12:00:00').toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' });
-    const endFmt = new Date(period.end_date + 'T12:00:00').toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' });
-    doc.setFont('helvetica', 'bold').setFontSize(12).setTextColor(...COLORS.dark);
+    // ── PERIOD INFO BOX ──
+    doc.setFillColor(...COL.light).setDrawColor(...COL.border).setLineWidth(0.3);
+    doc.roundedRect(M, y, PW, 20, 3, 3, 'FD');
+    const ppNum = getPPNum(period.start_date);
+    const payDate = getPayDate(period.start_date);
+    const startFmt = new Date(period.start_date+'T12:00:00').toLocaleDateString('en-CA',{month:'short',day:'numeric',year:'numeric'});
+    const endFmt = new Date(period.end_date+'T12:00:00').toLocaleDateString('en-CA',{month:'short',day:'numeric',year:'numeric'});
+    const pdFmt = payDate ? new Date(payDate+'T12:00:00').toLocaleDateString('en-CA',{month:'short',day:'numeric',year:'numeric'}) : null;
+
+    doc.setFont('helvetica','bold').setFontSize(12).setTextColor(...COL.dark);
     doc.text(`${startFmt} to ${endFmt}`, M + 4, y + 8);
-    doc.setFont('helvetica', 'normal').setFontSize(9).setTextColor(...COLORS.muted);
-    doc.text(`${period.shifts?.length || 0} shifts`, M + PW - 4, y + 8, { align: 'right' });
-    y += 24;
+    doc.setFont('helvetica','normal').setFontSize(9).setTextColor(...COL.muted);
+    let infoX = M + PW;
+    const infoParts = [];
+    if (ppNum) infoParts.push(`PP ${ppNum}`);
+    infoParts.push(`${period.shifts?.length || 0} shifts`);
+    if (payDate) infoParts.push(`Pay ${pdFmt}`);
+    doc.text(infoParts.join('  |  '), M + PW - 4, y + 8, { align: 'right' });
 
-    // ── Shifts Table with per-shift breakdown ──
-    const shifts = [...(period.shifts || [])].sort((a, b) => a.date.localeCompare(b.date));
+    // VCH period badge
+    if (ppNum) {
+      doc.setFillColor(235,238,242);
+      doc.roundedRect(M + 4, y + 2, 14, 5, 1.5, 1.5, 'F');
+      doc.setFont('helvetica','bold').setFontSize(7).setTextColor(...COL.muted);
+      doc.text(`PP ${ppNum}`, M + 11, y + 5.5, { align: 'center' });
+      doc.setFillColor(...COL.light);
+    }
+    y += 26;
+
+    // ── SHIFTS TABLE ──
+    const shifts = [...(period.shifts||[])].sort((a,b)=>a.date.localeCompare(b.date));
     if (shifts.length > 0) {
-      const colStatus = M, colType = M + 20, colTime = M + 38, colBreakdown = M + 108, colGross = M + PW;
-
-      doc.setFont('helvetica', 'bold').setFontSize(9).setTextColor(...COLORS.primary);
-      doc.text('Status', colStatus, y); doc.text('Type', colType, y);
-      doc.text('Date / Time', colTime, y); doc.text('Pay Breakdown', colBreakdown, y);
-      doc.text('Gross', colGross, y, { align: 'right' });
-      y += 2;
-      doc.setDrawColor(...COLORS.border).setLineWidth(0.2);
-      doc.line(M, y, M + PW, y);
-      y += 6;
-
-      doc.setFont('helvetica', 'normal').setFontSize(8);
+      doc.setFont('helvetica','bold').setFontSize(10).setTextColor(...COL.primary);
+      doc.text('Shift Log', M, y); y += 7;
 
       for (const shift of shifts) {
-        if (y > PAGE_H - 26) { doc.addPage(); y = M; }
+        if (y > PAGE_H - 40) { doc.addPage(); y = M + 4; }
 
-        const dt = new Date(shift.date + 'T12:00:00');
-        const dateLabel = dt.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' });
-        const timeStr = `${dateLabel}  ${shift.start_time}-${shift.end_time}`;
+        // Row background
+        doc.setFillColor(252,253,254).setDrawColor(...COL.border).setLineWidth(0.15);
+        const rowH = shift.hospital||shift.unit ? 24 : 20;
+        doc.roundedRect(M, y - 2, PW, rowH, 2, 2, 'FD');
 
-        doc.setTextColor(...COLORS.dark);
-        doc.text(safe(shift.status || 'pending'), colStatus, y);
-        doc.text(safe(shift.shift_type || 'regular'), colType, y);
-        doc.text(safe(timeStr), colTime, y);
+        // Date & time
+        const dt = new Date(shift.date+'T12:00:00');
+        const dateLabel = dt.toLocaleDateString('en-CA',{month:'short',day:'numeric',weekday:'short'});
+        const isNightShift = (premiums => premiums.night > 0)(shiftPremiums(shift, rates));
+        doc.setFont('helvetica','bold').setFontSize(9).setTextColor(...COL.dark);
+        doc.text(`${isNightShift ? 'N' : 'D'}  ${dateLabel}`, M + 3, y);
+        doc.setFont('helvetica','normal').setFontSize(8.5).setTextColor(...COL.dark);
+        doc.text(`${shift.start_time} - ${shift.end_time}`, M + 3, y + 5);
 
-        // Per-shift pay: straight time + overtime + premiums
-        const segments = splitOvernight(shift);
-        let stPay = 0, otPay = 0;
-        for (const seg of segments) {
-          const mult = getSegMultiplier(shift.shift_type, seg.date);
-          if (mult === 1.0) stPay += seg.hours * wage;
-          else if (mult > 0) otPay += seg.hours * wage * mult;
-        }
-        const premiums = shiftPremiums(shift, rates);
-        const premTotal = premiumSum(premiums);
-        const shiftGross = round2(stPay + otPay + premTotal);
+        // Type badge
+        const typeLabel = TYPE_LABELS[shift.shift_type] || shift.shift_type;
+        doc.setFillColor(235,238,242).roundedRect(M + 58, y + 3.5, 22, 4.5, 2, 2, 'F');
+        doc.setFont('helvetica','normal').setFontSize(7).setTextColor(...COL.dark);
+        doc.text(typeLabel, M + 69, y + 6.5, { align: 'center' });
 
-        // Breakdown text: ST $X + Prem $Y
-        const parts = [];
-        if (stPay > 0) parts.push(`ST ${fmtCurrency(stPay)}`);
-        if (otPay > 0) parts.push(`OT ${fmtCurrency(otPay)}`);
-        if (premTotal > 0) parts.push(`Prem ${fmtCurrency(premTotal)}`);
-        if (parts.length === 0) parts.push('$0.00');
-        doc.text(parts.join('  +  '), colBreakdown, y);
-
-        doc.text(fmtCurrency(shiftGross), colGross, y, { align: 'right' });
-        y += 5;
-
+        // Hospital / Unit
         if (shift.hospital || shift.unit) {
-          doc.setTextColor(...COLORS.muted).setFontSize(7);
-          doc.text(safe([shift.hospital, shift.unit].filter(Boolean).join(' / ')), colTime, y);
-          doc.setFontSize(8);
-          y += 4.5;
+          doc.setFont('helvetica','normal').setFontSize(7).setTextColor(...COL.muted);
+          doc.text(safe([shift.hospital, shift.unit].filter(Boolean).join(' / ')), M + 3, y + 10);
+
+          // Premium flags
+          const pr = shiftPremiums(shift, rates);
+          const flags = [];
+          if (pr.eveH > 0) flags.push(`EVE ${pr.eveH}h`);
+          if (pr.nightH > 0) flags.push(`NGT ${pr.nightH}h`);
+          if (pr.wkndH > 0) flags.push(`WKD ${pr.wkndH}h`);
+          if (pr.superH > 0) flags.push('Super');
+          if (shift.short_notice) flags.push('Short Notice');
+          if (shift.responsibility_pay !== 'none') flags.push(`Resp (${shift.responsibility_pay})`);
+          if (shift.specialty_premium) flags.push('Specialty');
+          if (shift.preceptor) flags.push('Preceptor');
+          if (shift.on_call_hours > 0) flags.push(`On-Call ${shift.on_call_hours}h`);
+          if (flags.length > 0) {
+            doc.setFontSize(6.5);
+            doc.text(flags.join('  |  '), M + 3, y + 13.5);
+          }
+        } else {
+          // Premium flags below time
+          const pr = shiftPremiums(shift, rates);
+          const flags = [];
+          if (pr.eveH > 0) flags.push(`EVE ${pr.eveH}h`);
+          if (pr.nightH > 0) flags.push(`NGT ${pr.nightH}h`);
+          if (pr.wkndH > 0) flags.push(`WKD ${pr.wkndH}h`);
+          if (pr.superH > 0) flags.push('Super');
+          if (shift.short_notice) flags.push('Short Notice');
+          if (shift.responsibility_pay !== 'none') flags.push(`Resp (${shift.responsibility_pay})`);
+          if (shift.specialty_premium) flags.push('Specialty');
+          if (shift.preceptor) flags.push('Preceptor');
+          if (shift.on_call_hours > 0) flags.push(`On-Call ${shift.on_call_hours}h`);
+          if (flags.length > 0) {
+            doc.setFont('helvetica','normal').setFontSize(6.5).setTextColor(...COL.muted);
+            doc.text(flags.join('  |  '), M + 3, y + 10);
+          }
         }
+
+        // Status badge
+        let statusLabel, statusColor;
+        const today = new Date().toISOString().slice(0,10);
+        if (shift.status === 'verified') { statusLabel = 'Verified'; statusColor = [34,139,34]; }
+        else if (shift.date > today) { statusLabel = 'Upcoming'; statusColor = [220,160,20]; }
+        else { statusLabel = 'Pending'; statusColor = COL.accent; }
+        doc.setFontSize(7).setTextColor(...statusColor);
+        doc.text(statusLabel, M + 84, y + 3, { align: 'right' });
+
+        // Paid hours
+        doc.setFont('helvetica','normal').setFontSize(8.5).setTextColor(...COL.dark);
+        doc.text(`${shift.paid_hours||0}h`, M + 84, y + 8, { align: 'right' });
+
+        // Per-shift pay breakdown line
+        const segments = splitOvernight(shift);
+        let stPay=0; const otGroups={};
+        for (const seg of segments) {
+          const mult = segMult(shift.shift_type, seg.date);
+          if (mult > 0) {
+            const base = seg.hours * wage;
+            if (mult === 1.0) stPay += base;
+            else { stPay += base; otGroups[mult] = (otGroups[mult]||0) + seg.hours * wage * (mult - 1); }
+          }
+        }
+        const prem = shiftPremiums(shift, rates);
+        const premTot = premSum(prem);
+        const otMults = Object.keys(otGroups).map(Number).sort((a,b)=>a-b);
+        const shiftGross = r2(stPay + Object.values(otGroups).reduce((s,v)=>s+v,0) + premTot);
+
+        const payX = M + 142;
+        doc.setFont('helvetica','normal').setFontSize(7.5).setTextColor(...COL.dark);
+        const payParts = [];
+        if (stPay > 0) payParts.push(`ST ${fm$(stPay)}`);
+        otMults.forEach(m => payParts.push(`OTx${m} ${fm$(otGroups[m])}`));
+        if (premTot > 0) payParts.push(`Prem ${fm$(premTot)}`);
+        const payText = payParts.join('  +  ');
+        doc.text(payText, payX, shift.hospital||shift.unit ? y + 10 : y + 5);
+
+        doc.setFont('helvetica','bold').setFontSize(9).setTextColor(...COL.primary);
+        doc.text(`= ${fm$(shiftGross)}`, M + PW - 3, shift.hospital||shift.unit ? y + 10 : y + 5, { align: 'right' });
+
+        y += rowH + 3;
       }
     }
 
-    // ── Pay Breakdown Summary ──
-    y += 8;
-    if (y > PAGE_H - 80) { doc.addPage(); y = M; }
-
-    doc.setFont('helvetica', 'bold').setFontSize(12).setTextColor(...COLORS.primary);
-    doc.text('Pay Breakdown', M, y); y += 8;
+    // ── PAY BREAKDOWN ──
+    y += 6;
+    if (y > PAGE_H - 100) { doc.addPage(); y = M; }
 
     const bd = period.breakdown || {};
+    doc.setFont('helvetica','bold').setFontSize(13).setTextColor(...COL.primary);
+    doc.text('Pay Period Breakdown', M, y); y += 2;
+    if (wage) { doc.setFont('helvetica','normal').setFontSize(8).setTextColor(...COL.muted); doc.text(`Base wage: $${wage.toFixed(2)}/hr`, M + PW, y, { align: 'right' }); }
+    y += 7;
 
-    const drawRow = (label, value, bold, color = COLORS.dark) => {
-      if (y > PAGE_H - 20) { doc.addPage(); y = M; }
-      doc.setFont('helvetica', bold ? 'bold' : 'normal').setFontSize(9).setTextColor(...color);
+    const drawRow = (label, value, bold, color=COL.dark, sub) => {
+      if (y > PAGE_H - 18) { doc.addPage(); y = M; }
+      doc.setFont('helvetica',bold?'bold':'normal').setFontSize(9).setTextColor(...color);
       doc.text(label, M, y);
-      doc.text(fmtCurrency(value), M + PW, y, { align: 'right' });
+      if (sub) { doc.setFontSize(7).setTextColor(...COL.muted); doc.text(sub, M + doc.getTextWidth(label) + 3, y); doc.setFontSize(9).setTextColor(...color); }
+      doc.text(fm$(value), M + PW, y, { align: 'right' });
       y += 5.5;
     };
-    const secHeader = (label) => {
-      if (y > PAGE_H - 20) { doc.addPage(); y = M; }
-      doc.setFont('helvetica', 'bold').setFontSize(8).setTextColor(...COLORS.muted);
-      doc.text(label, M, y); y += 5;
+    const secHdr = (label) => {
+      if (y > PAGE_H - 18) { doc.addPage(); y = M; }
+      doc.setFont('helvetica','bold').setFontSize(7.5).setTextColor(...COL.muted);
+      doc.text(label, M, y); y += 4.5;
     };
 
     // Base Pay
-    secHeader('BASE PAY');
-    if (bd.straight_time_pay) drawRow('Straight Time', bd.straight_time_pay);
-    if (bd.overtime_pay) drawRow('Overtime / Stat Pay', bd.overtime_pay);
-    const basePayTotal = (bd.straight_time_pay || 0) + (bd.overtime_pay || 0);
-    if (bd.straight_time_pay && bd.overtime_pay) {
-      drawRow('Subtotal: Base Pay', basePayTotal, true);
-      y += 2;
+    secHdr('BASE PAY');
+    if (bd.straight_time_pay) drawRow('Straight-Time Pay', bd.straight_time_pay, false, COL.dark, `${bd.regular_hours||0}h @ ${fm$(wage||(bd.straight_time_pay/(bd.regular_hours||1)))}/hr`);
+    if (bd.overtime_pay) {
+      const det = bd.overtime_detail || {};
+      const parts = [];
+      const labels = { overtime:'1.5x', day_off:'2x (Day Off)', work_stat:'2x (Stat)', work_super_stat:'2.5x (Super Stat)', ot_stat:'3x (OT on Stat)' };
+      for (const [t,hrs] of Object.entries(det)) if (hrs>0) parts.push(`${hrs}h @ ${labels[t]||t}`);
+      drawRow('Overtime / Stat Pay', bd.overtime_pay, false, COL.dark, parts.join(', '));
     }
 
-    // Premiums
+    // Hourly Premiums
     const premRows = [
-      ['Evening Premium', bd.evening_premium_total], ['Night Premium', bd.night_premium_total],
-      ['Weekend Premium', bd.weekend_premium_total], ['Super Shift Premium', bd.super_shift_premium_total],
-      ['Regular Premium', bd.regular_premium_total], ['Short Notice', bd.short_notice_total],
-      ['Responsibility', bd.responsibility_total], ['Preceptor', bd.preceptor_total],
-      ['Specialty Premium', bd.specialty_premium_total],
+      ['Regular Premium', bd.regular_premium_total, bd.regular_premium_hours, rates.regular_premium],
+      ['Evening Premium', bd.evening_premium_total, bd.evening_premium_hours, rates.evening],
+      ['Night Premium', bd.night_premium_total, bd.night_premium_hours, rates.night],
+      ['Weekend Premium', bd.weekend_premium_total, bd.weekend_premium_hours, rates.weekend],
+      ['Super Shift Premium', bd.super_shift_premium_total, bd.super_shift_premium_hours, rates.super_shift],
+      ['Short Notice', bd.short_notice_total, bd.short_notice_hours, rates.short_notice],
+      ['Responsibility Pay', bd.responsibility_total, bd.responsibility_hours, null],
+      ['Specialty Premium', bd.specialty_premium_total, bd.specialty_premium_hours, rates.specialty],
+      ['Preceptor', bd.preceptor_total, bd.preceptor_hours, rates.preceptor],
     ].filter(r => r[1] > 0);
-    if (premRows.length > 0) {
-      y += 2; secHeader('PREMIUMS');
-      premRows.forEach(([l, v]) => drawRow(l, v));
-      const premSum = premRows.reduce((s, r) => s + r[1], 0);
-      drawRow('Subtotal: Premiums', premSum, true);
-      y += 2;
+    if (premRows.length > 0) { y+=2; secHdr('HOURLY PREMIUMS');
+      premRows.forEach(([l,v,hrs,r]) => {
+        let sub = null;
+        if (hrs > 0 && r) sub = `${hrs}h x ${fm$(r)}/hr`;
+        else if (hrs > 0) sub = `${hrs}h`;
+        drawRow(l, v, false, COL.dark, sub);
+      });
     }
 
-    // Other
-    const others = [['On Call', bd.on_call_total], ['Allowances', bd.allowance_total], ['Qualifications', bd.qualification_total]].filter(r => r[1] > 0);
-    if (others.length > 0) {
-      secHeader('OTHER');
-      others.forEach(([l, v]) => drawRow(l, v));
+    // On-Call
+    if (bd.on_call_total > 0) { y+=2; secHdr('ON-CALL'); drawRow('On-Call Pay', bd.on_call_total, false, COL.dark, `${bd.on_call_hours||0}h total`); }
+
+    // Allowances & Qualifications
+    if (bd.allowance_total > 0 || bd.qualification_total > 0) {
+      y+=2; secHdr('MONTHLY ALLOWANCES & QUALIFICATIONS');
+      if (bd.allowance_total > 0) drawRow('Allowances (per period)', bd.allowance_total, false, COL.dark, `$${bd.allowance_monthly||0}/mo prorated`);
+      if (bd.qualification_total > 0) drawRow('Qualification Diff.', bd.qualification_total, false, COL.dark, `$${bd.qualification_hourly||0}/hr x ${bd.regular_hours||0} reg hrs`);
     }
 
-    // Union dues
-    if (bd.union_dues > 0) {
-      y += 2; secHeader('DEDUCTIONS FROM GROSS');
-      drawRow('Union Dues', -bd.union_dues);
+    // Union Dues
+    const unionDues = bd.union_dues || 0;
+    if (unionDues > 0) {
+      y += 2; secHdr('DEDUCTIONS');
+      drawRow('Union Dues (2% of straight-time)', -unionDues, false, COL.accent);
     }
 
-    // Gross total
+    // Gross Pay
     y += 4;
-    if (y > PAGE_H - 20) { doc.addPage(); y = M; }
-    doc.setDrawColor(...COLORS.primary).setLineWidth(0.6);
+    if (y > PAGE_H - 18) { doc.addPage(); y = M; }
+    doc.setDrawColor(...COL.primary).setLineWidth(0.6);
     doc.line(M, y, M + PW, y); y += 7;
-    doc.setFont('helvetica', 'bold').setFontSize(13).setTextColor(...COLORS.primary);
+    doc.setFont('helvetica','bold').setFontSize(13).setTextColor(...COL.primary);
     doc.text('Gross Pay', M, y);
-    doc.text(fmtCurrency(bd.gross_pay || 0), M + PW, y, { align: 'right' });
-    y += 14;
+    doc.text(fm$(bd.gross_pay||0), M + PW, y, { align: 'right' });
+    y += 12;
 
-    // ── Statutory Deductions (estimated + verified) ──
+    // ── STATUTORY DEDUCTIONS ──
     const vd = period.verified_deductions || {};
-    const est = estimateDeductions(bd, settings.tax_settings || {});
+    const est = estDed(bd, settings.tax_settings||{});
+    const hasV = vd && Object.keys(vd).some(k=>['cpp','cpp2','ei','federal_tax','provincial_tax'].includes(k)&&(vd[k]||0)>0);
 
-    // Merge: verified overrides estimated
-    const finalDed = {
-      cpp: vd.cpp != null ? vd.cpp : est.cpp || 0,
-      cpp2: vd.cpp2 != null ? vd.cpp2 : est.cpp2 || 0,
-      ei: vd.ei != null ? vd.ei : est.ei || 0,
-      federal_tax: vd.federal_tax != null ? vd.federal_tax : est.federal_tax || 0,
-      provincial_tax: vd.provincial_tax != null ? vd.provincial_tax : est.provincial_tax || 0,
-      union_dues: vd.union_dues != null ? vd.union_dues : bd.union_dues || 0,
+    // Merge verified over estimated
+    const fd = {
+      cpp: vd.cpp != null ? vd.cpp : est?.cpp || 0,
+      cpp2: vd.cpp2 != null ? vd.cpp2 : est?.cpp2 || 0,
+      ei: vd.ei != null ? vd.ei : est?.ei || 0,
+      federal_tax: vd.federal_tax != null ? vd.federal_tax : est?.fed || 0,
+      provincial_tax: vd.provincial_tax != null ? vd.provincial_tax : est?.prov || 0,
+      union_dues: vd.union_dues != null ? vd.union_dues : unionDues,
       other: vd.other_deductions || 0,
     };
 
-    const hasVerified = vd && Object.keys(vd).some(k => ['cpp','cpp2','ei','federal_tax','provincial_tax'].includes(k) && vd[k] > 0);
-    const dedLabel = hasVerified ? 'DEDUCTIONS (VERIFIED FROM PAY STUB)' : 'ESTIMATED STATUTORY DEDUCTIONS';
     if (y > PAGE_H - 50) { doc.addPage(); y = M; }
+    const dedLabel = hasV ? 'STATUTORY DEDUCTIONS (VERIFIED FROM PAY STUB)' : 'ESTIMATED STATUTORY DEDUCTIONS';
+    secHdr(dedLabel);
 
-    secHeader(dedLabel);
-
-    const dedRows = [
-      ['CPP', finalDed.cpp],
-      ['CPP2', finalDed.cpp2],
-      ['EI', finalDed.ei],
-      ['Federal Income Tax', finalDed.federal_tax],
-      ['Provincial Income Tax', finalDed.provincial_tax],
-      ['Union Dues', finalDed.union_dues],
+    const dRows = [
+      ['CPP', fd.cpp],
+      ['CPP2', fd.cpp2],
+      ['EI', fd.ei],
+      ['Federal Income Tax', fd.federal_tax],
+      ['Provincial Income Tax', fd.provincial_tax],
+      ['Union Dues', fd.union_dues],
     ];
-    if (finalDed.other > 0) dedRows.push([vd.other_label ? safe(vd.other_label) : 'Other Deductions', finalDed.other]);
+    if (fd.other > 0) dRows.push([vd.other_label ? safe(vd.other_label) : 'Other Deductions', fd.other]);
+    const activeDRows = dRows.filter(r=>r[1]>0);
 
-    const activeDedRows = dedRows.filter(r => r[1] > 0);
-
-    if (activeDedRows.length > 0) {
-      activeDedRows.forEach(([l, v]) => drawRow(l, -v));
-      const totalDed = activeDedRows.reduce((s, r) => s + r[1], 0);
-      const netPay = round2((bd.gross_pay || 0) - totalDed);
+    if (activeDRows.length > 0) {
+      activeDRows.forEach(([l,v]) => drawRow(l, -v, false, COL.accent));
+      const totalDed = activeDRows.reduce((s,r)=>s+r[1],0);
+      const netPay = r2((bd.gross_pay||0)-totalDed);
       y += 4;
-      doc.setDrawColor(...COLORS.border).setLineWidth(0.3);
-      doc.line(M, y, M + PW, y); y += 6;
-      doc.setFont('helvetica', 'bold').setFontSize(11).setTextColor(...COLORS.dark);
-      doc.text('Estimated Net Pay', M, y);
-      doc.text(fmtCurrency(netPay), M + PW, y, { align: 'right' });
+      doc.setDrawColor(...COL.primary).setLineWidth(0.5);
+      doc.line(M, y, M + PW, y); y += 7;
+      doc.setFont('helvetica','bold').setFontSize(12).setTextColor(...COL.primary);
+      doc.text(hasV ? 'Verified Net Pay' : 'Estimated Net Pay', M, y);
+      doc.text(fm$(netPay), M + PW, y, { align: 'right' });
+
+      // Extra info
+      y += 8;
+      doc.setFont('helvetica','normal').setFontSize(6.5).setTextColor(...COL.muted);
+      doc.text('* Income tax estimates use marginal rate at configured annual income. Actual withholding depends on TD1 credits.', M, y);
     } else {
-      doc.setFont('helvetica', 'normal').setFontSize(8.5).setTextColor(...COLORS.muted);
-      doc.text('Insufficient income data to estimate deductions. Set annual income in Settings.', M, y);
+      doc.setFont('helvetica','normal').setFontSize(8).setTextColor(...COL.muted);
+      doc.text('Insufficient income data to estimate deductions. Add annual income in Settings.', M, y);
     }
 
     // ── Footer ──
     const totalPages = doc.getNumberOfPages();
     for (let i = 1; i <= totalPages; i++) {
       doc.setPage(i);
-      doc.setFont('helvetica', 'normal').setFontSize(7.5).setTextColor(...COLORS.muted);
-      doc.text(`NursePayCheck  |  Page ${i} of ${totalPages}  |  ${genDate}`, M + PW / 2, PAGE_H - 8, { align: 'center' });
+      doc.setFont('helvetica','normal').setFontSize(7).setTextColor(...COL.muted);
+      doc.text(`NursePayCheck  |  Page ${i} of ${totalPages}  |  ${genDate}`, M + PW/2, PAGE_H - 7, { align: 'center' });
     }
 
     const pdfBytes = doc.output('arraybuffer');
     return new Response(pdfBytes, {
       status: 200,
-      headers: { 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="pay-period-${period.start_date}.pdf"` },
+      headers: { 'Content-Type':'application/pdf', 'Content-Disposition':`attachment; filename="pay-period-${period.start_date}.pdf"` },
     });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
