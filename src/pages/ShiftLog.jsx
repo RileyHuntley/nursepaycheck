@@ -723,6 +723,7 @@ export default function ShiftLog() {
                                   premiums={settings ? calculateShiftPremiums(shift, settings) : null}
                                   settings={settings}
                                   periodEndDate={group.periodEnd}
+                                  hidePending={group.key === currentPdKey}
                                   onEdit={(s) => setEditingShift({ data: s, _periodId: shift._periodId, _shiftIdx: shift._shiftIdx })}
                                   onDelete={() => deleteShift(shift)}
                                   onVerify={() => verifyShift(shift)}
