@@ -329,6 +329,7 @@ export default function ShiftLog() {
           shiftsMap={shiftsMap}
           onShiftUpdate={calendarUpdateShift}
           onReload={loadData}
+          showHeader={false}
         />
       ) : (
         <>

@@ -48,7 +48,7 @@ const HA_FULL_NAMES = {
   PHC:   'Providence Health Care',
 };
 
-export default function ShiftCalendarGrid({ settings, shiftsMap, onShiftUpdate, onReload }) {
+export default function ShiftCalendarGrid({ settings, shiftsMap, onShiftUpdate, onReload, showHeader = true }) {
   const [editingShift, setEditingShift] = useState(null);
   const [hospitalFilter, setHospitalFilter] = useState('all');
   const [haFilter, setHaFilter] = useState('all');
@@ -150,6 +150,7 @@ export default function ShiftCalendarGrid({ settings, shiftsMap, onShiftUpdate, 
 
   return (
     <div className="space-y-6">
+      {showHeader && (
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-display font-bold text-foreground tracking-tight">Shift Calendar</h2>
         <div className="flex items-center gap-2">
@@ -203,6 +204,7 @@ export default function ShiftCalendarGrid({ settings, shiftsMap, onShiftUpdate, 
           </button>
         </div>
       </div>
+      )}
 
       {editingShift && (
         <div className="bg-card border border-border rounded-xl p-5 mb-4">
