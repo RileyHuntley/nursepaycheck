@@ -80,10 +80,15 @@ export default function ShiftLog() {
       }
       for (const [key, dupes] of Object.entries(dateGroups)) {
         if (dupes.length > 1) {
-          // Merge all shifts into the first period, delete the rest
+          // Merge all shifts into the first period, recalculate breakdown, delete the rest
           const [keeper, ...extras] = dupes;
           const allShifts = extras.reduce((acc, p) => acc.concat(p.shifts || []), keeper.shifts || []);
-          await base44.entities.PayPeriod.update(keeper.id, { shifts: allShifts });
+          const mergedSettings = settingsList.length > 0 ? settingsList[0] : null;
+          const mergedBreakdown = mergedSettings ? calculatePeriodBreakdown(allShifts, mergedSettings) : null;
+          await base44.entities.PayPeriod.update(keeper.id, {
+            shifts: allShifts,
+            ...(mergedBreakdown ? { breakdown: mergedBreakdown } : {}),
+          });
           for (const extra of extras) {
             await base44.entities.PayPeriod.delete(extra.id);
           }
