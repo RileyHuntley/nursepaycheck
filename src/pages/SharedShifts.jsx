@@ -22,39 +22,16 @@ export default function SharedShifts() {
 
     (async () => {
       try {
-        const allSettings = await base44.asServiceRole.entities.Settings.list();
-        const settings = allSettings.find(s => s.share_token === token);
-        if (!settings) {
+        const links = await base44.entities.ShareLink.filter({ token });
+        if (links.length === 0) {
           setError('This share link is invalid or has been revoked.');
           setLoading(false);
           return;
         }
-
-        const userId = settings.created_by_id;
-
-        const payPeriods = await base44.asServiceRole.entities.PayPeriod.filter(
-          { created_by_id: userId },
-          '-start_date',
-          50
-        );
-
-        const safeSettings = {
-          hourly_wage: settings.hourly_wage,
-          premium_rates: settings.premium_rates,
-          ot_multipliers: settings.ot_multipliers,
-          active_allowances: settings.active_allowances,
-          allowance_rates: settings.allowance_rates,
-          active_qualifications: settings.active_qualifications,
-          qualification_rates: settings.qualification_rates,
-          hospitals: settings.hospitals,
-          units: settings.units,
-          preset_times: settings.preset_times,
-          tax_settings: settings.tax_settings,
-        };
-
+        const link = links[0];
         setData({
-          settings: safeSettings,
-          payPeriods: payPeriods.filter(p => p.shifts && p.shifts.length > 0),
+          settings: link.settings_data || {},
+          payPeriods: link.pay_periods_data || [],
         });
         setLoading(false);
       } catch (e) {

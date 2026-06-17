@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { createClient } from 'npm:@base44/sdk@0.8.31';
 
 Deno.serve(async (req) => {
   try {
@@ -14,13 +14,16 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Missing share token' }, { status: 400 });
     }
 
-    const base44 = createClientFromRequest(req);
+    const base44 = createClient({
+      appId: Deno.env.get('BASE44_APP_ID'),
+    });
 
     // Use service role to bypass RLS and read settings by share_token
     const allSettings = await base44.asServiceRole.entities.Settings.list();
+    console.log('Settings found:', allSettings.length, allSettings.map(s => s.share_token));
     const settings = allSettings.find(s => s.share_token === token);
     if (!settings) {
-      return Response.json({ error: 'Invalid or expired share link' }, { status: 404 });
+      return Response.json({ error: 'Invalid or expired share link', tokens: allSettings.map(s => s.share_token) }, { status: 404 });
     }
 
     const userId = settings.created_by_id;

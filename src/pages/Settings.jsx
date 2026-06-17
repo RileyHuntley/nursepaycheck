@@ -205,12 +205,55 @@ export default function Settings() {
     }
   };
 
+  const syncShareLink = async (token, userId, settingsData, payPeriodsData) => {
+    const existing = await base44.entities.ShareLink.filter({ token });
+    if (existing.length > 0) {
+      await base44.entities.ShareLink.update(existing[0].id, {
+        settings_data: settingsData,
+        pay_periods_data: payPeriodsData,
+      });
+    } else {
+      await base44.entities.ShareLink.create({
+        token,
+        user_id: userId,
+        settings_data: settingsData,
+        pay_periods_data: payPeriodsData,
+      });
+    }
+  };
+
   const saveShareToken = async (token) => {
     await base44.entities.Settings.update(settings.id, { share_token: token || '' });
     const updated = { ...settings, share_token: token || '' };
     savedRef.current = cloneDeep(updated);
     setSettings(updated);
     setSavedVersion(v => v + 1);
+
+    if (token) {
+      // Build a snapshot of sharable data
+      const safeSettings = {
+        hourly_wage: settings.hourly_wage,
+        premium_rates: settings.premium_rates,
+        ot_multipliers: settings.ot_multipliers,
+        active_allowances: settings.active_allowances,
+        allowance_rates: settings.allowance_rates,
+        active_qualifications: settings.active_qualifications,
+        qualification_rates: settings.qualification_rates,
+        hospitals: settings.hospitals,
+        units: settings.units,
+        preset_times: settings.preset_times,
+        tax_settings: settings.tax_settings,
+      };
+      const payPeriods = await base44.entities.PayPeriod.list('-start_date', 50);
+      const withShifts = payPeriods.filter(p => p.shifts && p.shifts.length > 0);
+      await syncShareLink(token, settings.created_by_id, safeSettings, withShifts);
+    } else {
+      // Revoke: delete the ShareLink record
+      const existing = await base44.entities.ShareLink.filter({ token: settings.share_token });
+      if (existing.length > 0) {
+        await base44.entities.ShareLink.delete(existing[0].id);
+      }
+    }
   };
 
   if (!settings) {

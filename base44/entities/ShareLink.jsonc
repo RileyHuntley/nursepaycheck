@@ -1,0 +1,41 @@
+{
+  "name": "ShareLink",
+  "type": "object",
+  "properties": {
+    "token": {
+      "type": "string"
+    },
+    "user_id": {
+      "type": "string"
+    },
+    "settings_data": {
+      "type": "object"
+    },
+    "pay_periods_data": {
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "object"
+      }
+    },
+    "updated_date_alt": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "token",
+    "user_id"
+  ],
+  "rls": {
+    "create": {
+      "created_by_id": "{{user.id}}"
+    },
+    "read": {},
+    "update": {
+      "created_by_id": "{{user.id}}"
+    },
+    "delete": {
+      "created_by_id": "{{user.id}}"
+    }
+  }
+}
