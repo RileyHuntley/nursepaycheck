@@ -6,6 +6,7 @@ import { Trash2, Eye, Loader2, CalendarPlus, ArrowUpDown } from 'lucide-react';
 import PayPeriodDialog from '@/components/payroll/PayPeriodDialog';
 import { getVCHPeriodNumber } from '@/lib/statHolidays';
 import { formatCurrency } from '@/lib/utils';
+import { calculatePeriodBreakdown } from '@/lib/premiumCalculator';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,6 +20,7 @@ import {
 
 export default function PayPeriodHistory() {
   const [periods, setPeriods] = useState([]);
+  const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [viewTarget, setViewTarget] = useState(null);
@@ -32,7 +34,12 @@ export default function PayPeriodHistory() {
     if (loadRef.current) { clearTimeout(loadRef.current); loadRef.current = null; }
     loadingRef.current = true;
     setLoading(true);
-    const list = await base44.entities.PayPeriod.list('-start_date', 50);
+    const [list, settingsList] = await Promise.all([
+      base44.entities.PayPeriod.list('-start_date', 50),
+      base44.entities.Settings.list(),
+    ]);
+    const userSettings = settingsList[0] || null;
+    setSettings(userSettings);
     // Deduplicate by start_date and exclude empty periods
     const seen = new Set();
     const deduped = list.filter(p => {
@@ -134,10 +141,17 @@ export default function PayPeriodHistory() {
                   </div>
                 </div>
 
-                {period.breakdown && (
+                {(period.breakdown || (settings && period.shifts?.length > 0)) && (
                   <div className="text-right flex-shrink-0">
-                    <span className="text-sm font-mono font-semibold text-primary">{formatCurrency(period.breakdown.gross_pay || 0)}</span>
-                    <p className="text-[10px] text-muted-foreground">gross</p>
+                    <span className="text-sm font-mono font-semibold text-primary">
+                      {formatCurrency(
+                        period.breakdown?.gross_pay
+                        || (settings ? calculatePeriodBreakdown(period.shifts, settings).gross_pay : 0)
+                      )}
+                    </span>
+                    <p className="text-[10px] text-muted-foreground">
+                      {period.breakdown ? 'gross' : 'estimated gross'}
+                    </p>
                   </div>
                 )}
 
