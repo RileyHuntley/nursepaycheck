@@ -93,6 +93,7 @@ export default function ShiftForm({ onSubmit, onCancel, onDelete, initial, setti
     };
   });
   const [showOverrides, setShowOverrides] = useState(false);
+  const [overrideEnabled, setOverrideEnabled] = useState(false);
   const [showWageCalc, setShowWageCalc] = useState(false);
 
   // Compute total hours from start/end times, then paid hours = total − unpaid break
@@ -484,7 +485,16 @@ export default function ShiftForm({ onSubmit, onCancel, onDelete, initial, setti
             </button>
             {showOverrides && (
               <div className="px-4 py-3 space-y-2 bg-card">
-                <p className="text-[11px] text-muted-foreground mb-3">Auto-calculated values shown. Enter an override to replace a value on this shift only. Clear to restore auto-calculation.</p>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-[11px] text-muted-foreground">Auto-calculated values shown. Enter an override to replace a value on this shift only. Clear to restore auto-calculation.</p>
+                  <button
+                    type="button"
+                    onClick={() => setOverrideEnabled(v => !v)}
+                    className={`text-[10px] px-2 py-0.5 rounded border font-medium transition-colors ${overrideEnabled ? 'bg-chart-2/15 text-chart-2 border-chart-2/30' : 'bg-muted text-muted-foreground border-border hover:text-foreground'}`}
+                  >
+                    {overrideEnabled ? 'overriding' : 'override premiums'}
+                  </button>
+                </div>
                 {PREMIUM_FIELDS.map(({ key, label, hoursKey }) => {
                   const calcVal = premiums[key] || 0;
                   const calcHours = premiums[hoursKey] || 0;
@@ -492,24 +502,28 @@ export default function ShiftForm({ onSubmit, onCancel, onDelete, initial, setti
                   return (
                     <div key={key} className="flex items-center gap-3">
                       <div className="w-36 text-xs text-muted-foreground flex-shrink-0">{label}</div>
-                      <div className="text-xs font-mono text-foreground text-right flex-shrink-0" style={{ minWidth: calcVal > 0 ? '8.5rem' : '4rem' }}>
+                      <div className="text-xs font-mono text-foreground flex-shrink-0" style={{ width: '8.5rem' }}>
                         {calcVal > 0 ? `${formatCurrency(calcVal)} (${calcHours.toFixed(2)} hrs)` : formatCurrency(calcVal)}
                       </div>
-                      <span className="text-xs text-muted-foreground flex-shrink-0">→</span>
-                      <div className="relative">
-                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-mono">$</span>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          placeholder="override"
-                          value={isOverridden ? overrides[key] : ''}
-                          onChange={e => setOverride(key, e.target.value)}
-                          className={`h-7 w-32 text-xs font-mono pl-5 ${isOverridden ? 'border-chart-2 ring-1 ring-chart-2/30' : ''}`}
-                        />
-                      </div>
-                      {isOverridden && (
-                        <button type="button" onClick={() => clearOverride(key)} className="text-[10px] text-muted-foreground hover:text-destructive">clear</button>
+                      {overrideEnabled && (
+                        <>
+                          <span className="text-xs text-muted-foreground flex-shrink-0">→</span>
+                          <div className="relative">
+                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-mono">$</span>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              placeholder="override"
+                              value={isOverridden ? overrides[key] : ''}
+                              onChange={e => setOverride(key, e.target.value)}
+                              className={`h-7 w-32 text-xs font-mono pl-5 ${isOverridden ? 'border-chart-2 ring-1 ring-chart-2/30' : ''}`}
+                            />
+                          </div>
+                          {isOverridden && (
+                            <button type="button" onClick={() => clearOverride(key)} className="text-[10px] text-muted-foreground hover:text-destructive">clear</button>
+                          )}
+                        </>
                       )}
                     </div>
                   );
