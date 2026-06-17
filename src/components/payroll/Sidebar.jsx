@@ -63,7 +63,7 @@ export default function Sidebar() {
             <h1 className="text-lg font-display font-semibold tracking-tight text-sidebar-foreground">
               Nurse<span className="text-primary">Pay</span>Check
             </h1>
-            <p className="text-xs text-muted-foreground mt-0.5">NBA Paystub Verifier</p>
+            <p className="text-xs text-muted-foreground mt-0.5">NBA Pay Tracker</p>
           </>
         )}
       </div>
