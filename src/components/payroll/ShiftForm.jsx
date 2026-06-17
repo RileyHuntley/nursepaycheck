@@ -29,7 +29,7 @@ const DEFAULT_RATES = {
 const SHIFT_TYPES = [
   { value: 'casual',          label: 'Casual Shift' },
   { value: 'regular',         label: 'Regular Shift' },
-  { value: 'day_off',         label: 'Working Day Off (×2)' },
+  { value: 'day_off',         label: 'Working Day Off' },
   { value: 'isn',             label: 'ISN Shift' },
   { value: 'vacation',        label: 'Paid Vacation' },
   { value: 'sick',            label: 'Paid Sick' },
