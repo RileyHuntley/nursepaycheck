@@ -8,7 +8,7 @@ import ShiftRow from '@/components/payroll/ShiftRow';
 import PayBreakdown from '@/components/payroll/PayBreakdown';
 import { calculatePeriodBreakdown, calculateShiftPremiums, getPayPeriodForDate, getPayPeriodName, isDuplicateShift } from '@/lib/premiumCalculator';
 import { toast } from '@/components/ui/use-toast';
-import { Plus, Loader2, CalendarPlus, ArrowUpDown, ClipboardList } from 'lucide-react';
+import { Plus, Loader2, CalendarPlus, ArrowUpDown, ClipboardList, FileDown } from 'lucide-react';
 import BulkAddShift from '@/components/payroll/BulkAddShift';
 import { getVCHPeriodNumber } from '@/lib/statHolidays';
 
@@ -256,6 +256,24 @@ export default function LastPayPeriod() {
     }
   };
 
+  const exportPDF = async () => {
+    if (!period) return;
+    try {
+      const res = await base44.functions.invoke('exportPayPeriodPDF', { periodId: period.id });
+      const blob = new Blob([res.data], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `pay-period-${period.start_date}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      toast({ title: 'Export failed', description: 'Could not generate PDF. Please try again.', variant: 'destructive' });
+    }
+  };
+
   const clearDeductions = async () => {
     if (!period) return;
     setSavingDeductions(true);
@@ -322,6 +340,10 @@ export default function LastPayPeriod() {
             </p>
           )}
         </div>
+        <Button variant="outline" size="sm" onClick={exportPDF} disabled={!period || displayShifts.length === 0}>
+          <FileDown className="w-4 h-4 mr-1.5" />
+          Export PDF
+        </Button>
       </div>
 
       {/* Shift Log */}
