@@ -5,8 +5,8 @@ import { formatCurrency } from '@/lib/utils';
 
 const TYPE_LABELS = {
   casual:          'Casual',
-  regular:         'Regular (×1.0)',
-  day_off:         'Day Off (×2.0)',
+  regular:         'Regular',
+  day_off:         'Day Off',
   isn:             'ISN',
   vacation:        'Paid Vacation',
   sick:            'Paid Sick',
@@ -45,18 +45,6 @@ const TYPE_MULTIPLIERS = {
   other_leave:     1.0,
 };
 
-function PremiumChip({ label, amount, overridden }) {
-  if (!amount || amount <= 0) return null;
-  return (
-    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${
-      overridden ? 'bg-chart-2/20 text-chart-2 ring-1 ring-chart-2/40' : 'bg-primary/10 text-primary'
-    }`}>
-      {label} <span className="font-mono">{formatCurrency(amount)}</span>
-      {overridden && <span className="opacity-60">*</span>}
-    </span>
-  );
-}
-
 const todayStr = new Date().toISOString().slice(0, 10);
 
 function resolveStatus(shift) {
@@ -68,7 +56,6 @@ function resolveStatus(shift) {
 }
 
 export default function ShiftRow({ shift, premiums, settings, periodEndDate, onEdit, onDelete, onVerify, readOnly, selectable, selected, onToggleSelect, hidePending }) {
-  const overridden = premiums?._overridden || [];
   const hosp = shift.hospital ? (settings?.hospitals || []).find(h => h.name === shift.hospital) : null;
   const unit = shift.unit ? (settings?.units || []).find(u => u.name === shift.unit) : null;
 
@@ -168,25 +155,7 @@ export default function ShiftRow({ shift, premiums, settings, periodEndDate, onE
 
         <div className="flex-1" />
 
-        {wage > 0 && (
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <span className="text-[11px] font-mono text-muted-foreground">
-              {formatCurrency(baseGross)}
-            </span>
-            {premiumTotal > 0 && (
-              <>
-                <span className="text-[11px] text-muted-foreground">+</span>
-                <span className="text-[11px] font-mono text-primary">
-                  {formatCurrency(premiumTotal)}
-                </span>
-              </>
-            )}
-            <span className="text-[11px] text-muted-foreground">=</span>
-            <span className="text-xs font-mono font-semibold text-foreground">
-              {formatCurrency(totalGross)}
-            </span>
-          </div>
-        )}
+
 
         {!readOnly && !selectable && (
           <div className="flex items-center gap-1 flex-shrink-0">
@@ -208,28 +177,29 @@ export default function ShiftRow({ shift, premiums, settings, periodEndDate, onE
         )}
       </div>
 
-      {/* Premium chips row */}
-      {premiums && (
-        <div className="flex flex-wrap gap-1.5 mt-1.5 ml-0">
-          {shift.extended_shift && (
-            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-destructive/10 text-destructive">Extended (full hrs)</span>
-          )}
-          <PremiumChip label="Evening" amount={premiums.evening} overridden={overridden.includes('evening')} />
-          <PremiumChip label="Night" amount={premiums.night} overridden={overridden.includes('night')} />
-          <PremiumChip label="Weekend" amount={premiums.weekend} overridden={overridden.includes('weekend')} />
-          <PremiumChip label="Super Shift" amount={premiums.super_shift} overridden={overridden.includes('super_shift')} />
-          <PremiumChip label="Regular" amount={premiums.regular_premium} overridden={overridden.includes('regular_premium')} />
-          <PremiumChip label="Short Notice" amount={premiums.short_notice} overridden={overridden.includes('short_notice')} />
-          <PremiumChip label="Resp. Pay" amount={premiums.responsibility} overridden={overridden.includes('responsibility')} />
-          <PremiumChip label="Specialty" amount={premiums.specialty} overridden={overridden.includes('specialty')} />
-          <PremiumChip label="Preceptor" amount={premiums.preceptor} overridden={overridden.includes('preceptor')} />
-          {shift.on_call_hours > 0 && (
-            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-chart-4/15 text-chart-4">
-              On-Call {shift.on_call_hours}h
-            </span>
-          )}
-        </div>
-      )}
+      {/* Wage summary row */}
+      {premiums && wage > 0 && (() => {
+        const straightTime = multiplier >= 1 ? shift.paid_hours * wage : 0;
+        const overtime = multiplier > 1 ? shift.paid_hours * wage * (multiplier - 1) : 0;
+        return (
+          <div className="flex items-center gap-1.5 mt-1.5 text-[11px] font-mono text-muted-foreground">
+            <span>Straight Time</span>
+            <span className="text-foreground font-medium">{formatCurrency(straightTime)}</span>
+            <span>+</span>
+            {overtime > 0 && (
+              <>
+                <span>Overtime</span>
+                <span className="text-foreground font-medium">{formatCurrency(overtime)}</span>
+                <span>+</span>
+              </>
+            )}
+            <span>Premiums</span>
+            <span className="text-foreground font-medium">{formatCurrency(premiumTotal)}</span>
+            <span>=</span>
+            <span className="text-primary font-semibold">{formatCurrency(straightTime + overtime + premiumTotal)}</span>
+          </div>
+        );
+      })()}
 
       {/* Misc flags when no premiums yet */}
       {!premiums && (
