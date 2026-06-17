@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Trash2, Eye, Loader2, CalendarPlus } from 'lucide-react';
+import { Trash2, Eye, Loader2, CalendarPlus, ArrowUpDown } from 'lucide-react';
 import PayPeriodDialog from '@/components/payroll/PayPeriodDialog';
 import { getVCHPeriodNumber } from '@/lib/statHolidays';
 import { formatCurrency } from '@/lib/utils';
@@ -22,6 +22,7 @@ export default function PayPeriodHistory() {
   const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [viewTarget, setViewTarget] = useState(null);
+  const [sortAsc, setSortAsc] = useState(true);
 
   const loadingRef = useRef(false);
   const loadRef = useRef(null);
@@ -58,6 +59,11 @@ export default function PayPeriodHistory() {
     return () => unsub();
   }, [debouncedLoad]);
 
+  const sortedPeriods = [...periods].sort((a, b) => {
+    const diff = (a.start_date || '').localeCompare(b.start_date || '');
+    return sortAsc ? diff : -diff;
+  });
+
   const confirmDelete = async () => {
     if (!deleteTarget) return;
     await base44.entities.PayPeriod.delete(deleteTarget.id);
@@ -80,12 +86,18 @@ export default function PayPeriodHistory() {
           <h2 className="text-2xl font-display font-bold text-foreground tracking-tight">Pay Period History</h2>
           <p className="text-sm text-muted-foreground mt-1">{periods.length} pay periods on record</p>
         </div>
-        <Link to="/pay-period">
-          <Button size="sm" className="bg-primary text-primary-foreground">
-            <CalendarPlus className="w-4 h-4 mr-2" />
-            Current Period
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={() => setSortAsc(s => !s)} className="h-8 px-2 text-xs text-muted-foreground">
+            <ArrowUpDown className="w-3.5 h-3.5 mr-1" />
+            {sortAsc ? 'Oldest first' : 'Newest first'}
           </Button>
-        </Link>
+          <Link to="/pay-period">
+            <Button size="sm" className="bg-primary text-primary-foreground">
+              <CalendarPlus className="w-4 h-4 mr-2" />
+              Current Period
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {periods.length === 0 ? (
@@ -101,7 +113,7 @@ export default function PayPeriodHistory() {
       ) : (
         <div className="bg-card border border-border rounded-xl overflow-hidden">
           <div className="divide-y divide-border">
-            {periods.map((period) => (
+            {sortedPeriods.map((period) => (
               <div
                 key={period.id}
                 className="flex items-center gap-4 px-5 py-4 hover:bg-muted/30 transition-colors duration-150"
