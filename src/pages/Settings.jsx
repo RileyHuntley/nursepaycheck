@@ -205,6 +205,14 @@ export default function Settings() {
     }
   };
 
+  const saveShareToken = async (token) => {
+    await base44.entities.Settings.update(settings.id, { share_token: token || '' });
+    const updated = { ...settings, share_token: token || '' };
+    savedRef.current = cloneDeep(updated);
+    setSettings(updated);
+    setSavedVersion(v => v + 1);
+  };
+
   if (!settings) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -490,10 +498,10 @@ export default function Settings() {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => {
+                onClick={async () => {
                   setGenerating(true);
                   const newToken = crypto.randomUUID();
-                  set('share_token', newToken);
+                  await saveShareToken(newToken);
                   setGenerating(false);
                 }}
                 disabled={generating}
@@ -505,7 +513,7 @@ export default function Settings() {
               <Button
                 size="sm"
                 variant="ghost"
-                onClick={() => set('share_token', '')}
+                onClick={async () => { await saveShareToken(''); }}
                 className="text-xs text-destructive hover:text-destructive"
               >
                 <X className="w-3.5 h-3.5 mr-1" />
@@ -519,10 +527,10 @@ export default function Settings() {
         ) : (
           <Button
             size="sm"
-            onClick={() => {
+            onClick={async () => {
               setGenerating(true);
               const newToken = crypto.randomUUID();
-              set('share_token', newToken);
+              await saveShareToken(newToken);
               setGenerating(false);
             }}
             disabled={generating}

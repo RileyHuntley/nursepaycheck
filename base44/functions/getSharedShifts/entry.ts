@@ -3,8 +3,13 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 Deno.serve(async (req) => {
   try {
     const url = new URL(req.url);
-    const body = await req.json().catch(() => ({}));
-    const token = body.token || url.searchParams.get('token');
+    let token = url.searchParams.get('token');
+    if (!token) {
+      try {
+        const body = await req.clone().json();
+        token = body.token;
+      } catch (_) { /* body not JSON or already consumed */ }
+    }
     if (!token) {
       return Response.json({ error: 'Missing share token' }, { status: 400 });
     }
@@ -12,12 +17,12 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
 
     // Look up settings by share_token using service role (RLS bypass)
-    const settingsList = await base44.asServiceRole.entities.Settings.filter({ share_token: token });
-    if (settingsList.length === 0) {
+    const allSettings = await base44.asServiceRole.entities.Settings.list();
+    const settings = allSettings.find(s => s.share_token === token);
+    if (!settings) {
       return Response.json({ error: 'Invalid or expired share link' }, { status: 404 });
     }
 
-    const settings = settingsList[0];
     const userId = settings.created_by_id;
 
     // Fetch pay periods for this user using service role
