@@ -1,3 +1,5 @@
+import { getStatType } from '@/lib/statHolidays';
+
 // Built-in shift patterns for bulk add
 // Each pattern has a name, description, and a sequence of shift templates.
 // Null entries represent off days.
@@ -85,9 +87,16 @@ export function generateShiftsFromPattern(startDate, pattern, repetitions, defau
       dayOffset++;
 
       if (step !== null) {
+        // Auto-detect stat holidays
+        const statType = getStatType(dateStr);
+        let shiftType = step.shift_type;
+        if (shiftType === 'regular' && statType === 'super_stat') shiftType = 'work_super_stat';
+        else if (shiftType === 'regular' && statType === 'stat') shiftType = 'work_stat';
+
         shifts.push({
           date: dateStr,
           ...step,
+          shift_type: shiftType,
           hospital: defaults.hospital || '',
           unit: defaults.unit || '',
           short_notice: false,
