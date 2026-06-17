@@ -333,7 +333,7 @@ export default function Settings() {
                   type="time"
                   value={settings.preset_times?.[key] || ''}
                   onChange={e => set(`preset_times.${key}`, e.target.value)}
-                  className="h-9 w-28 text-sm font-mono"
+                  className="h-9 w-[116px] text-sm font-mono"
                 />
               </div>
             ))}
