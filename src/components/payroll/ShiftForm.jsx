@@ -130,7 +130,9 @@ export default function ShiftForm({ onSubmit, onCancel, initial, settings }) {
     <form onSubmit={handleSubmit} className="bg-card border border-border rounded-xl p-5 space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-foreground">
-          {initial ? 'Edit Shift' : 'Add Shift'}
+          {initial
+            ? `Edit Shift — ${new Date(initial.date + 'T12:00:00').toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' })}`
+            : 'Add Shift'}
         </h3>
         {onCancel && (
           <Button type="button" variant="ghost" size="icon" onClick={onCancel} className="h-7 w-7">
