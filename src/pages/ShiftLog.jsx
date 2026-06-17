@@ -632,8 +632,8 @@ export default function ShiftLog() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="casual">Casual Shift</SelectItem>
-                    <SelectItem value="regular">Regular (×1.0)</SelectItem>
-                    <SelectItem value="day_off">Day Off (×2.0)</SelectItem>
+                    <SelectItem value="regular">Regular</SelectItem>
+                    <SelectItem value="day_off">Day Off</SelectItem>
                     <SelectItem value="isn">ISN</SelectItem>
                     <SelectItem value="vacation">Paid Vacation</SelectItem>
                     <SelectItem value="sick">Paid Sick</SelectItem>
