@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Trash2, Sun, Moon, Check } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
+import { splitOvernightShift, getSegmentMultiplier } from '@/lib/premiumCalculator';
 
 const TYPE_LABELS = {
   casual:          'Casual',
@@ -31,20 +32,6 @@ const TYPE_COLORS = {
   other_leave:     'bg-muted text-muted-foreground',
 };
 
-const TYPE_MULTIPLIERS = {
-  casual:          1.0,
-  regular:         1.0,
-  day_off:         2.0,
-  isn:             1.0,
-  vacation:        1.0,
-  sick:            1.0,
-  unpaid_vacation: 0,
-  unpaid_sick:     0,
-  special_leave:   1.0,
-  pdo_pst:         1.0,
-  other_leave:     1.0,
-};
-
 const todayStr = new Date().toISOString().slice(0, 10);
 
 function resolveStatus(shift) {
@@ -60,8 +47,6 @@ export default function ShiftRow({ shift, premiums, settings, periodEndDate, onE
   const unit = shift.unit ? (settings?.units || []).find(u => u.name === shift.unit) : null;
 
   const wage = settings?.hourly_wage || 0;
-  const multiplier = TYPE_MULTIPLIERS[shift.shift_type] || 1.0;
-  const baseGross = shift.paid_hours * wage * multiplier;
   const premiumTotal = premiums
     ? (premiums.evening || 0) + (premiums.night || 0) + (premiums.weekend || 0) +
       (premiums.super_shift || 0) + (premiums.regular_premium || 0) +
@@ -69,7 +54,6 @@ export default function ShiftRow({ shift, premiums, settings, periodEndDate, onE
       (premiums.short_notice || 0) + (premiums.responsibility || 0) +
       (premiums.preceptor || 0)
     : 0;
-  const totalGross = baseGross + premiumTotal;
 
   // Detect night shift: use calculated premiums when available, otherwise fall back to start time
   const isNight = premiums
@@ -179,24 +163,42 @@ export default function ShiftRow({ shift, premiums, settings, periodEndDate, onE
 
       {/* Wage summary row */}
       {premiums && wage > 0 && (() => {
-        const straightTime = multiplier >= 1 ? shift.paid_hours * wage : 0;
-        const overtime = multiplier > 1 ? shift.paid_hours * wage * (multiplier - 1) : 0;
+        const segments = splitOvernightShift(shift);
+        let straightTime = 0;
+        const otGroups = {};
+        for (const seg of segments) {
+          const mult = getSegmentMultiplier(shift.shift_type, seg.date);
+          if (mult > 0) {
+            const base = seg.hours * wage;
+            straightTime += base;
+            if (mult > 1) {
+              const premium = seg.hours * wage * (mult - 1);
+              if (!otGroups[mult]) otGroups[mult] = 0;
+              otGroups[mult] += premium;
+            }
+          }
+        }
+        const otTotal = Object.values(otGroups).reduce((s, v) => s + v, 0);
+        const grandTotal = straightTime + otTotal + premiumTotal;
+        const otMults = Object.keys(otGroups).map(Number).sort((a, b) => a - b);
         return (
           <div className="flex items-center gap-1.5 mt-1.5 text-[11px] font-mono text-muted-foreground">
-            <span>Straight Time</span>
-            <span className="text-foreground font-medium">{formatCurrency(straightTime)}</span>
-            <span>+</span>
-            {overtime > 0 && (
-              <>
-                <span>Overtime</span>
-                <span className="text-foreground font-medium">{formatCurrency(overtime)}</span>
-                <span>+</span>
-              </>
+            {straightTime > 0 && (
+              <span className="text-foreground font-medium">{formatCurrency(straightTime)}</span>
             )}
-            <span>Premiums</span>
-            <span className="text-foreground font-medium">{formatCurrency(premiumTotal)}</span>
-            <span>=</span>
-            <span className="text-primary font-semibold">{formatCurrency(straightTime + overtime + premiumTotal)}</span>
+            {otMults.map((mult, i) => (
+              <span key={mult}>
+                {(straightTime > 0 || i > 0) && <span> + </span>}
+                <span>OT×{mult}</span>
+                <span className="text-foreground font-medium"> {formatCurrency(otGroups[mult])}</span>
+              </span>
+            ))}
+            {((straightTime > 0 || otTotal > 0) && premiumTotal > 0) && <span> + </span>}
+            {premiumTotal > 0 && (
+              <><span>Premiums</span> <span className="text-foreground font-medium">{formatCurrency(premiumTotal)}</span></>
+            )}
+            <span> = </span>
+            <span className="text-primary font-semibold">{formatCurrency(grandTotal)}</span>
           </div>
         );
       })()}
