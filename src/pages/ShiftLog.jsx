@@ -387,29 +387,62 @@ export default function ShiftLog() {
               </div>
             )}
 
-            <div className="divide-y divide-border">
+            <div>
               {allShifts.length === 0 && (
                 <div className="px-5 py-12 text-center">
                   <p className="text-sm text-muted-foreground">No shifts logged yet.</p>
                 </div>
               )}
-              {sortedShifts.map((shift, idx) => (
-                <div key={`${shift._periodId}-${shift._shiftIdx}`} className="bg-muted/30 border-b border-border">
-                  <div className="text-[10px] text-muted-foreground font-mono px-4 pt-2">
-                    {(() => {
-                      const pd = getPayPeriodForDate(shift.date);
-                      return getPayPeriodName(pd.start_date, pd.end_date);
-                    })()}
-                  </div>
-                  <ShiftRow
-                    shift={shift}
-                    premiums={settings ? calculateShiftPremiums(shift, settings) : null}
-                    settings={settings}
-                    onEdit={(s) => setEditingShift({ data: s, _periodId: shift._periodId, _shiftIdx: shift._shiftIdx })}
-                    onDelete={() => deleteShift(shift)}
-                  />
-                </div>
-              ))}
+              {(() => {
+                // Group shifts by _periodId, maintaining sort order
+                const groups = [];
+                const seen = new Set();
+                for (const shift of sortedShifts) {
+                  if (!seen.has(shift._periodId)) {
+                    seen.add(shift._periodId);
+                    groups.push({ periodId: shift._periodId, periodName: shift._periodName, shifts: [] });
+                  }
+                  groups[groups.length - 1].shifts.push(shift);
+                }
+                return groups.map((group, gi) => {
+                  // Compute period breakdown for this group
+                  const periodBreakdown = settings ? calculatePeriodBreakdown(group.shifts, settings) : null;
+                  return (
+                    <div key={group.periodId}>
+                      {/* Period header */}
+                      <div className="px-4 py-3 bg-secondary/30 border-b border-border flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <h4 className="text-sm font-semibold text-foreground">
+                            {group.periodName}
+                          </h4>
+                          <span className="text-xs text-muted-foreground">
+                            {group.shifts.length} shift{group.shifts.length !== 1 ? 's' : ''}
+                          </span>
+                        </div>
+                        {periodBreakdown && (
+                          <span className="text-sm font-mono font-semibold text-primary">
+                            ${periodBreakdown.gross_pay.toFixed(2)}
+                          </span>
+                        )}
+                      </div>
+                      {/* Shifts in this period */}
+                      <div className="divide-y divide-border">
+                        {group.shifts.map((shift) => (
+                          <div key={`${shift._periodId}-${shift._shiftIdx}`} className="bg-muted/20 hover:bg-muted/30">
+                            <ShiftRow
+                              shift={shift}
+                              premiums={settings ? calculateShiftPremiums(shift, settings) : null}
+                              settings={settings}
+                              onEdit={(s) => setEditingShift({ data: s, _periodId: shift._periodId, _shiftIdx: shift._shiftIdx })}
+                              onDelete={() => deleteShift(shift)}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
             </div>
           </div>
 
