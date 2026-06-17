@@ -60,8 +60,8 @@ export default function PaySummaryPanel({ title, subtitle, breakdown, loading, t
       { label: 'EI', value: statutory.ei, negative: true },
     ] : []),
     ...(hasTaxes ? [
-      { label: 'Est. BC Tax', value: taxes.provincial, negative: true },
-      { label: 'Est. Federal Tax', value: taxes.federal, negative: true },
+      { label: 'Provincial Tax (estimated)', value: taxes.provincial, negative: true },
+      { label: 'Federal Tax (estimated)', value: taxes.federal, negative: true },
     ] : []),
   ].filter(r => r.value !== 0 && r.value != null);
 
@@ -89,7 +89,7 @@ export default function PaySummaryPanel({ title, subtitle, breakdown, loading, t
         <span className="text-sm font-mono font-semibold text-foreground">{formatCurrency(breakdown.gross_pay)}</span>
       </div>
       <div className="flex items-center justify-between pt-2 mt-1 border-t-2 border-primary/30">
-        <span className="text-sm font-display font-bold text-foreground">Est. Net Pay</span>
+        <span className="text-sm font-display font-bold text-foreground">Net Pay</span>
         <span className="text-2xl font-mono font-bold text-primary">{formatCurrency(netPay)}</span>
       </div>
     </div>
