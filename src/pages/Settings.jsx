@@ -27,6 +27,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
+const SHARE_BASE_URL = 'https://nursepaycheck.ca';
+
 const HEALTH_AUTHORITIES = [
   { value: 'VCH', label: 'Vancouver Coastal Health (VCH)' },
   { value: 'FH', label: 'Fraser Health (FH)' },
@@ -377,9 +379,9 @@ export default function Settings() {
           <div className="space-y-3">
             <div className="flex items-center gap-2 bg-muted rounded-lg p-3">
               <code className="text-xs font-mono text-foreground flex-1 break-all select-all">
-                {`${window.location.origin}/share?token=${settings.share_token}`}
+                {`${SHARE_BASE_URL}/share?token=${settings.share_token}`}
               </code>
-              <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/share?token=${settings.share_token}`); setShareCopied(true); setTimeout(() => setShareCopied(false), 2000); }} className="h-8 flex-shrink-0">
+              <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(`${SHARE_BASE_URL}/share?token=${settings.share_token}`); setShareCopied(true); setTimeout(() => setShareCopied(false), 2000); }} className="h-8 flex-shrink-0">
                 <Copy className="w-3.5 h-3.5 mr-1" />
                 {shareCopied ? 'Copied!' : 'Copy'}
               </Button>
