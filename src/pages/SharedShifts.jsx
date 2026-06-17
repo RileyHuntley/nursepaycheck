@@ -3,7 +3,7 @@ import { Loader2, AlertCircle } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import ShiftCalendarGrid from '@/components/payroll/ShiftCalendarGrid';
 import PayBreakdown from '@/components/payroll/PayBreakdown';
-import { calculatePeriodBreakdown } from '@/lib/premiumCalculator';
+import { calculatePeriodBreakdown, getPayPeriodForDate } from '@/lib/premiumCalculator';
 import { formatCurrency } from '@/lib/utils';
 
 export default function SharedShifts() {
@@ -78,10 +78,15 @@ export default function SharedShifts() {
    return <div className="p-8 text-center">Settings not found for this shared view.</div>;
   }
   
-  // Calculate breakdown for most recent period
-  const latestPeriod = payPeriods[0];
-  const latestBreakdown = latestPeriod && settings
-    ? calculatePeriodBreakdown(latestPeriod.shifts || [], settings)
+  // Sort all periods chronologically (oldest first)
+  const sortedPeriods = [...payPeriods].sort((a, b) => (a.start_date || '').localeCompare(b.start_date || ''));
+
+  // Find current pay period (where today falls)
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const currentPd = getPayPeriodForDate(todayStr);
+  const currentPeriod = sortedPeriods.find(p => p.start_date === currentPd.start_date && p.end_date === currentPd.end_date);
+  const currentBreakdown = currentPeriod && settings
+    ? calculatePeriodBreakdown(currentPeriod.shifts || [], settings)
     : null;
 
   // Year-to-date gross sum
@@ -105,16 +110,16 @@ export default function SharedShifts() {
           readOnly={true}
         />
 
-        {latestBreakdown && (
+        {currentBreakdown && currentPeriod && (
           <section className="bg-card border border-border rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-sm font-semibold text-foreground">Latest Period</h3>
-                <p className="text-xs text-muted-foreground">{latestPeriod.name} · {latestPeriod.start_date} – {latestPeriod.end_date}</p>
+                <h3 className="text-sm font-semibold text-foreground">Current Period</h3>
+                <p className="text-xs text-muted-foreground">{currentPeriod.name} · {currentPeriod.start_date} – {currentPeriod.end_date}</p>
               </div>
             </div>
             <PayBreakdown
-              breakdown={latestBreakdown}
+              breakdown={currentBreakdown}
               wage={settings.hourly_wage}
               taxSettings={settings.tax_settings}
             />
@@ -125,7 +130,7 @@ export default function SharedShifts() {
         <section className="space-y-3">
           <h3 className="text-sm font-semibold text-foreground">All Pay Periods</h3>
           <div className="bg-card border border-border rounded-xl divide-y divide-border">
-            {payPeriods.map(period => (
+            {sortedPeriods.map(period => (
               <div key={period.id} className="flex items-center gap-4 px-5 py-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground">{period.name}</p>
