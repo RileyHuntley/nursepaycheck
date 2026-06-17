@@ -125,6 +125,27 @@ export default function Sidebar() {
           </NavLink>
         ))}
 
+        {/* BCNU Union Resources */}
+        <>
+          <div className={`pt-4 pb-1 ${collapsed ? 'px-0' : 'px-3'}`}>
+            {!collapsed && (
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">BCNU Resources</p>
+            )}
+          </div>
+          <a
+            href="https://memberportal.bcnu.org/"
+            target="_blank"
+            rel="noopener noreferrer"
+            title={collapsed ? 'Contact Your Steward' : undefined}
+            className={`flex items-center gap-3 rounded-lg text-sm font-medium transition-colors duration-150 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground ${
+              collapsed ? 'justify-center px-0 py-2.5 w-full' : 'px-3 py-2.5'
+            }`}
+          >
+            <ExternalLink className="w-4 h-4 flex-shrink-0" />
+            {!collapsed && <span className="truncate">Contact Your Steward</span>}
+          </a>
+        </>
+
         {/* External health authority links */}
         {haLinks.length > 0 && (
           <>
