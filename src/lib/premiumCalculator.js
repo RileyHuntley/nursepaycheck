@@ -468,3 +468,16 @@ export function getPayPeriodForDate(date) {
   const fmt = (dt) => dt.toISOString().split('T')[0];
   return { start_date: fmt(start), end_date: fmt(end) };
 }
+
+/**
+ * Check if a shift is a duplicate of an existing one:
+ * same date, same start_time, and same end_time.
+ * Returns true if a match is found in the existing shifts array.
+ */
+export function isDuplicateShift(existingShifts, newShift) {
+  return existingShifts.some(s =>
+    s.date === newShift.date &&
+    s.start_time === newShift.start_time &&
+    s.end_time === newShift.end_time
+  );
+}

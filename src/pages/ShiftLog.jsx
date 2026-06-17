@@ -4,7 +4,8 @@ import ShiftRow from '@/components/payroll/ShiftRow';
 import ShiftForm from '@/components/payroll/ShiftForm';
 import PayBreakdown from '@/components/payroll/PayBreakdown';
 import ShiftCalendarGrid from '@/components/payroll/ShiftCalendarGrid';
-import { calculatePeriodBreakdown, calculateShiftPremiums, getPayPeriodForDate, getPayPeriodName } from '@/lib/premiumCalculator';
+import { calculatePeriodBreakdown, calculateShiftPremiums, getPayPeriodForDate, getPayPeriodName, isDuplicateShift } from '@/lib/premiumCalculator';
+import { toast } from '@/components/ui/use-toast';
 import { formatCurrency } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Loader2, ArrowUpDown, Plus, CalendarPlus, List, CalendarDays, Filter } from 'lucide-react';
@@ -255,7 +256,15 @@ export default function ShiftLog() {
 
   const addShift = async (shiftData) => {
     const period = await findOrCreatePeriodForDate(shiftData.date);
-    const updatedShifts = [...(period.shifts || []), { ...shiftData, status: shiftData.status || getDefaultStatus(shiftData.date) }];
+    const periodShifts = period.shifts || [];
+
+    // Check for duplicate: same date + same start_time + same end_time
+    if (isDuplicateShift(periodShifts, shiftData)) {
+      toast({ title: 'Duplicate shift', description: 'A shift with the same date, start, and end time already exists.', variant: 'destructive' });
+      return;
+    }
+
+    const updatedShifts = [...periodShifts, { ...shiftData, status: shiftData.status || getDefaultStatus(shiftData.date) }];
     const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings) : null;
     await base44.entities.PayPeriod.update(period.id, {
       shifts: updatedShifts,
@@ -273,13 +282,20 @@ export default function ShiftLog() {
       if (!groups[period.id]) groups[period.id] = { period, shifts: [] };
       groups[period.id].shifts.push({ ...s, status: s.status || getDefaultStatus(s.date) });
     }
+    let skippedCount = 0;
     for (const { period, shifts: groupShifts } of Object.values(groups)) {
-      const updatedShifts = [...(period.shifts || []), ...groupShifts];
+      const existing = period.shifts || [];
+      const filtered = groupShifts.filter(s => !isDuplicateShift(existing, s));
+      skippedCount += groupShifts.length - filtered.length;
+      const updatedShifts = [...existing, ...filtered];
       const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings) : null;
       await base44.entities.PayPeriod.update(period.id, {
         shifts: updatedShifts,
         ...(breakdown ? { breakdown } : {}),
       });
+    }
+    if (skippedCount > 0) {
+      toast({ title: 'Duplicates skipped', description: `${skippedCount} shift${skippedCount !== 1 ? 's' : ''} skipped — same date, start, and end time already exists.` });
     }
     setShowBulkForm(false);
     loadData();

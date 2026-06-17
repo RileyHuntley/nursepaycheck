@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import ShiftForm from '@/components/payroll/ShiftForm';
 import ShiftRow from '@/components/payroll/ShiftRow';
 import PayBreakdown from '@/components/payroll/PayBreakdown';
-import { calculatePeriodBreakdown, calculateShiftPremiums, getCurrentPayPeriodDates, getPayPeriodName, getPayPeriodForDate } from '@/lib/premiumCalculator';
+import { calculatePeriodBreakdown, calculateShiftPremiums, getCurrentPayPeriodDates, getPayPeriodName, getPayPeriodForDate, isDuplicateShift } from '@/lib/premiumCalculator';
+import { toast } from '@/components/ui/use-toast';
 import { Plus, Loader2, CalendarPlus, ArrowUpDown } from 'lucide-react';
 import BulkAddShift from '@/components/payroll/BulkAddShift';
 import { getVCHPeriodNumber } from '@/lib/statHolidays';
@@ -92,12 +93,24 @@ export default function PayPeriodDetail() {
 
   const addShift = async (shiftData) => {
     shiftData.status = shiftData.status || getDefaultStatus(shiftData.date);
+
+    // Check for duplicate: same date + same start_time + same end_time
+    if (isValidForPeriod(shiftData.date) && isDuplicateShift(period.shifts || [], shiftData)) {
+      toast({ title: 'Duplicate shift', description: 'A shift with the same date, start, and end time already exists.', variant: 'destructive' });
+      return;
+    }
+
     if (!isValidForPeriod(shiftData.date)) {
       // Allow but warn: if date is outside current period, auto-route to correct period
       const { start_date, end_date } = getPayPeriodForDate(shiftData.date);
       const allPeriods = await base44.entities.PayPeriod.list('-start_date', 50);
       const existing = allPeriods.find(p => p.start_date === start_date && p.end_date === end_date);
       if (existing) {
+        if (isDuplicateShift(existing.shifts || [], shiftData)) {
+          toast({ title: 'Duplicate shift', description: 'A shift with the same date, start, and end time already exists.', variant: 'destructive' });
+          setShowForm(false);
+          return;
+        }
         const updatedShifts = [...(existing.shifts || []), { ...shiftData }];
         const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings) : null;
         await base44.entities.PayPeriod.update(existing.id, {
@@ -155,13 +168,20 @@ export default function PayPeriodDetail() {
       if (!groups[key].shifts) groups[key].shifts = [];
       groups[key].shifts.push({ ...s, status: s.status || getDefaultStatus(s.date) });
     }
+    let skippedCount = 0;
     for (const { period, shifts: groupShifts } of Object.values(groups)) {
-      const updatedShifts = [...(period.shifts || []), ...groupShifts];
+      const existing = period.shifts || [];
+      const filtered = groupShifts.filter(s => !isDuplicateShift(existing, s));
+      skippedCount += groupShifts.length - filtered.length;
+      const updatedShifts = [...existing, ...filtered];
       const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings) : null;
       await base44.entities.PayPeriod.update(period.id, {
         shifts: updatedShifts,
         ...(breakdown ? { breakdown } : {}),
       });
+    }
+    if (skippedCount > 0) {
+      toast({ title: 'Duplicates skipped', description: `${skippedCount} shift${skippedCount !== 1 ? 's' : ''} skipped — same date, start, and end time already exists.` });
     }
     loadData();
     setShowBulkForm(false);
