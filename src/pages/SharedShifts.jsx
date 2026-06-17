@@ -73,6 +73,10 @@ export default function SharedShifts() {
     });
   });
 
+// In SharedShifts.jsx
+if (!settings) {
+   return <div className="p-8 text-center">Settings not found for this shared view.</div>;
+}
   // Calculate breakdown for most recent period
   const latestPeriod = payPeriods[0];
   const latestBreakdown = latestPeriod && settings
