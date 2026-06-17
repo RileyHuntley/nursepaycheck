@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { NavLink } from 'react-router-dom';
 import { LayoutDashboard, CalendarPlus, Clock, Settings, PanelLeftClose, PanelLeftOpen, ExternalLink, List, Sun, Moon } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
@@ -37,35 +37,38 @@ export default function Sidebar() {
   const { theme, setTheme } = useTheme();
   const isDark = theme === 'dark';
 
+  const settingsRef = useRef(null);
+  const periodsRef = useRef(null);
+
   useEffect(() => {
-    const load = async () => {
-      const list = await base44.entities.Settings.list();
-      if (list.length > 0) {
-        setHealthAuthorities(getUserHealthAuthorities(list[0].hospitals || []));
-      }
-    };
-    load();
-    const unsub = base44.entities.Settings.subscribe(async () => {
-      const list = await base44.entities.Settings.list();
-      if (list.length > 0) {
-        setHealthAuthorities(getUserHealthAuthorities(list[0].hospitals || []));
-      }
+    loadSettings();
+    const unsub = base44.entities.Settings.subscribe(() => {
+      if (settingsRef.current) clearTimeout(settingsRef.current);
+      settingsRef.current = setTimeout(() => loadSettings(), 300);
     });
-    return () => unsub();
+    return () => { unsub(); if (settingsRef.current) clearTimeout(settingsRef.current); };
   }, []);
 
   useEffect(() => {
-    const load = async () => {
-      const periods = await base44.entities.PayPeriod.list();
-      setPendingCount(countPendingVerification(periods));
-    };
-    load();
-    const unsub = base44.entities.PayPeriod.subscribe(async () => {
-      const periods = await base44.entities.PayPeriod.list();
-      setPendingCount(countPendingVerification(periods));
+    loadPeriods();
+    const unsub = base44.entities.PayPeriod.subscribe(() => {
+      if (periodsRef.current) clearTimeout(periodsRef.current);
+      periodsRef.current = setTimeout(() => loadPeriods(), 300);
     });
-    return () => unsub();
+    return () => { unsub(); if (periodsRef.current) clearTimeout(periodsRef.current); };
   }, []);
+
+  async function loadSettings() {
+    const list = await base44.entities.Settings.list();
+    if (list.length > 0) {
+      setHealthAuthorities(getUserHealthAuthorities(list[0].hospitals || []));
+    }
+  }
+
+  async function loadPeriods() {
+    const periods = await base44.entities.PayPeriod.list();
+    setPendingCount(countPendingVerification(periods));
+  }
 
   const toggle = () => {
     const next = !collapsed;
