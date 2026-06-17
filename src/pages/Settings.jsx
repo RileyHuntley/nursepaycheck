@@ -1,13 +1,12 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import isEqual from 'lodash/isEqual';
 import cloneDeep from 'lodash/cloneDeep';
-import { useBlocker } from 'react-router-dom';
+import { useBlocker, Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Save, Loader2, Plus, X, AlertTriangle, Link2, Copy, RefreshCw, Info } from 'lucide-react';
+import { Save, Loader2, Plus, X, AlertTriangle, Link2, Copy, RefreshCw } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,15 +38,6 @@ const HEALTH_AUTHORITIES = [
   { value: 'NBA', label: 'Private Facility (NBA)' },
 ];
 
-const QUALIFICATION_OPTIONS = [
-  { key: 'special_clinical_prep', label: 'Special Clinical Prep', rate: 50 },
-  { key: 'bsn', label: 'BSN Degree', rate: 100 },
-  { key: 'masters', label: "Master's Degree", rate: 125 },
-  { key: 'rpn_dual', label: 'RPN Dual Registration', rate: 50 },
-  { key: 'cha_bcit', label: 'CHA / BCIT Certification', rate: 25 },
-  { key: 'university_prep', label: 'University Preparation', rate: 25 },
-];
-
 const defaultSettings = {
   hourly_wage: 45.00,
   ot_multipliers: { overtime: 1.5, overtime_extended: 2.0, stat_holiday: 1.5, ot_stat_holiday: 3.0 },
@@ -73,7 +63,7 @@ const defaultSettings = {
     night_12h_start: '19:00', night_12h_end: '07:00',
     day_8h_start: '08:00', day_8h_end: '16:00',
   },
-  };
+};
 
 export default function Settings() {
   const [settings, setSettings] = useState(null);
@@ -82,26 +72,19 @@ export default function Settings() {
   const [savedVersion, setSavedVersion] = useState(0);
   const savedRef = useRef(null);
 
-  // Track unsaved changes by comparing to last saved snapshot.
-  // savedVersion bumps on every save so useMemo recomputes immediately.
   const isDirty = useMemo(() => {
     if (!settings || !savedRef.current) return false;
     return !isEqual(settings, savedRef.current);
   }, [settings, savedVersion]);
 
-  // Block in-app navigation when dirty
   const blocker = useBlocker(
     ({ currentLocation, nextLocation }) =>
       isDirty && currentLocation.pathname !== nextLocation.pathname
   );
 
-  // Warn on browser close/refresh when dirty
   useEffect(() => {
     if (!isDirty) return;
-    const handler = (e) => {
-      e.preventDefault();
-      e.returnValue = '';
-    };
+    const handler = (e) => { e.preventDefault(); e.returnValue = ''; };
     window.addEventListener('beforeunload', handler);
     return () => window.removeEventListener('beforeunload', handler);
   }, [isDirty]);
@@ -109,9 +92,7 @@ export default function Settings() {
   const loadSettings = useCallback(async () => {
     const list = await base44.entities.Settings.list();
     if (list.length > 0) {
-      // Merge in defaults for any missing fields (e.g. newly added preset_times)
-      const loaded = list[0];
-      const merged = { ...defaultSettings, ...loaded };
+      const merged = { ...defaultSettings, ...list[0] };
       setSettings(merged);
       savedRef.current = cloneDeep(merged);
     } else {
@@ -134,52 +115,14 @@ export default function Settings() {
     });
   };
 
-  const toggleAllowance = (key) => {
-    setSettings(s => {
-      const current = s.active_allowances || [];
-      const next = current.includes(key) ? current.filter(k => k !== key) : [...current, key];
-      return { ...s, active_allowances: next };
-    });
-  };
-
-  const toggleQualification = (key) => {
-    setSettings(s => {
-      const current = s.active_qualifications || [];
-      const next = current.includes(key) ? current.filter(k => k !== key) : [...current, key];
-      return { ...s, active_qualifications: next };
-    });
-  };
-
   const [shareCopied, setShareCopied] = useState(false);
   const [generating, setGenerating] = useState(false);
-
-  const [openInfo, setOpenInfo] = useState(null);
 
   const [newHospitalName, setNewHospitalName] = useState('');
   const [newHospitalAcronym, setNewHospitalAcronym] = useState('');
   const [newHospitalHA, setNewHospitalHA] = useState('');
   const [newUnitName, setNewUnitName] = useState('');
   const [newUnitCode, setNewUnitCode] = useState('');
-
-  const PREMIUM_INFO = {
-    evening: { article: 'Art. 28.01', title: 'Evening Shift Premium', desc: 'Paid for shifts where >½ of hours fall between 15:30–23:30. Extended-hour nurses: paid only for hours actually within 15:30–23:30.' },
-    night: { article: 'Art. 28.01', title: 'Night Shift Premium', desc: 'Paid for shifts where >½ of hours fall between 23:30–07:30. Extended-hour nurses: paid only for hours actually within 23:30–07:30.' },
-    weekend: { article: 'Art. 28.02', title: 'Weekend Premium', desc: 'Paid for each hour worked between 23:00 Friday and 23:00 Sunday.' },
-    super_shift: { article: 'Art. 28.03', title: 'Super Shift Premium', desc: 'Paid for Fri night + Sat night shifts: 23:30 Fri–07:30 Sat and 23:30 Sat–07:30 Sun.' },
-    regular_premium: { article: 'Art. 28.05', title: 'Regular Premium', desc: 'Paid on all straight-time hours worked by regular employees (excluding overtime).' },
-    short_notice: { article: 'Art. 28.04', title: 'Short Notice Premium', desc: 'Paid when called in within 24 hours of a shift start, on all hours worked.' },
-    responsibility_hourly: { article: 'Art. 30', title: 'Responsibility Pay (Hourly)', desc: 'Paid to nurses designated in-charge of a ward/unit for ≥2 hours. Cannot combine hourly + flat on same shift.' },
-    responsibility_flat: { article: 'Art. 30', title: 'Responsibility Pay (Flat)', desc: 'Flat $18.75 per shift for nurses designated in-charge. Cannot combine hourly + flat on same shift.' },
-    preceptor: { article: 'App. GG', title: 'Preceptor Premium', desc: 'Paid for the entire shift when designated as a preceptor supervising a preceptee.' },
-    specialty: { article: 'Art. 28.06', title: 'Specialty Premium', desc: 'Paid on all hours worked in specialty areas: OR, PAR, ER, ICU, CCU.' },
-    on_call_first_72: { article: 'Art. 29.03', title: 'On-Call (≤72 hrs/mo)', desc: 'Paid for all on-call hours within the first 72 hours in a calendar month.' },
-    on_call_beyond_72: { article: 'Art. 29.03', title: 'On-Call (>72 hrs/mo)', desc: 'Paid for all on-call hours beyond 72 hours within the same calendar month.' },
-  };
-
-  const ALLOWANCE_INFO = {
-    isolation: { article: 'Art. 54', title: 'Isolation Allowance', desc: 'Monthly lump-sum for nurses working in isolated communities identified in Article 54. Pro-rated for PT & casual.' },
-    business: { article: 'Art. 57.06', title: 'Business Allowance', desc: 'Monthly allowance for regular nurses in community-based services. Excludes clinic-type services aligned with acute care.' },
-  };
 
   const addHospital = () => {
     const name = newHospitalName.trim();
@@ -230,17 +173,9 @@ export default function Settings() {
   const syncShareLink = async (token, userId, settingsData, payPeriodsData) => {
     const existing = await base44.entities.ShareLink.filter({ token });
     if (existing.length > 0) {
-      await base44.entities.ShareLink.update(existing[0].id, {
-        settings_data: settingsData,
-        pay_periods_data: payPeriodsData,
-      });
+      await base44.entities.ShareLink.update(existing[0].id, { settings_data: settingsData, pay_periods_data: payPeriodsData });
     } else {
-      await base44.entities.ShareLink.create({
-        token,
-        user_id: userId,
-        settings_data: settingsData,
-        pay_periods_data: payPeriodsData,
-      });
+      await base44.entities.ShareLink.create({ token, user_id: userId, settings_data: settingsData, pay_periods_data: payPeriodsData });
     }
   };
 
@@ -250,31 +185,20 @@ export default function Settings() {
     savedRef.current = cloneDeep(updated);
     setSettings(updated);
     setSavedVersion(v => v + 1);
-
     if (token) {
-      // Build a snapshot of sharable data
       const safeSettings = {
-        hourly_wage: settings.hourly_wage,
-        premium_rates: settings.premium_rates,
-        ot_multipliers: settings.ot_multipliers,
-        active_allowances: settings.active_allowances,
-        allowance_rates: settings.allowance_rates,
-        active_qualifications: settings.active_qualifications,
-        qualification_rates: settings.qualification_rates,
-        hospitals: settings.hospitals,
-        units: settings.units,
-        preset_times: settings.preset_times,
-        tax_settings: settings.tax_settings,
+        hourly_wage: settings.hourly_wage, premium_rates: settings.premium_rates,
+        ot_multipliers: settings.ot_multipliers, active_allowances: settings.active_allowances,
+        allowance_rates: settings.allowance_rates, active_qualifications: settings.active_qualifications,
+        qualification_rates: settings.qualification_rates, hospitals: settings.hospitals,
+        units: settings.units, preset_times: settings.preset_times, tax_settings: settings.tax_settings,
       };
       const payPeriods = await base44.entities.PayPeriod.list('-start_date', 50);
       const withShifts = payPeriods.filter(p => p.shifts && p.shifts.length > 0);
       await syncShareLink(token, settings.created_by_id, safeSettings, withShifts);
     } else {
-      // Revoke: delete the ShareLink record
       const existing = await base44.entities.ShareLink.filter({ token: settings.share_token });
-      if (existing.length > 0) {
-        await base44.entities.ShareLink.delete(existing[0].id);
-      }
+      if (existing.length > 0) await base44.entities.ShareLink.delete(existing[0].id);
     }
   };
 
@@ -291,7 +215,7 @@ export default function Settings() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-display font-bold text-foreground tracking-tight">Settings</h2>
-          <p className="text-sm text-muted-foreground mt-1">Configure wage, premiums, and allowances per your CBA</p>
+          <p className="text-sm text-muted-foreground mt-1">Shift defaults, hospitals, tax estimation, and sharing</p>
         </div>
         <Button onClick={handleSave} disabled={saving} size="sm" className="bg-primary text-primary-foreground">
           {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
@@ -305,227 +229,13 @@ export default function Settings() {
         </div>
       )}
 
-      {/* Hourly Wage */}
-      <section className="bg-card border border-border rounded-xl p-5 space-y-4">
-        <h3 className="text-sm font-semibold text-foreground">Base Hourly Wage</h3>
-        <div className="flex items-center gap-3">
-          <Label className="text-xs text-muted-foreground w-40">Hourly Rate ($)</Label>
-          <Input
-            type="number" step="0.01" min="0"
-            value={settings.hourly_wage}
-            onChange={e => set('hourly_wage', parseFloat(e.target.value) || 0)}
-            className="h-9 w-32 text-sm font-mono"
-          />
-        </div>
-        <p className="text-xs text-muted-foreground">Update annually when your CBA wage scale changes.</p>
-      </section>
-
-      {/* OT Multipliers info */}
-      <section className="bg-muted/50 border border-border rounded-xl p-4">
-        <h3 className="text-sm font-semibold text-foreground mb-1">Overtime Multipliers</h3>
-        <p className="text-xs text-muted-foreground">Multipliers are set per-shift when logging time, per the NBA CBA: Regular ×1.0 · Overtime ×1.5 · Working Day Off ×2.0 · Work Stat ×2.0 · Work Super Stat ×2.5 · OT on Stat ×3.0. Super stats are Good Friday, Labour Day, and Christmas Day.</p>
-      </section>
-
-      {/* Premium Rates */}
-      <section className="bg-card border border-border rounded-xl p-5 space-y-4" onClick={() => setOpenInfo(null)}>
-        <div>
-          <h3 className="text-sm font-semibold text-foreground">Hourly Premium Rates ($/hr)</h3>
-          <p className="text-xs text-muted-foreground mt-1">NBA CBA rates as of April 1, 2025. These rarely change — update only when a new CBA is ratified.</p>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {[
-            { key: 'evening', label: 'Evening Shift (15:30–23:30)', defaultVal: 1.40 },
-            { key: 'night', label: 'Night Shift (23:30–07:30)', defaultVal: 5.00 },
-            { key: 'weekend', label: 'Weekend (Fri 23:00–Sun 23:00)', defaultVal: 3.50 },
-            { key: 'super_shift', label: 'Super Shift (Fri/Sat overnight)', defaultVal: 1.85 },
-            { key: 'regular_premium', label: 'Regular Premium (straight time)', defaultVal: 2.15 },
-            { key: 'short_notice', label: 'Short Notice Call-In', defaultVal: 2.00 },
-            { key: 'responsibility_hourly', label: 'Responsibility Pay (hourly)', defaultVal: 2.50 },
-            { key: 'preceptor', label: 'Preceptor', defaultVal: 1.50 },
-            { key: 'specialty', label: 'Specialty Premium (OR/PAR/ER/ICU/CCU)', defaultVal: 2.00 },
-          ].map(({ key, label }) => (
-            <div key={key} className="flex items-center gap-2">
-              <div className="flex items-center gap-1 flex-1 min-w-0">
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); setOpenInfo(openInfo === key ? null : key); }}
-                  className={`flex-shrink-0 p-0.5 rounded transition-colors ${openInfo === key ? 'text-primary' : 'text-muted-foreground/60 hover:text-muted-foreground'}`}
-                  title="View description"
-                >
-                  <Info className="w-3.5 h-3.5" />
-                </button>
-                <Label className="text-xs text-muted-foreground truncate">{label}</Label>
-              </div>
-              <div className="relative flex-shrink-0">
-                {openInfo === key && PREMIUM_INFO[key] && (
-                  <div className="absolute z-50 left-0 bottom-full mb-2 w-64 bg-popover border border-border rounded-lg shadow-lg p-3 text-left" onClick={e => e.stopPropagation()}>
-                    <div className="flex items-start justify-between gap-2 mb-1.5">
-                      <div>
-                        <p className="text-xs font-semibold text-foreground leading-tight">{PREMIUM_INFO[key].title}</p>
-                        <p className="text-[10px] text-primary font-mono mt-0.5">{PREMIUM_INFO[key].article}</p>
-                      </div>
-                      <button onClick={() => setOpenInfo(null)} className="text-muted-foreground hover:text-foreground flex-shrink-0 mt-0.5">
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                    <p className="text-xs text-muted-foreground leading-relaxed">{PREMIUM_INFO[key].desc}</p>
-                  </div>
-                )}
-                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground/50 font-mono">$</span>
-                <Input
-                  type="number" step="0.01" min="0"
-                  value={settings.premium_rates?.[key] || 0}
-                  onChange={e => set(`premium_rates.${key}`, parseFloat(e.target.value) || 0)}
-                  className="h-9 w-24 text-sm font-mono flex-shrink-0 pl-6 bg-muted/40 text-muted-foreground border-muted-foreground/20 hover:bg-muted/60 focus:bg-card focus:text-foreground transition-colors"
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="flex items-center gap-2 pt-1">
-          <div className="flex items-center gap-1 flex-1">
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); setOpenInfo(openInfo === 'responsibility_flat' ? null : 'responsibility_flat'); }}
-              className={`flex-shrink-0 p-0.5 rounded transition-colors ${openInfo === 'responsibility_flat' ? 'text-primary' : 'text-muted-foreground/60 hover:text-muted-foreground'}`}
-              title="View description"
-            >
-              <Info className="w-3.5 h-3.5" />
-            </button>
-            <Label className="text-xs text-muted-foreground">Responsibility Pay (flat per shift)</Label>
-          </div>
-          <div className="relative flex-shrink-0">
-            {openInfo === 'responsibility_flat' && (
-              <div className="absolute z-50 left-0 bottom-full mb-2 w-64 bg-popover border border-border rounded-lg shadow-lg p-3 text-left" onClick={e => e.stopPropagation()}>
-                <div className="flex items-start justify-between gap-2 mb-1.5">
-                  <div>
-                    <p className="text-xs font-semibold text-foreground leading-tight">Responsibility Pay (Flat)</p>
-                    <p className="text-[10px] text-primary font-mono mt-0.5">Art. 30</p>
-                  </div>
-                  <button onClick={() => setOpenInfo(null)} className="text-muted-foreground hover:text-foreground flex-shrink-0 mt-0.5">
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-                <p className="text-xs text-muted-foreground leading-relaxed">Flat $18.75 per shift for nurses designated in-charge. Cannot combine hourly + flat on same shift.</p>
-              </div>
-            )}
-            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground/50 font-mono">$</span>
-            <Input
-              type="number" step="0.01" min="0"
-              value={settings.premium_rates?.responsibility_flat || 0}
-              onChange={e => set('premium_rates.responsibility_flat', parseFloat(e.target.value) || 0)}
-              className="h-9 w-24 text-sm font-mono flex-shrink-0 pl-6 bg-muted/40 text-muted-foreground border-muted-foreground/20 hover:bg-muted/60 focus:bg-card focus:text-foreground transition-colors"
-            />
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-3 pt-1">
-          {[
-            { key: 'on_call_first_72', label: 'On-Call (first 72 hrs/mo)', defaultVal: 7.00 },
-            { key: 'on_call_beyond_72', label: 'On-Call (beyond 72 hrs/mo)', defaultVal: 7.50 },
-          ].map(({ key, label }) => (
-            <div key={key} className="flex items-center gap-2">
-              <div className="flex items-center gap-1 flex-1 min-w-0">
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); setOpenInfo(openInfo === key ? null : key); }}
-                  className={`flex-shrink-0 p-0.5 rounded transition-colors ${openInfo === key ? 'text-primary' : 'text-muted-foreground/60 hover:text-muted-foreground'}`}
-                  title="View description"
-                >
-                  <Info className="w-3.5 h-3.5" />
-                </button>
-                <Label className="text-xs text-muted-foreground truncate">{label}</Label>
-              </div>
-              <div className="relative flex-shrink-0">
-                {openInfo === key && PREMIUM_INFO[key] && (
-                  <div className="absolute z-50 left-0 bottom-full mb-2 w-64 bg-popover border border-border rounded-lg shadow-lg p-3 text-left" onClick={e => e.stopPropagation()}>
-                    <div className="flex items-start justify-between gap-2 mb-1.5">
-                      <div>
-                        <p className="text-xs font-semibold text-foreground leading-tight">{PREMIUM_INFO[key].title}</p>
-                        <p className="text-[10px] text-primary font-mono mt-0.5">{PREMIUM_INFO[key].article}</p>
-                      </div>
-                      <button onClick={() => setOpenInfo(null)} className="text-muted-foreground hover:text-foreground flex-shrink-0 mt-0.5">
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                    <p className="text-xs text-muted-foreground leading-relaxed">{PREMIUM_INFO[key].desc}</p>
-                  </div>
-                )}
-                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground/50 font-mono">$</span>
-                <Input
-                  type="number" step="0.01" min="0"
-                  value={settings.premium_rates?.[key] || 0}
-                  onChange={e => set(`premium_rates.${key}`, parseFloat(e.target.value) || 0)}
-                  className="h-9 w-24 text-sm font-mono flex-shrink-0 pl-6 bg-muted/40 text-muted-foreground border-muted-foreground/20 hover:bg-muted/60 focus:bg-card focus:text-foreground transition-colors"
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Monthly Allowances */}
-      <section className="bg-card border border-border rounded-xl p-5 space-y-4" onClick={() => setOpenInfo(null)}>
-        <div>
-          <h3 className="text-sm font-semibold text-foreground">Monthly Allowances</h3>
-          <p className="text-xs text-muted-foreground mt-1">Prorated per bi-weekly pay period: monthly ÷ (26/12)</p>
-        </div>
-        {[
-          { key: 'isolation', label: 'Isolation Allowance', rate: 150 },
-          { key: 'business', label: 'Business Allowance', rate: 150 },
-        ].map(({ key, label, rate }) => (
-          <div key={key} className="flex items-center gap-4 relative">
-            <Switch
-              checked={(settings.active_allowances || []).includes(key)}
-              onCheckedChange={() => toggleAllowance(key)}
-            />
-            <div className="flex-1">
-              <div className="flex items-center gap-1">
-                <Label className="text-sm text-foreground">{label}</Label>
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); setOpenInfo(openInfo === `allow_${key}` ? null : `allow_${key}`); }}
-                  className={`flex-shrink-0 p-0.5 rounded transition-colors ${openInfo === `allow_${key}` ? 'text-primary' : 'text-muted-foreground/60 hover:text-muted-foreground'}`}
-                  title="View description"
-                >
-                  <Info className="w-3.5 h-3.5" />
-                </button>
-              </div>
-              <p className="text-xs text-muted-foreground">${rate.toFixed(2)}/month = ${(rate * 12 / 26).toFixed(2)}/period</p>
-            </div>
-            {openInfo === `allow_${key}` && ALLOWANCE_INFO[key] && (
-              <div className="absolute z-50 left-0 bottom-full mb-2 w-64 bg-popover border border-border rounded-lg shadow-lg p-3 text-left" onClick={e => e.stopPropagation()}>
-                <div className="flex items-start justify-between gap-2 mb-1.5">
-                  <div>
-                    <p className="text-xs font-semibold text-foreground leading-tight">{ALLOWANCE_INFO[key].title}</p>
-                    <p className="text-[10px] text-primary font-mono mt-0.5">{ALLOWANCE_INFO[key].article}</p>
-                  </div>
-                  <button onClick={() => setOpenInfo(null)} className="text-muted-foreground hover:text-foreground flex-shrink-0 mt-0.5">
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-                <p className="text-xs text-muted-foreground leading-relaxed">{ALLOWANCE_INFO[key].desc}</p>
-              </div>
-            )}
-          </div>
-        ))}
-      </section>
-
-      {/* Qualification Differentials */}
-      <section className="bg-card border border-border rounded-xl p-5 space-y-4">
-        <h3 className="text-sm font-semibold text-foreground">Qualification Differentials</h3>
-        <p className="text-xs text-muted-foreground">Hourly rate = (annual total ÷ 1950 hrs). Applied to regular straight-time hours.</p>
-        {QUALIFICATION_OPTIONS.map(({ key, label, rate }) => (
-          <div key={key} className="flex items-center gap-4">
-            <Switch
-              checked={(settings.active_qualifications || []).includes(key)}
-              onCheckedChange={() => toggleQualification(key)}
-            />
-            <div className="flex-1">
-              <Label className="text-sm text-foreground">{label}</Label>
-              <p className="text-xs text-muted-foreground">${rate.toFixed(2)}/month → ${((rate * 12) / 1950).toFixed(3)}/hr</p>
-            </div>
-          </div>
-        ))}
+      {/* Pay Configuration link notice */}
+      <section className="bg-primary/5 border border-primary/20 rounded-xl p-4">
+        <h3 className="text-sm font-semibold text-foreground mb-1">Wage, Premiums & Allowances</h3>
+        <p className="text-xs text-muted-foreground">
+          Base hourly wage, overtime multipliers, hourly premium rates, monthly allowances, and qualification differentials are now in{' '}
+          <Link to="/pay-configuration" className="text-primary underline font-medium">Pay Configuration</Link>.
+        </p>
       </section>
 
       {/* Shifts */}
@@ -648,69 +358,31 @@ export default function Settings() {
             Generate a unique link to let anyone view your shift calendar and pay period summaries — no login required.
           </p>
         </div>
-
         {settings.share_token ? (
           <div className="space-y-3">
             <div className="flex items-center gap-2 bg-muted rounded-lg p-3">
               <code className="text-xs font-mono text-foreground flex-1 break-all select-all">
                 {`${window.location.origin}/share?token=${settings.share_token}`}
               </code>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  navigator.clipboard.writeText(`${window.location.origin}/share?token=${settings.share_token}`);
-                  setShareCopied(true);
-                  setTimeout(() => setShareCopied(false), 2000);
-                }}
-                className="h-8 flex-shrink-0"
-              >
+              <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/share?token=${settings.share_token}`); setShareCopied(true); setTimeout(() => setShareCopied(false), 2000); }} className="h-8 flex-shrink-0">
                 <Copy className="w-3.5 h-3.5 mr-1" />
                 {shareCopied ? 'Copied!' : 'Copy'}
               </Button>
             </div>
             <div className="flex items-center gap-3">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={async () => {
-                  setGenerating(true);
-                  const newToken = crypto.randomUUID();
-                  await saveShareToken(newToken);
-                  setGenerating(false);
-                }}
-                disabled={generating}
-                className="text-xs"
-              >
+              <Button size="sm" variant="outline" onClick={async () => { setGenerating(true); const newToken = crypto.randomUUID(); await saveShareToken(newToken); setGenerating(false); }} disabled={generating} className="text-xs">
                 <RefreshCw className={`w-3.5 h-3.5 mr-1 ${generating ? 'animate-spin' : ''}`} />
                 Regenerate
               </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={async () => { await saveShareToken(''); }}
-                className="text-xs text-destructive hover:text-destructive"
-              >
+              <Button size="sm" variant="ghost" onClick={async () => { await saveShareToken(''); }} className="text-xs text-destructive hover:text-destructive">
                 <X className="w-3.5 h-3.5 mr-1" />
                 Revoke Link
               </Button>
             </div>
-            <p className="text-[11px] text-muted-foreground">
-              Regenerating invalidates the old link. Revoking stops all anonymous access.
-            </p>
+            <p className="text-[11px] text-muted-foreground">Regenerating invalidates the old link. Revoking stops all anonymous access.</p>
           </div>
         ) : (
-          <Button
-            size="sm"
-            onClick={async () => {
-              setGenerating(true);
-              const newToken = crypto.randomUUID();
-              await saveShareToken(newToken);
-              setGenerating(false);
-            }}
-            disabled={generating}
-            className="bg-primary text-primary-foreground"
-          >
+          <Button size="sm" onClick={async () => { setGenerating(true); const newToken = crypto.randomUUID(); await saveShareToken(newToken); setGenerating(false); }} disabled={generating} className="bg-primary text-primary-foreground">
             <Link2 className="w-4 h-4 mr-2" />
             {generating ? 'Generating...' : 'Generate Share Link'}
           </Button>
@@ -720,35 +392,18 @@ export default function Settings() {
       {/* Hospitals & Units */}
       <section className="bg-card border border-border rounded-xl p-5 space-y-5">
         <h3 className="text-sm font-semibold text-foreground">Hospitals & Units</h3>
-        <p className="text-xs text-muted-foreground">Add the hospitals and units you work at. Manage defaults in the Shifts section above.</p>
+        <p className="text-xs text-muted-foreground">Add the hospitals and units you work at.</p>
 
-        {/* Hospitals */}
         <div className="space-y-3">
           <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Hospitals</h4>
           <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr] gap-2">
-            <Input
-              value={newHospitalName}
-              onChange={e => setNewHospitalName(e.target.value)}
-              placeholder="Hospital name (e.g. Vancouver General)"
-              className="h-9 text-sm"
-            />
-            <Input
-              value={newHospitalAcronym}
-              onChange={e => setNewHospitalAcronym(e.target.value)}
-              placeholder="Abbreviation (e.g. VGH)"
-              className="h-9 text-sm"
-            />
+            <Input value={newHospitalName} onChange={e => setNewHospitalName(e.target.value)} placeholder="Hospital name (e.g. Vancouver General)" className="h-9 text-sm" />
+            <Input value={newHospitalAcronym} onChange={e => setNewHospitalAcronym(e.target.value)} placeholder="Abbreviation (e.g. VGH)" className="h-9 text-sm" />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-2">
             <Select value={newHospitalHA} onValueChange={v => setNewHospitalHA(v)}>
-              <SelectTrigger className="h-9 text-sm">
-                <SelectValue placeholder="Health authority" />
-              </SelectTrigger>
-              <SelectContent>
-                {HEALTH_AUTHORITIES.map(ha => (
-                  <SelectItem key={ha.value} value={ha.value}>{ha.label}</SelectItem>
-                ))}
-              </SelectContent>
+              <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Health authority" /></SelectTrigger>
+              <SelectContent>{HEALTH_AUTHORITIES.map(ha => <SelectItem key={ha.value} value={ha.value}>{ha.label}</SelectItem>)}</SelectContent>
             </Select>
             <Button size="sm" variant="outline" onClick={addHospital} disabled={!newHospitalName.trim() || !newHospitalAcronym.trim() || !newHospitalHA} className="flex-shrink-0">
               <Plus className="w-4 h-4 mr-1" /> Add
@@ -759,34 +414,18 @@ export default function Settings() {
               {(settings.hospitals || []).map(h => (
                 <span key={h.name} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-muted text-xs font-medium text-foreground">
                   {h.name} <span className="text-[10px] text-muted-foreground">[{h.acronym}] · {h.health_authority}</span>
-                  <button onClick={() => removeHospital(h.name)} className="ml-1 text-muted-foreground hover:text-destructive">
-                    <X className="w-3 h-3" />
-                  </button>
+                  <button onClick={() => removeHospital(h.name)} className="ml-1 text-muted-foreground hover:text-destructive"><X className="w-3 h-3" /></button>
                 </span>
               ))}
             </div>
-          ) : (
-            <p className="text-xs text-muted-foreground italic">No hospitals added yet.</p>
-          )}
+          ) : <p className="text-xs text-muted-foreground italic">No hospitals added yet.</p>}
         </div>
 
-        {/* Units */}
         <div className="space-y-3">
           <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Units</h4>
           <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-2">
-            <Input
-              value={newUnitName}
-              onChange={e => setNewUnitName(e.target.value)}
-              placeholder="Unit name (e.g. Medicine)"
-              className="h-9 text-sm"
-            />
-            <Input
-              value={newUnitCode}
-              onChange={e => setNewUnitCode(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addUnit())}
-              placeholder="Unit # or Abbreviation (e.g. C2B)"
-              className="h-9 text-sm"
-            />
+            <Input value={newUnitName} onChange={e => setNewUnitName(e.target.value)} placeholder="Unit name (e.g. Medicine)" className="h-9 text-sm" />
+            <Input value={newUnitCode} onChange={e => setNewUnitCode(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addUnit())} placeholder="Unit # or Abbreviation (e.g. C2B)" className="h-9 text-sm" />
             <Button size="sm" variant="outline" onClick={addUnit} disabled={!newUnitName.trim() || !newUnitCode.trim()} className="flex-shrink-0">
               <Plus className="w-4 h-4 mr-1" /> Add
             </Button>
@@ -796,51 +435,37 @@ export default function Settings() {
               {(settings.units || []).map(u => (
                 <span key={u.name} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-muted text-xs font-medium text-foreground">
                   {u.name} <span className="text-[10px] text-muted-foreground">[{u.code}]</span>
-                  <button onClick={() => removeUnit(u.name)} className="ml-1 text-muted-foreground hover:text-destructive">
-                    <X className="w-3 h-3" />
-                  </button>
+                  <button onClick={() => removeUnit(u.name)} className="ml-1 text-muted-foreground hover:text-destructive"><X className="w-3 h-3" /></button>
                 </span>
               ))}
             </div>
-          ) : (
-            <p className="text-xs text-muted-foreground italic">No units added yet.</p>
-          )}
+          ) : <p className="text-xs text-muted-foreground italic">No units added yet.</p>}
         </div>
 
-        {/* Default Hospital / Unit */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">Default Hospital</Label>
             <Select value={settings.default_hospital || ''} onValueChange={v => set('default_hospital', v === '_none' ? '' : v)}>
-              <SelectTrigger className="h-9 text-sm">
-                <SelectValue placeholder="None" />
-              </SelectTrigger>
+              <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="None" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="_none">— None —</SelectItem>
-                {(settings.hospitals || []).map(h => (
-                  <SelectItem key={h.name} value={h.name}>{h.name} [{h.acronym}] · {h.health_authority}</SelectItem>
-                ))}
+                {(settings.hospitals || []).map(h => <SelectItem key={h.name} value={h.name}>{h.name} [{h.acronym}] · {h.health_authority}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">Default Unit</Label>
             <Select value={settings.default_unit || ''} onValueChange={v => set('default_unit', v === '_none' ? '' : v)}>
-              <SelectTrigger className="h-9 text-sm">
-                <SelectValue placeholder="None" />
-              </SelectTrigger>
+              <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="None" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="_none">— None —</SelectItem>
-                {(settings.units || []).map(u => (
-                  <SelectItem key={u.name} value={u.name}>{u.name} [{u.code}]</SelectItem>
-                ))}
+                {(settings.units || []).map(u => <SelectItem key={u.name} value={u.name}>{u.name} [{u.code}]</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
         </div>
       </section>
 
-      {/* Floating unsaved indicator */}
       {isDirty && (
         <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-card border border-chart-2/30 shadow-lg rounded-xl px-4 py-2.5 animate-in slide-in-from-right-4 duration-200">
           <span className="w-2 h-2 rounded-full bg-chart-2 animate-pulse flex-shrink-0" />
@@ -848,7 +473,6 @@ export default function Settings() {
         </div>
       )}
 
-      {/* Unsaved changes confirmation dialog */}
       <AlertDialog open={blocker.state === 'blocked'} onOpenChange={() => {}}>
         <AlertDialogContent>
           <AlertDialogHeader>
