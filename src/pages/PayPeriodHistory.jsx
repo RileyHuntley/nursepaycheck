@@ -2,7 +2,14 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Trash2, Eye, Loader2, CalendarPlus, ArrowUpDown } from 'lucide-react';
+import { Trash2, Eye, Loader2, CalendarPlus, ArrowUpDown, Filter } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import PayPeriodDialog from '@/components/payroll/PayPeriodDialog';
 import { getVCHPeriodNumber, getVCHPayDate } from '@/lib/statHolidays';
 import { formatCurrency } from '@/lib/utils';
@@ -25,6 +32,7 @@ export default function PayPeriodHistory() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [viewTarget, setViewTarget] = useState(null);
   const [sortAsc, setSortAsc] = useState(true);
+  const [yearFilter, setYearFilter] = useState('all');
 
   const loadingRef = useRef(false);
   const loadRef = useRef(null);
@@ -66,10 +74,15 @@ export default function PayPeriodHistory() {
     return () => unsub();
   }, [debouncedLoad]);
 
-  const sortedPeriods = [...periods].sort((a, b) => {
-    const diff = (a.start_date || '').localeCompare(b.start_date || '');
-    return sortAsc ? diff : -diff;
-  });
+  const years = [...new Set(periods.map(p => new Date(p.start_date + 'T12:00:00').getFullYear()).filter(Boolean))].sort();
+  const showYearFilter = years.length > 1;
+
+  const filteredPeriods = [...periods]
+    .filter(p => yearFilter === 'all' || new Date(p.start_date + 'T12:00:00').getFullYear() === parseInt(yearFilter))
+    .sort((a, b) => {
+      const diff = (a.start_date || '').localeCompare(b.start_date || '');
+      return sortAsc ? diff : -diff;
+    });
 
   const confirmDelete = async () => {
     if (!deleteTarget) return;
@@ -91,9 +104,23 @@ export default function PayPeriodHistory() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-display font-bold text-foreground tracking-tight">Pay Period History</h2>
-          <p className="text-sm text-muted-foreground mt-1">{periods.length} pay periods on record</p>
+          <p className="text-sm text-muted-foreground mt-1">{filteredPeriods.length} of {periods.length} pay periods</p>
         </div>
         <div className="flex items-center gap-2">
+          {showYearFilter && (
+            <Select value={yearFilter} onValueChange={setYearFilter}>
+              <SelectTrigger className="h-8 w-[120px] text-xs">
+                <Filter className="w-3 h-3 mr-1" />
+                <SelectValue placeholder="All Years" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Years</SelectItem>
+                {years.map(y => (
+                  <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
           <Button variant="ghost" size="sm" onClick={() => setSortAsc(s => !s)} className="h-8 px-2 text-xs text-muted-foreground">
             <ArrowUpDown className="w-3.5 h-3.5 mr-1" />
             {sortAsc ? 'Oldest first' : 'Newest first'}
@@ -120,7 +147,7 @@ export default function PayPeriodHistory() {
       ) : (
         <div className="bg-card border border-border rounded-xl overflow-hidden">
           <div className="divide-y divide-border">
-            {sortedPeriods.map((period) => (
+            {filteredPeriods.map((period) => (
               <div
                 key={period.id}
                 className="flex items-center gap-4 px-5 py-4 hover:bg-muted/30 transition-colors duration-150"
