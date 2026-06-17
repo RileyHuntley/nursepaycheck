@@ -10,7 +10,7 @@ const COL = { primary: [23,162,140], muted: [140,150,160], dark: [30,35,40], lig
 // ── Utilities ──
 function r2(n) { return Math.round(n * 100) / 100; }
 function fm$(n) { return (n < 0 ? '-' : '') + '$' + Math.abs(n || 0).toLocaleString('en-CA', { minimumFractionDigits: 2 }); }
-function safe(s) { if (!s) return ''; return String(s).replace(/\u2013|\u2014/g,'-').replace(/\u00b7/g,'.').replace(/\u2019|\u2018/g,"'").replace(/[^\x00-\xFF]/g,'?'); }
+function safe(s) { if (!s) return ''; return String(s).replace(/\u2013|\u2014/g,'-').replace(/\u00b7/g,'.').replace(/\u2019|\u2018|\u201c|\u201d/g,"'").replace(/\u00d7/g,'x').replace(/\u00f7/g,'/').replace(/\u2026/g,'...').replace(/[^\x00-\xFF]/g,'?'); }
 function pt(t) { if (!t) return 0; const [h,m] = t.replace('.',':').split(':').map(Number); return h + (m||0)/60; }
 function fmtTime(d) { let h = Math.floor(d) % 24; return `${String(h).padStart(2,'0')}:${String(Math.round((d-Math.floor(d))*60)).padStart(2,'0')}`; }
 function hrsInRange(sS,sE,rS,rE) { if(sS>=sE)sE+=24; if(rS>=rE)rE+=24; const oS=Math.max(sS,rS),oE=Math.min(sE,rE); return oS<oE?oE-oS:0; }
@@ -303,12 +303,12 @@ Deno.serve(async (req) => {
     if (bd.straight_time_pay) {
       const rh = bd.regular_hours||0;
       const stWage = wage||(rh>0?bd.straight_time_pay/rh:0);
-      drawRow('Straight-Time Pay', bd.straight_time_pay, false, COL.dark, `${rh}h \u00d7 ${fm$(stWage)}/hr = ${fm$(bd.straight_time_pay)}`);
+      drawRow('Straight-Time Pay', bd.straight_time_pay, false, COL.dark, `${rh}h x ${fm$(stWage)}/hr = ${fm$(bd.straight_time_pay)}`);
     }
     if (bd.overtime_pay) {
       const det = bd.overtime_detail || {};
       const parts = [];
-      const labels = { overtime:'1.5\u00d7', day_off:'2\u00d7 (Day Off)', work_stat:'2\u00d7 (Stat)', work_super_stat:'2.5\u00d7 (Super Stat)', ot_stat:'3\u00d7 (OT on Stat)' };
+      const labels = { overtime:'1.5x', day_off:'2x (Day Off)', work_stat:'2x (Stat)', work_super_stat:'2.5x (Super Stat)', ot_stat:'3x (OT on Stat)' };
       for (const [t,hrs] of Object.entries(det)) if (hrs>0) {
         const mult = { overtime:1.5, day_off:2, work_stat:2, work_super_stat:2.5, ot_stat:3 }[t]||0;
         const premium = r2(hrs * wage * (mult - 1));
@@ -332,11 +332,11 @@ Deno.serve(async (req) => {
     if (premRows.length > 0) { y+=2; secHdr('HOURLY PREMIUMS');
       premRows.forEach(([l,v,hrs,r]) => {
         let sub = null;
-        if (hrs > 0 && r) sub = `${hrs}h \u00d7 ${fm$(r)}/hr = ${fm$(r2(hrs*r))}`;
+        if (hrs > 0 && r) sub = `${hrs}h x ${fm$(r)}/hr = ${fm$(r2(hrs*r))}`;
         else if (hrs > 0 && !r && l === 'Responsibility Pay') {
           // Flat responsibility: show as "1 shift × $18.75"
-          if (hrs >= 1 && hrs < 2 && (rates.responsibility_flat||0) > 0) sub = `1 shift \u00d7 ${fm$(rates.responsibility_flat||0)} = ${fm$(v)}`;
-          else sub = `${hrs}h \u00d7 ${fm$(rates.responsibility_hourly||0)}/hr = ${fm$(v)}`;
+          if (hrs >= 1 && hrs < 2 && (rates.responsibility_flat||0) > 0) sub = `1 shift x ${fm$(rates.responsibility_flat||0)} = ${fm$(v)}`;
+          else sub = `${hrs}h x ${fm$(rates.responsibility_hourly||0)}/hr = ${fm$(v)}`;
         } else if (hrs > 0) sub = `${hrs}h`;
         drawRow(l, v, false, COL.dark, sub);
       });
@@ -348,8 +348,8 @@ Deno.serve(async (req) => {
       const hr = bd.on_call_hours||0;
       const ft = Math.min(hr,72), bt = Math.max(0,hr-72);
       const calc = [];
-      if (ft>0) calc.push(`${ft}h \u00d7 ${fm$(rates.on_call_first_72||7)}/hr = ${fm$(r2(ft*(rates.on_call_first_72||7)))}`);
-      if (bt>0) calc.push(`${bt}h \u00d7 ${fm$(rates.on_call_beyond_72||7.5)}/hr = ${fm$(r2(bt*(rates.on_call_beyond_72||7.5)))}`);
+      if (ft>0) calc.push(`${ft}h x ${fm$(rates.on_call_first_72||7)}/hr = ${fm$(r2(ft*(rates.on_call_first_72||7)))}`);
+      if (bt>0) calc.push(`${bt}h x ${fm$(rates.on_call_beyond_72||7.5)}/hr = ${fm$(r2(bt*(rates.on_call_beyond_72||7.5)))}`);
       drawRow('On-Call Pay', bd.on_call_total, false, COL.dark, calc.join(', '));
     }
 
@@ -358,11 +358,11 @@ Deno.serve(async (req) => {
       y+=2; secHdr('MONTHLY ALLOWANCES & QUALIFICATIONS');
       if (bd.allowance_total > 0) {
         const mo = bd.allowance_monthly||0;
-        drawRow('Allowances (per period)', bd.allowance_total, false, COL.dark, `${fm$(mo)}/mo \u00d7 12mo \u00f7 26 PP = ${fm$(bd.allowance_total)}`);
+        drawRow('Allowances (per period)', bd.allowance_total, false, COL.dark, `${fm$(mo)}/mo x 12mo / 26 PP = ${fm$(bd.allowance_total)}`);
       }
       if (bd.qualification_total > 0) {
         const qh = bd.qualification_hourly||0, rh = bd.regular_hours||0;
-        drawRow('Qualification Diff.', bd.qualification_total, false, COL.dark, `${rh}h \u00d7 ${fm$(qh)}/hr = ${fm$(bd.qualification_total)}`);
+        drawRow('Qualification Diff.', bd.qualification_total, false, COL.dark, `${rh}h x ${fm$(qh)}/hr = ${fm$(bd.qualification_total)}`);
       }
     }
 
@@ -370,7 +370,7 @@ Deno.serve(async (req) => {
     const unionDues = bd.union_dues || 0;
     if (unionDues > 0) {
       y += 2; secHdr('DEDUCTIONS');
-      drawRow('Union Dues', -unionDues, false, COL.accent, `${fm$(bd.straight_time_pay||0)} \u00d7 2.0% = ${fm$(unionDues)}`);
+      drawRow('Union Dues', -unionDues, false, COL.accent, `${fm$(bd.straight_time_pay||0)} x 2.0% = ${fm$(unionDues)}`);
     }
 
     // Gross Pay
@@ -405,11 +405,11 @@ Deno.serve(async (req) => {
 
     const dRows = [
       ['CPP', fd.cpp, hasV ? null : `(5.95% on pensionable earnings up to $74,600)`],
-      ['CPP2', fd.cpp2, fd.cpp2 > 0 && !hasV ? `(4.0% on earnings $74,600–$85,000)` : null],
+      ['CPP2', fd.cpp2, fd.cpp2 > 0 && !hasV ? `(4.0% on earnings $74,600-$85,000)` : null],
       ['EI', fd.ei, hasV ? null : `(1.63% on insurable earnings up to $68,900)`],
-      ['Federal Income Tax', fd.federal_tax, hasV ? null : `Gross ${fm$(bd.gross_pay||0)} \u00d7 ${(mRate(FED_B, settings.tax_settings?.annual_federal_income||0)*100).toFixed(1)}% rate`],
-      ['Provincial Income Tax', fd.provincial_tax, hasV ? null : `Gross ${fm$(bd.gross_pay||0)} \u00d7 ${(mRate(BC_B, settings.tax_settings?.annual_provincial_income||0)*100).toFixed(1)}% rate`],
-      ['Union Dues', fd.union_dues, hasV ? null : `${fm$(bd.straight_time_pay||0)} \u00d7 2.0%`],
+      ['Federal Income Tax', fd.federal_tax, hasV ? null : `Gross ${fm$(bd.gross_pay||0)} x ${(mRate(FED_B, settings.tax_settings?.annual_federal_income||0)*100).toFixed(1)}% rate`],
+      ['Provincial Income Tax', fd.provincial_tax, hasV ? null : `Gross ${fm$(bd.gross_pay||0)} x ${(mRate(BC_B, settings.tax_settings?.annual_provincial_income||0)*100).toFixed(1)}% rate`],
+      ['Union Dues', fd.union_dues, hasV ? null : `${fm$(bd.straight_time_pay||0)} x 2.0%`],
     ];
     if (fd.other > 0) dRows.push([vd.other_label ? safe(vd.other_label) : 'Other Deductions', fd.other]);
     const activeDRows = dRows.filter(r=>r[1]>0);
