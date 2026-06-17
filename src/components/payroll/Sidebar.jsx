@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, CalendarPlus, Clock, Settings, PanelLeftClose, PanelLeftOpen, ExternalLink, List } from 'lucide-react';
+import { LayoutDashboard, CalendarPlus, Clock, Settings, PanelLeftClose, PanelLeftOpen, ExternalLink, List, Sun, Moon } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { HA_PORTALS, getUserHealthAuthorities } from '@/lib/healthAuthorityPortals';
+import { useTheme } from 'next-themes';
 
 const links = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -15,6 +16,8 @@ const links = [
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('sidebar-collapsed') === 'true');
   const [healthAuthorities, setHealthAuthorities] = useState([]);
+  const { theme, setTheme } = useTheme();
+  const isDark = theme === 'dark';
 
   useEffect(() => {
     const load = async () => {
@@ -118,7 +121,15 @@ export default function Sidebar() {
         )}
       </nav>
       <div className={`border-t border-sidebar-border flex items-center ${collapsed ? 'justify-center px-2 py-4' : 'justify-between px-5 py-4'}`}>
-        {!collapsed && <span className="text-xs text-muted-foreground">NBA CBA Calculator</span>}
+        <button
+          onClick={() => setTheme(isDark ? 'light' : 'dark')}
+          className="text-muted-foreground hover:text-sidebar-foreground transition-colors p-1 rounded-md hover:bg-sidebar-accent"
+          title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+        >
+          {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+        </button>
+        {!collapsed && <span className="text-[10px] text-muted-foreground ml-1">{isDark ? 'Light' : 'Dark'}</span>}
+        <div className="flex-1" />
         <button
           onClick={toggle}
           className="text-muted-foreground hover:text-sidebar-foreground transition-colors p-1 rounded-md hover:bg-sidebar-accent"
