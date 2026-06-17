@@ -1,4 +1,4 @@
-import { estimateTaxes } from '@/lib/taxCalculator';
+import { estimateTaxes, estimateStatutoryDeductions } from '@/lib/taxCalculator';
 
 export default function PaySummaryPanel({ title, subtitle, breakdown, loading, taxSettings }) {
   if (loading) {
@@ -25,11 +25,24 @@ export default function PaySummaryPanel({ title, subtitle, breakdown, loading, t
     );
   }
 
-  const taxes = taxSettings
+  const annualIncome = taxSettings
+    ? (taxSettings.annual_federal_income || taxSettings.annual_provincial_income || 0)
+    : 0;
+
+  const taxes = annualIncome > 0
     ? estimateTaxes(breakdown.gross_pay, taxSettings.annual_provincial_income || 0, taxSettings.annual_federal_income || 0)
     : null;
   const hasTaxes = taxes && taxes.total > 0;
-  const netPay = breakdown.gross_pay - (breakdown.union_dues || 0) - (hasTaxes ? taxes.total : 0);
+
+  const statutory = annualIncome > 0
+    ? estimateStatutoryDeductions(breakdown.gross_pay, annualIncome)
+    : null;
+  const hasStatutory = statutory && statutory.total > 0;
+
+  const netPay = breakdown.gross_pay
+    - (breakdown.union_dues || 0)
+    - (hasTaxes ? taxes.total : 0)
+    - (hasStatutory ? statutory.total : 0);
 
   const rows = [
     { label: 'Straight-Time Pay', value: breakdown.straight_time_pay },
@@ -37,8 +50,13 @@ export default function PaySummaryPanel({ title, subtitle, breakdown, loading, t
     { label: 'Hourly Premiums', value: (breakdown.regular_premium_total || 0) + (breakdown.evening_premium_total || 0) + (breakdown.night_premium_total || 0) + (breakdown.weekend_premium_total || 0) + (breakdown.super_shift_premium_total || 0) + (breakdown.short_notice_total || 0) + (breakdown.responsibility_total || 0) + (breakdown.preceptor_total || 0) + (breakdown.on_call_total || 0) },
     { label: 'Allowances & Qualifications', value: (breakdown.allowance_total || 0) + (breakdown.qualification_total || 0) },
     { label: 'Union Dues', value: breakdown.union_dues, negative: true },
+    ...(hasStatutory ? [
+      { label: 'CPP', value: statutory.cpp, negative: true },
+      ...(statutory.cpp2 > 0 ? [{ label: 'CPP2', value: statutory.cpp2, negative: true }] : []),
+      { label: 'EI', value: statutory.ei, negative: true },
+    ] : []),
     ...(hasTaxes ? [
-      { label: 'Est. BC Provincial Tax', value: taxes.provincial, negative: true },
+      { label: 'Est. BC Tax', value: taxes.provincial, negative: true },
       { label: 'Est. Federal Tax', value: taxes.federal, negative: true },
     ] : []),
   ].filter(r => r.value !== 0 && r.value != null);

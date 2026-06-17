@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Info, X } from 'lucide-react';
-import { estimateTaxes } from '@/lib/taxCalculator';
+import { estimateTaxes, estimateStatutoryDeductions } from '@/lib/taxCalculator';
 
 const PREMIUM_INFO = {
   evening: {
@@ -78,6 +78,21 @@ const PREMIUM_INFO = {
     title: 'Estimated Taxes',
     description: 'A rough estimate of provincial (BC) and federal income tax based on your marginal tax rate at your configured annual income threshold. Rates are applied to gross pay for this period. This is an estimate only — actual withholding depends on TD1 credits, deductions, and employer calculations.',
   },
+  cpp: {
+    article: 'CRA',
+    title: 'CPP Contribution',
+    description: 'Canada Pension Plan contributions at 5.95% on pensionable earnings between $3,500 and $74,600 (max $4,230.45/yr). Pro-rated per pay period based on your annual income estimate.',
+  },
+  cpp2: {
+    article: 'CRA',
+    title: 'CPP2 Contribution',
+    description: 'Second CPP tier at 4.0% on earnings between $74,600 and $85,000 (max $416.00/yr). Only applicable if annual income exceeds $74,600.',
+  },
+  ei: {
+    article: 'CRA',
+    title: 'EI Premium',
+    description: 'Employment Insurance premiums at 1.63% on insurable earnings up to $68,900 (max $1,123.07/yr). Pro-rated per pay period based on your annual income estimate.',
+  },
 };
 
 function InfoPopover({ info, onClose }) {
@@ -136,7 +151,11 @@ export default function PayBreakdown({ breakdown, wage, title = 'Pay Period Brea
 
   const toggle = (key) => setOpenInfo(prev => prev === key ? null : key);
 
-  const taxes = taxSettings
+  const annualIncome = taxSettings
+    ? (taxSettings.annual_federal_income || taxSettings.annual_provincial_income || 0)
+    : 0;
+
+  const taxes = annualIncome > 0
     ? estimateTaxes(
         breakdown.gross_pay,
         taxSettings.annual_provincial_income || 0,
@@ -144,7 +163,16 @@ export default function PayBreakdown({ breakdown, wage, title = 'Pay Period Brea
       )
     : null;
   const hasTaxes = taxes && taxes.total > 0;
-  const netPay = breakdown.gross_pay - (breakdown.union_dues || 0) - (hasTaxes ? taxes.total : 0);
+
+  const statutory = annualIncome > 0
+    ? estimateStatutoryDeductions(breakdown.gross_pay, annualIncome)
+    : null;
+  const hasStatutory = statutory && statutory.total > 0;
+
+  const netPay = breakdown.gross_pay
+    - (breakdown.union_dues || 0)
+    - (hasTaxes ? taxes.total : 0)
+    - (hasStatutory ? statutory.total : 0);
 
   return (
     <div className="bg-card border border-border rounded-xl p-6 space-y-1" onClick={() => setOpenInfo(null)}>
@@ -191,6 +219,15 @@ export default function PayBreakdown({ breakdown, wage, title = 'Pay Period Brea
 
       <SectionHeader title="Deductions" />
       <LineItem label="Union Dues (2% of straight-time)" amount={breakdown.union_dues} negative infoKey="union_dues" openInfo={openInfo} onToggleInfo={toggle} />
+      {hasStatutory && (
+        <>
+          <LineItem label="CPP Contribution" amount={statutory.cpp} negative infoKey="cpp" openInfo={openInfo} onToggleInfo={toggle} />
+          {statutory.cpp2 > 0 && (
+            <LineItem label="CPP2 Contribution" amount={statutory.cpp2} negative infoKey="cpp2" openInfo={openInfo} onToggleInfo={toggle} />
+          )}
+          <LineItem label="EI Premium" amount={statutory.ei} negative infoKey="ei" openInfo={openInfo} onToggleInfo={toggle} />
+        </>
+      )}
       {hasTaxes && (
         <>
           <LineItem label="Est. BC Provincial Tax" amount={taxes.provincial} negative infoKey="est_taxes" openInfo={openInfo} onToggleInfo={toggle} />

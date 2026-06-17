@@ -425,6 +425,8 @@ export default function Settings() {
           <p className="text-xs text-muted-foreground">$0–$50,363: 5.60% · $50,364–$100,728: 7.70% · $100,729–$115,648: 10.50% · $115,649–$140,430: 12.29% · $140,431–$190,405: 14.70% · $190,406–$265,545: 16.80% · Over $265,545: 20.50%</p>
           <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mt-2">2026 Federal Marginal Rates</p>
           <p className="text-xs text-muted-foreground">$0–$58,523: 14.00% · $58,524–$117,045: 20.50% · $117,046–$181,440: 26.00% · $181,441–$258,482: 29.00% · Over $258,482: 33.00%</p>
+          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mt-2">2026 Statutory Deductions</p>
+          <p className="text-xs text-muted-foreground">CPP: 5.95% on $3,500–$74,600 (max $4,230.45/yr) · CPP2: 4.0% on $74,600–$85,000 (max $416.00/yr) · EI: 1.63% up to $68,900 (max $1,123.07/yr)</p>
         </div>
       </section>
 

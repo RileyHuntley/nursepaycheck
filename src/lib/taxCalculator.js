@@ -60,5 +60,65 @@ export function estimateTaxes(periodGross, annualProvincialIncome, annualFederal
   };
 }
 
+/**
+ * Estimate statutory deductions (CPP, CPP2, EI) for a pay period.
+ * Calculates annual contribution at the given annual income, then prorates to the period.
+ *
+ * @param {number} periodGross - gross pay for this period
+ * @param {number} annualIncome - estimated annual taxable income (federal)
+ * @returns {{ cpp: number, cpp2: number, ei: number, total: number }}
+ */
+export function estimateStatutoryDeductions(periodGross, annualIncome) {
+  if (!periodGross || periodGross <= 0 || !annualIncome || annualIncome <= 0) {
+    return { cpp: 0, cpp2: 0, ei: 0, total: 0 };
+  }
+
+  // CPP: 5.95% on pensionable earnings between $3,500 and $74,600
+  const CPP_RATE = 0.0595;
+  const CPP_EXEMPTION = 3500;
+  const CPP_CEILING = 74600;
+  const CPP_MAX_PENSIONABLE = CPP_CEILING - CPP_EXEMPTION; // 71,100
+  const CPP_MAX = 4230.45;
+
+  let annualCpp = 0;
+  if (annualIncome > CPP_EXEMPTION) {
+    const pensionable = Math.min(annualIncome, CPP_CEILING) - CPP_EXEMPTION;
+    annualCpp = Math.min(pensionable * CPP_RATE, CPP_MAX);
+  }
+
+  // CPP2: 4.0% on earnings between $74,600 and $85,000
+  const CPP2_RATE = 0.04;
+  const CPP2_FLOOR = 74600;
+  const CPP2_CEILING = 85000;
+  const CPP2_MAX = 416.00;
+
+  let annualCpp2 = 0;
+  if (annualIncome > CPP2_FLOOR) {
+    const cpp2Earnings = Math.min(annualIncome, CPP2_CEILING) - CPP2_FLOOR;
+    annualCpp2 = Math.min(cpp2Earnings * CPP2_RATE, CPP2_MAX);
+  }
+
+  // EI: 1.63% on insurable earnings up to $68,900
+  const EI_RATE = 0.0163;
+  const EI_CEILING = 68900;
+  const EI_MAX = 1123.07;
+
+  const insurable = Math.min(annualIncome, EI_CEILING);
+  const annualEi = Math.min(insurable * EI_RATE, EI_MAX);
+
+  // Pro-rate to this pay period
+  const ratio = periodGross / annualIncome;
+
+  return {
+    cpp: Math.round(annualCpp * ratio * 100) / 100,
+    cpp2: Math.round(annualCpp2 * ratio * 100) / 100,
+    ei: Math.round(annualEi * ratio * 100) / 100,
+    total: Math.round((annualCpp + annualCpp2 + annualEi) * ratio * 100) / 100,
+  };
+}
+
 export const BC_BRACKETS_INFO = BC_BRACKETS;
 export const FED_BRACKETS_INFO = FED_BRACKETS;
+export const CPP_CONFIG = { rate: 0.0595, exemption: 3500, ceiling: 74600, max: 4230.45 };
+export const CPP2_CONFIG = { rate: 0.04, floor: 74600, ceiling: 85000, max: 416.00 };
+export const EI_CONFIG = { rate: 0.0163, ceiling: 68900, max: 1123.07 };
