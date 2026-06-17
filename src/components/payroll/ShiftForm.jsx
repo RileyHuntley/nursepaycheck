@@ -187,18 +187,18 @@ export default function ShiftForm({ onSubmit, onCancel, initial, settings }) {
         </div>
       )}
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">Date</Label>
           <Input type="date" value={shift.date} onChange={(e) => handleDateChange(e.target.value)} className="h-9 text-sm" />
         </div>
         <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">Start Time (24h)</Label>
-          <Input type="text" pattern="([01]?[0-9]|2[0-3]):[0-5][0-9]" placeholder="HH:MM" value={shift.start_time} onChange={(e) => set('start_time', e.target.value)} className="h-9 text-sm font-mono" />
+          <Label className="text-xs text-muted-foreground">Start Time</Label>
+          <Input type="time" value={shift.start_time} onChange={(e) => set('start_time', e.target.value)} className="h-9 text-sm" />
         </div>
         <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">End Time (24h)</Label>
-          <Input type="text" pattern="([01]?[0-9]|2[0-3]):[0-5][0-9]" placeholder="HH:MM" value={shift.end_time} onChange={(e) => set('end_time', e.target.value)} className="h-9 text-sm font-mono" />
+          <Label className="text-xs text-muted-foreground">End Time</Label>
+          <Input type="time" value={shift.end_time} onChange={(e) => set('end_time', e.target.value)} className="h-9 text-sm" />
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">Shift Type</Label>
@@ -215,7 +215,7 @@ export default function ShiftForm({ onSubmit, onCancel, initial, settings }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">Total Hours</Label>
           <div className="h-9 flex items-center px-3 rounded-md border border-input bg-muted/30 text-sm font-mono text-foreground">
