@@ -28,6 +28,7 @@ export default function ShiftLog() {
   const [showBulkForm, setShowBulkForm] = useState(false);
   const [viewMode, setViewMode] = useState('list'); // 'list' | 'calendar'
   const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'upcoming' | 'pending' | 'verified'
+  const [visibleNextCount, setVisibleNextCount] = useState(1); // show current + N future periods
 
   const todayStr = new Date().toISOString().slice(0, 10);
   const resolveStatus = (shift) => {
@@ -296,14 +297,22 @@ export default function ShiftLog() {
       return sortAsc ? diff : -diff;
     });
 
+  // Compute visible pay periods: current period + visibleNextCount future periods
+  const currentPd = getPayPeriodForDate(todayStr);
+  const currentPdKey = `${currentPd.start_date}|${currentPd.end_date}`;
+  const lastVisibleStart = new Date(currentPd.start_date + 'T12:00:00');
+  lastVisibleStart.setDate(lastVisibleStart.getDate() + 14 * visibleNextCount);
+  const lastVisibleEnd = new Date(lastVisibleStart);
+  lastVisibleEnd.setDate(lastVisibleStart.getDate() + 13);
+  const lastVisibleEndStr = lastVisibleEnd.toISOString().split('T')[0];
+
+  // Check if there are shifts beyond the last visible period
+  const hasMoreFuture = allShifts.some(s => s.date > lastVisibleEndStr);
+
   // YTD breakdown: filter to current year, compute per-period, sum
   const currentYear = new Date().getFullYear();
   const yearStart = `${currentYear}-01-01`;
   const ytdAllShifts = allShifts.filter(s => s.date >= yearStart);
-  const ytdPeriodKeys = new Set(ytdAllShifts.map(s => {
-    const pd = getPayPeriodForDate(s.date);
-    return `${pd.start_date}|${pd.end_date}`;
-  }));
 
   // Group shifts by actual pay period (from date) and compute per-period breakdown, then sum
   let breakdown = null;
@@ -362,7 +371,7 @@ export default function ShiftLog() {
             <p className="text-sm text-muted-foreground mt-1">
               {statusFilter !== 'all'
                 ? `${sortedShifts.length} shift${sortedShifts.length !== 1 ? 's' : ''} · ${statusFilter}`
-                : `${ytdAllShifts.length} shift${ytdAllShifts.length !== 1 ? 's' : ''} in ${currentYear} across ${ytdPeriodKeys.size} pay period${ytdPeriodKeys.size !== 1 ? 's' : ''} — Year-to-Date`
+                : `${visibleNextCount + 1} pay period${visibleNextCount > 0 ? 's' : ''} shown — past periods on Calendar or History`
               }
             </p>
           )}
@@ -463,11 +472,6 @@ export default function ShiftLog() {
             )}
 
             <div>
-              {allShifts.length === 0 && (
-                <div className="px-5 py-12 text-center">
-                  <p className="text-sm text-muted-foreground">No shifts logged yet.</p>
-                </div>
-              )}
               {(() => {
                 // Group shifts by actual pay period dates (deduplicates across duplicate DB records)
                 const groups = [];
@@ -481,46 +485,74 @@ export default function ShiftLog() {
                   }
                   groups[groups.length - 1].shifts.push(shift);
                 }
-                return groups.map((group) => {
-                  // Compute period breakdown for this group
-                  const periodBreakdown = settings ? calculatePeriodBreakdown(group.shifts, settings) : null;
-                  return (
-                    <div key={group.key}>
-                      {/* Period header */}
-                      <div className="px-4 py-3 bg-secondary/30 border-b border-border flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <h4 className="text-sm font-semibold text-foreground">
-                            {group.periodName}
-                          </h4>
-                          <span className="text-xs text-muted-foreground">
-                            {group.shifts.length} shift{group.shifts.length !== 1 ? 's' : ''}
-                          </span>
-                        </div>
-                        {periodBreakdown && (
-                          <span className="text-sm font-mono font-semibold text-primary">
-                            ${periodBreakdown.gross_pay.toFixed(2)}
-                          </span>
-                        )}
-                      </div>
-                      {/* Shifts in this period */}
-                      <div className="divide-y divide-border">
-                        {group.shifts.map((shift) => (
-                          <div key={`${shift._periodId}-${shift._shiftIdx}`} className="bg-muted/20 hover:bg-muted/30">
-                            <ShiftRow
-                              shift={shift}
-                              premiums={settings ? calculateShiftPremiums(shift, settings) : null}
-                              settings={settings}
-                              periodEndDate={group.periodEnd}
-                              onEdit={(s) => setEditingShift({ data: s, _periodId: shift._periodId, _shiftIdx: shift._shiftIdx })}
-                              onDelete={() => deleteShift(shift)}
-                              onVerify={() => verifyShift(shift)}
-                            />
+
+                // Filter to visible periods: current and N future
+                const visibleGroups = groups.filter(g => g.periodStart >= currentPd.start_date && g.periodStart <= lastVisibleEndStr);
+                // Show current period even if empty
+                const hasCurrentGroup = visibleGroups.some(g => g.key === currentPdKey);
+                if (!hasCurrentGroup && currentPdKey) {
+                  visibleGroups.unshift({
+                    key: currentPdKey,
+                    periodName: getPayPeriodName(currentPd.start_date, currentPd.end_date),
+                    periodStart: currentPd.start_date,
+                    periodEnd: currentPd.end_date,
+                    shifts: [],
+                  });
+                }
+
+                return (
+                  <>
+                    {visibleGroups.map((group) => {
+                      const periodBreakdown = settings && group.shifts.length > 0 ? calculatePeriodBreakdown(group.shifts, settings) : null;
+                      return (
+                        <div key={group.key}>
+                          <div className="px-4 py-3 bg-secondary/30 border-b border-border flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <h4 className="text-sm font-semibold text-foreground">
+                                {group.periodName}
+                              </h4>
+                              <span className="text-xs text-muted-foreground">
+                                {group.shifts.length} shift{group.shifts.length !== 1 ? 's' : ''}
+                              </span>
+                            </div>
+                            {periodBreakdown && (
+                              <span className="text-sm font-mono font-semibold text-primary">
+                                ${periodBreakdown.gross_pay.toFixed(2)}
+                              </span>
+                            )}
                           </div>
-                        ))}
+                          <div className="divide-y divide-border">
+                            {group.shifts.map((shift) => (
+                              <div key={`${shift._periodId}-${shift._shiftIdx}`} className="bg-muted/20 hover:bg-muted/30">
+                                <ShiftRow
+                                  shift={shift}
+                                  premiums={settings ? calculateShiftPremiums(shift, settings) : null}
+                                  settings={settings}
+                                  periodEndDate={group.periodEnd}
+                                  onEdit={(s) => setEditingShift({ data: s, _periodId: shift._periodId, _shiftIdx: shift._shiftIdx })}
+                                  onDelete={() => deleteShift(shift)}
+                                  onVerify={() => verifyShift(shift)}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {hasMoreFuture && (
+                      <div className="px-4 py-3 flex justify-center border-t border-border">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setVisibleNextCount(c => c + 1)}
+                          className="text-xs text-muted-foreground hover:text-foreground"
+                        >
+                          Load next pay period
+                        </Button>
                       </div>
-                    </div>
-                  );
-                });
+                    )}
+                  </>
+                );
               })()}
             </div>
           </div>
