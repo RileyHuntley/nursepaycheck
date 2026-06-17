@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Sun, Moon } from 'lucide-react';
 
 const TYPE_LABELS = {
   regular:         'Regular (×1.0)',
@@ -71,6 +71,11 @@ export default function ShiftRow({ shift, premiums, settings, onEdit, onDelete, 
     : 0;
   const totalGross = baseGross + premiumTotal;
 
+  // Detect night shift: use calculated premiums when available, otherwise fall back to start time
+  const isNight = premiums
+    ? (premiums.night || 0) > 0
+    : shift.start_time >= '18:00' || shift.end_time <= '08:00';
+
   return (
     <div
       className="px-4 py-3 bg-card hover:bg-muted/20 transition-colors duration-150 cursor-pointer"
@@ -78,7 +83,11 @@ export default function ShiftRow({ shift, premiums, settings, onEdit, onDelete, 
     >
       {/* Top row: date, time, type, hours, actions */}
       <div className="flex items-center gap-3 flex-wrap">
-        <div className="w-28 flex-shrink-0">
+        <div className="flex items-center gap-1.5 flex-shrink-0" style={{ minWidth: '8rem' }}>
+          {isNight
+            ? <Moon className="w-3.5 h-3.5 text-indigo-500 flex-shrink-0" />
+            : <Sun className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+          }
           <span className="text-sm font-medium text-foreground">
             {new Date(shift.date + 'T12:00:00').toLocaleDateString('en-CA', { month: 'short', day: 'numeric', weekday: 'short' })}
           </span>
