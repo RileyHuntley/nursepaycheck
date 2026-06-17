@@ -1,15 +1,18 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { useTheme } from "next-themes";
 import AppLogo from "@/components/AppLogo";
 
 export default function AuthLayout({ icon: Icon, title, subtitle, footer, children }) {
-  const { theme, setTheme } = useTheme();
+  const { resolvedTheme, setTheme } = useTheme();
+  const prevThemeRef = useRef(null);
 
   useEffect(() => {
-    const prev = theme;
-    if (prev !== "light") setTheme("light");
+    prevThemeRef.current = resolvedTheme;
+    setTheme("light");
     return () => {
-      if (prev && prev !== "light") setTheme(prev);
+      if (prevThemeRef.current && prevThemeRef.current !== "light") {
+        setTheme(prevThemeRef.current);
+      }
     };
   }, []);
 
