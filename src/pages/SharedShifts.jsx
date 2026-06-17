@@ -54,7 +54,8 @@ export default function SharedShifts() {
     );
   }
 
-  const { settings, payPeriods } = data;
+  const settings = data?.settings || null;
+  const payPeriods = Array.isArray(data?.payPeriods) ? data.payPeriods : [];
 
   // Build shiftsMap for calendar
   const shiftsMap = {};

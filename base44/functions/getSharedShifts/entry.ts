@@ -6,7 +6,7 @@ Deno.serve(async (req) => {
     let token = url.searchParams.get('token');
     if (!token) {
       try {
-        const body = await req.clone().json();
+        const body = await req.json();
         token = body.token;
       } catch (_) { /* body not JSON or already consumed */ }
     }
@@ -16,7 +16,7 @@ Deno.serve(async (req) => {
 
     const base44 = createClientFromRequest(req);
 
-    // Look up settings by share_token using service role (RLS bypass)
+    // Use service role to bypass RLS and read settings by share_token
     const allSettings = await base44.asServiceRole.entities.Settings.list();
     const settings = allSettings.find(s => s.share_token === token);
     if (!settings) {
@@ -25,14 +25,13 @@ Deno.serve(async (req) => {
 
     const userId = settings.created_by_id;
 
-    // Fetch pay periods for this user using service role
     const payPeriods = await base44.asServiceRole.entities.PayPeriod.filter(
       { created_by_id: userId },
       '-start_date',
       50
     );
 
-    // Remove sensitive/private fields from settings
+    // Strip sensitive fields
     const safeSettings = {
       hourly_wage: settings.hourly_wage,
       premium_rates: settings.premium_rates,
