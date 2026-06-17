@@ -81,7 +81,7 @@ export default function SharedShifts() {
   // Calculate breakdown for most recent period
   const latestPeriod = payPeriods[0];
   const latestBreakdown = latestPeriod && settings
-    ? calculatePeriodBreakdown({ shifts: latestPeriod.shifts || [] }, settings)
+    ? calculatePeriodBreakdown(latestPeriod.shifts || [], settings)
     : null;
 
   // Year-to-date gross sum
