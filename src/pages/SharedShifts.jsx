@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Loader2, AlertCircle } from 'lucide-react';
+import { base44 } from '@/api/base44Client';
 import ShiftCalendarGrid from '@/components/payroll/ShiftCalendarGrid';
 import PayBreakdown from '@/components/payroll/PayBreakdown';
 import { calculatePeriodBreakdown } from '@/lib/premiumCalculator';
@@ -18,20 +19,49 @@ export default function SharedShifts() {
       setLoading(false);
       return;
     }
-    fetch(`/functions/getSharedShifts?token=${encodeURIComponent(token)}`)
-      .then(res => res.json())
-      .then(json => {
-        if (json.error) {
-          setError(json.error);
-        } else {
-          setData(json);
+
+    (async () => {
+      try {
+        const allSettings = await base44.asServiceRole.entities.Settings.list();
+        const settings = allSettings.find(s => s.share_token === token);
+        if (!settings) {
+          setError('This share link is invalid or has been revoked.');
+          setLoading(false);
+          return;
         }
+
+        const userId = settings.created_by_id;
+
+        const payPeriods = await base44.asServiceRole.entities.PayPeriod.filter(
+          { created_by_id: userId },
+          '-start_date',
+          50
+        );
+
+        const safeSettings = {
+          hourly_wage: settings.hourly_wage,
+          premium_rates: settings.premium_rates,
+          ot_multipliers: settings.ot_multipliers,
+          active_allowances: settings.active_allowances,
+          allowance_rates: settings.allowance_rates,
+          active_qualifications: settings.active_qualifications,
+          qualification_rates: settings.qualification_rates,
+          hospitals: settings.hospitals,
+          units: settings.units,
+          preset_times: settings.preset_times,
+          tax_settings: settings.tax_settings,
+        };
+
+        setData({
+          settings: safeSettings,
+          payPeriods: payPeriods.filter(p => p.shifts && p.shifts.length > 0),
+        });
         setLoading(false);
-      })
-      .catch(() => {
+      } catch (e) {
         setError('This share link is invalid or has been revoked.');
         setLoading(false);
-      });
+      }
+    })();
   }, []);
 
   if (loading) {
