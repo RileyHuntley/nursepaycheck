@@ -54,6 +54,7 @@ export default function SharedShifts() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="bg-card border border-border rounded-xl p-8 max-w-md text-center space-y-3">
+          <p className="text-xs font-semibold tracking-widest uppercase text-primary/70">NursePayCheck</p>
           <AlertCircle className="w-8 h-8 text-destructive mx-auto" />
           <h2 className="text-lg font-semibold text-foreground">Unavailable</h2>
           <p className="text-sm text-muted-foreground">{error}</p>
@@ -98,6 +99,7 @@ export default function SharedShifts() {
     <div className="min-h-screen bg-background">
       <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
         <header className="text-center space-y-2">
+          <p className="text-xs font-semibold tracking-widest uppercase text-primary/70">NursePayCheck</p>
           <h1 className="text-2xl font-display font-bold text-foreground">{(settings.user_name || 'Nurse')}&rsquo;s Shift Tracker</h1>
           {showPayInfo && (
             <p className="text-sm text-muted-foreground">
