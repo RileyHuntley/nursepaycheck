@@ -21,8 +21,9 @@ export default function EarningsTrendChart({ periods, settings }) {
 
   const now = new Date();
   const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+  const sixMonthsAgoStr = sixMonthsAgo.toISOString().split('T')[0];
 
-  // Build monthly aggregates
+  // Build monthly aggregates — bucket by each shift's date, not pay period start
   const monthlyMap = {};
   for (let i = 0; i < 6; i++) {
     const m = new Date(now.getFullYear(), now.getMonth() - i, 1);
@@ -31,14 +32,32 @@ export default function EarningsTrendChart({ periods, settings }) {
   }
 
   for (const p of periods) {
-    if (p.start_date < sixMonthsAgo.toISOString().split('T')[0]) continue;
+    const shifts = p.shifts || [];
+    if (!shifts.length) continue;
     const b = p.computedBreakdown || p.breakdown;
     const gross = b?.gross_pay;
-    if (gross != null) {
-      const startMonth = p.start_date.substring(0, 7);
-      if (monthlyMap.hasOwnProperty(startMonth)) {
-        monthlyMap[startMonth] += gross;
+    if (gross == null || gross <= 0) continue;
+
+    // Group shifts by month and sum paid_hours per month
+    const monthHours = {};
+    let totalHours = 0;
+    let hasRecentShift = false;
+    for (const s of shifts) {
+      if (!s.date || !s.paid_hours) continue;
+      if (s.date >= sixMonthsAgoStr) hasRecentShift = true;
+      const m = s.date.substring(0, 7);
+      if (monthlyMap.hasOwnProperty(m)) {
+        monthHours[m] = (monthHours[m] || 0) + (s.paid_hours || 0);
+        totalHours += (s.paid_hours || 0);
       }
+    }
+
+    // Skip periods with no shifts in the 6-month window
+    if (!hasRecentShift || totalHours === 0) continue;
+
+    // Distribute period gross proportionally by paid hours per month
+    for (const [m, hrs] of Object.entries(monthHours)) {
+      monthlyMap[m] += gross * (hrs / totalHours);
     }
   }
 
