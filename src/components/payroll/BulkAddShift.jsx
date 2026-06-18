@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { X, CalendarPlus } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { SHIFT_PATTERNS, generateShiftsFromPattern } from '@/lib/shiftPatterns';
 
 export default function BulkAddShift({ onSubmit, onCancel, settings }) {
@@ -20,10 +21,12 @@ export default function BulkAddShift({ onSubmit, onCancel, settings }) {
   const [unit, setUnit] = useState(settings?.default_unit || '');
   const [preview, setPreview] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [specialtyPremium, setSpecialtyPremium] = useState(false);
+  const [preceptor, setPreceptor] = useState(false);
 
   const pattern = SHIFT_PATTERNS.find(p => p.name === patternName) || SHIFT_PATTERNS[0];
 
-  const updatePreview = (date, pat, occ, hosp, unt) => {
+  const updatePreview = (date, pat, occ, hosp, unt, spec, prec) => {
     if (!date || !pat || !occ || occ < 1) {
       setPreview(null);
       return;
@@ -31,6 +34,8 @@ export default function BulkAddShift({ onSubmit, onCancel, settings }) {
     const shifts = generateShiftsFromPattern(date, pat, occ, {
       hospital: hosp || '',
       unit: unt || '',
+      specialty_premium: spec,
+      preceptor: prec,
     });
     setPreview(shifts);
   };
@@ -41,7 +46,9 @@ export default function BulkAddShift({ onSubmit, onCancel, settings }) {
     const o = overrides.occurrences ?? occurrences;
     const h = overrides.hospital ?? hospital;
     const u = overrides.unit ?? unit;
-    updatePreview(d, p, o, h, u);
+    const sp = overrides.specialtyPremium ?? specialtyPremium;
+    const pr = overrides.preceptor ?? preceptor;
+    updatePreview(d, p, o, h, u, sp, pr);
   };
 
   const handleStartDateChange = (d) => { setStartDate(d); setSubmitting(false); refreshPreview({ date: d }); };
@@ -49,6 +56,8 @@ export default function BulkAddShift({ onSubmit, onCancel, settings }) {
   const handleOccurrencesChange = (o) => { setOccurrences(o); refreshPreview({ occurrences: o }); };
   const handleHospitalChange = (h) => { setHospital(h === '_none' ? '' : h); refreshPreview({ hospital: h === '_none' ? '' : h }); };
   const handleUnitChange = (u) => { setUnit(u === '_none' ? '' : u); refreshPreview({ unit: u === '_none' ? '' : u }); };
+  const handleSpecialtyChange = (v) => { setSpecialtyPremium(v); refreshPreview({ specialtyPremium: v }); };
+  const handlePreceptorChange = (v) => { setPreceptor(v); refreshPreview({ preceptor: v }); };
 
   const handleSubmit = async () => {
     if (!preview || preview.length === 0 || submitting) return;
@@ -146,6 +155,29 @@ export default function BulkAddShift({ onSubmit, onCancel, settings }) {
         </div>
       </div>
 
+      <div className="flex items-center gap-6 flex-wrap">
+        <div className="flex items-center gap-2">
+          <Switch
+            id="specialty-premium"
+            checked={specialtyPremium}
+            onCheckedChange={handleSpecialtyChange}
+          />
+          <Label htmlFor="specialty-premium" className="text-xs text-muted-foreground cursor-pointer">
+            Specialty Premium
+          </Label>
+        </div>
+        <div className="flex items-center gap-2">
+          <Switch
+            id="preceptor"
+            checked={preceptor}
+            onCheckedChange={handlePreceptorChange}
+          />
+          <Label htmlFor="preceptor" className="text-xs text-muted-foreground cursor-pointer">
+            Preceptor Premium
+          </Label>
+        </div>
+      </div>
+
       {pattern && (
         <div className="text-xs text-muted-foreground bg-muted/40 rounded-lg px-3 py-2">
           <span className="font-medium text-foreground">{pattern.name}:</span> {pattern.description} · {cycleDays}-day cycle · {occurrences}× = {totalDays} calendar days, <span className="font-medium text-primary">{preview ? preview.length : pattern.sequence.filter(s => s !== null).length * occurrences}</span> shifts
@@ -167,6 +199,12 @@ export default function BulkAddShift({ onSubmit, onCancel, settings }) {
                 <span className="text-muted-foreground flex-shrink-0">{shift.paid_hours}h</span>
                 {shift.hospital && (
                   <span className="text-muted-foreground truncate">{shift.hospital}{shift.unit ? ` — ${shift.unit}` : ''}</span>
+                )}
+                {shift.specialty_premium && (
+                  <span className="text-chart-1 font-medium flex-shrink-0">Specialty</span>
+                )}
+                {shift.preceptor && (
+                  <span className="text-chart-3 font-medium flex-shrink-0">Preceptor</span>
                 )}
               </div>
             ))}
