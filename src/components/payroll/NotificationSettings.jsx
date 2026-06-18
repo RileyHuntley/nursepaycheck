@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Bell, Loader2 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,18 @@ import { base44 } from '@/api/base44Client';
 export default function NotificationSettings({ settings, setSettings }) {
   const [testSending, setTestSending] = useState(false);
   const [testResult, setTestResult] = useState(null);
+  const [userEmail, setUserEmail] = useState(null);
+
+  useEffect(() => {
+    base44.auth.me().then(u => { if (u?.email) setUserEmail(u.email); }).catch(() => {});
+  }, []);
+
+  const handleToggle = (enabled) => {
+    setSettings('notification_enabled', enabled);
+    if (enabled && !settings.notification_email && userEmail) {
+      setSettings('notification_email', userEmail);
+    }
+  };
 
   const sendTest = async () => {
     setTestSending(true);
@@ -39,7 +51,7 @@ export default function NotificationSettings({ settings, setSettings }) {
       <div className="flex items-center gap-3">
         <Switch
           checked={settings.notification_enabled || false}
-          onCheckedChange={(v) => setSettings('notification_enabled', v)}
+          onCheckedChange={handleToggle}
         />
         <div>
           <Label className="text-xs text-foreground cursor-pointer">Enable verification reminders</Label>
@@ -57,7 +69,7 @@ export default function NotificationSettings({ settings, setSettings }) {
               type="email"
               value={settings.notification_email || ''}
               onChange={(e) => setSettings('notification_email', e.target.value)}
-              placeholder="you@example.com"
+              placeholder={userEmail || 'you@example.com'}
               className="h-8 text-sm max-w-xs"
             />
           </div>
