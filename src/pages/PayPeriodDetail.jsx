@@ -47,7 +47,22 @@ export default function PayPeriodDetail() {
         });
         settingsList = [created];
       }
-      setSettings(settingsList[0]);
+      // Merge with defaults in case settings were created by a page that didn't include all fields
+      const loadedSettings = {
+        hourly_wage: 45,
+        ot_multipliers: { overtime: 1.5, overtime_extended: 2, stat_holiday: 1.5, ot_stat_holiday: 3 },
+        premium_rates: { evening: 1.4, night: 5, weekend: 3.5, super_shift: 1.85, regular_premium: 2.15, specialty: 2, short_notice: 2, responsibility_hourly: 2.5, responsibility_flat: 18.75, preceptor: 1.5, on_call_first_72: 7, on_call_beyond_72: 7.5 },
+        preset_times: { day_12h_start: '07:00', day_12h_end: '19:00', night_12h_start: '19:00', night_12h_end: '07:00', day_8h_start: '08:00', day_8h_end: '16:00' },
+        active_allowances: ['isolation'],
+        active_qualifications: [],
+        hospitals: [],
+        units: [],
+        default_shift_pattern: 'DDNN',
+        shift_lines: [{ status: 'full_time', fte: 1.0, hospital: '', unit: '' }],
+        tax_settings: { annual_provincial_income: 0, annual_federal_income: 0 },
+        ...settingsList[0],
+      };
+      setSettings(loadedSettings);
       setAllPeriods(periodList);
 
       // Find the current pay period
