@@ -30,12 +30,12 @@ export default function AccountProfile() {
     setSaving(true);
     setMessage(null);
     try {
-      await base44.auth.updateMe({ full_name: name.trim() });
+      await base44.functions.invoke('updateUserName', { full_name: name.trim() });
       setMessage({ type: 'success', text: 'Name updated.' });
       setEditing(false);
       setTimeout(() => setMessage(null), 3000);
     } catch (e) {
-      setMessage({ type: 'error', text: 'Failed to update name.' });
+      setMessage({ type: 'error', text: e.response?.data?.error || 'Failed to update name.' });
     } finally {
       setSaving(false);
     }

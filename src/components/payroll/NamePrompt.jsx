@@ -20,11 +20,10 @@ export default function NamePrompt({ onDone }) {
     setSaving(true);
     setError('');
     try {
-      await base44.auth.updateMe({ full_name: trimmed });
-      onDone();
+      await base44.functions.invoke('updateUserName', { full_name: trimmed });
+      window.location.reload();
     } catch (err) {
-      setError(err.message || 'Failed to save name.');
-    } finally {
+      setError(err.response?.data?.error || err.message || 'Failed to save name.');
       setSaving(false);
     }
   };
