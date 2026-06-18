@@ -227,8 +227,6 @@ export default function Landing() {
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Calculator className="w-4 h-4 text-primary" />
             <span>Nurse<span className="text-primary font-medium">Pay</span>Check</span>
-            <span className="mx-2">·</span>
-            <span>Free forever</span>
           </div>
           <div className="flex items-center gap-6 text-sm text-muted-foreground">
             <a href="https://www.bcnu.org/Contracts-Bargaining/Documents/nba-pca_2022_2025.pdf" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors inline-flex items-center gap-1">
