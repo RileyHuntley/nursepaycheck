@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { User, Loader2 } from 'lucide-react';
 
 export default function NamePrompt({ onDone }) {
-  const { checkUserAuth } = useAuth();
+  const { updateUserLocal } = useAuth();
   const [name, setName] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -23,7 +23,7 @@ export default function NamePrompt({ onDone }) {
     setError('');
     try {
       await base44.functions.invoke('updateUserName', { full_name: trimmed });
-      await checkUserAuth();
+      updateUserLocal({ full_name: trimmed });
       onDone();
     } catch (err) {
       setError(err.response?.data?.error || err.message || 'Failed to save name.');
