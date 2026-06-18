@@ -4,6 +4,10 @@
 
 // Super stats = Christmas Day, Labour Day, Good Friday (per NBA CBA)
 const SUPER_STATS = [
+  // 2025
+  '2025-04-18', // Good Friday
+  '2025-09-01', // Labour Day
+  '2025-12-25', // Christmas Day
   // 2026
   '2026-04-03', // Good Friday
   '2026-09-07', // Labour Day
@@ -12,11 +16,26 @@ const SUPER_STATS = [
   '2027-03-26', // Good Friday
   '2027-09-06', // Labour Day
   '2027-12-25', // Christmas Day
+  // 2028
+  '2028-04-14', // Good Friday
+  '2028-09-04', // Labour Day
+  '2028-12-25', // Christmas Day
 ];
 
 // All BC stat holidays (excluding super stats, which are also stats)
 const REGULAR_STATS = [
-  // 2026
+// 2025
+  '2025-01-01', // New Year's Day
+  '2025-02-17', // Family Day
+  '2025-04-21', // Easter Monday
+  '2025-05-19', // Victoria Day
+  '2025-07-01', // Canada Day
+  '2025-08-04', // BC Day
+  '2025-09-30', // National Day for Truth and Reconciliation
+  '2025-10-13', // Thanksgiving Day
+  '2025-11-11', // Remembrance Day
+  '2025-12-26', // Boxing Day
+// 2026
   '2026-01-01', // New Year's Day
   '2026-02-16', // Family Day
   '2026-04-06', // Easter Monday
@@ -30,6 +49,7 @@ const REGULAR_STATS = [
   // 2027
   '2027-01-01', // New Year's Day
   '2027-02-15', // Family Day
+  '2027-03-29', // Easter Monday
   '2027-05-24', // Victoria Day
   '2027-07-01', // Canada Day
   '2027-08-02', // BC Day
@@ -37,6 +57,17 @@ const REGULAR_STATS = [
   '2027-10-11', // Thanksgiving Day
   '2027-11-11', // Remembrance Day
   '2027-12-26', // Boxing Day
+  // 2028
+  '2028-01-01', // New Year's Day
+  '2028-02-21', // Family Day
+  '2028-04-17', // Easter Monday
+  '2028-05-22', // Victoria Day
+  '2028-07-03', // Canada Day (observed, Jul 1 is Saturday)
+  '2028-08-07', // BC Day
+  '2028-09-30', // National Day for Truth and Reconciliation
+  '2028-10-09', // Thanksgiving Day
+  '2028-11-13', // Remembrance Day (observed, Nov 11 is Saturday)
+  '2028-12-26', // Boxing Day
 ];
 
 export function isSuperStat(dateStr) {
