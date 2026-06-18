@@ -147,9 +147,10 @@ export default function EarningsTrendChart({ periods, settings, chartType, title
 
   } else {
     // ── Period charts: use breakdown directly ──
-    const sorted = chartType === 'periods_past'
+    const sorted = (chartType === 'periods_past'
       ? periods.filter(p => p.end_date < todayStr).sort((a, b) => b.end_date.localeCompare(a.end_date)).slice(0, 6).reverse()
-      : periods.filter(p => p.start_date >= todayStr || p.end_date >= todayStr).sort((a, b) => a.start_date.localeCompare(b.start_date)).slice(0, 6);
+      : periods.filter(p => p.start_date >= todayStr || p.end_date >= todayStr).sort((a, b) => a.start_date.localeCompare(b.start_date)).slice(0, 6))
+      .filter(p => (p.shifts?.length || 0) > 0);
 
     data = sorted.map(p => {
       const b = p.computedBreakdown || p.breakdown || {};
