@@ -193,7 +193,8 @@ export function superShiftHours(dateStr, startTime, endTime) {
 export function calculateShiftPremiums(shift, settings) {
   const rates = settings.premium_rates;
   const paidHours = shift.paid_hours || 0;
-  const isStraight = ['casual', 'regular', 'isn', 'vacation', 'paid_vacation', 'sick', 'paid_sick', 'special_leave', 'pdo_pst', 'other_leave'].includes(shift.shift_type);
+  const isStraight = ['regular', 'isn', 'vacation', 'paid_vacation', 'sick', 'paid_sick', 'special_leave', 'pdo_pst', 'other_leave'].includes(shift.shift_type);
+  const eligibleForRegularPremium = ['regular', 'isn'].includes(shift.shift_type);
   const overrides = shift.premium_overrides || {};
 
   // --- Evening / Night ---
@@ -239,7 +240,7 @@ export function calculateShiftPremiums(shift, settings) {
     weekend_hours:    round2(cappedWknd),
     super_shift:      round2(cappedSuper * rates.super_shift),
     super_shift_hours:round2(cappedSuper),
-    regular_premium:  isStraight ? round2(paidHours * rates.regular_premium) : 0,
+    regular_premium:  eligibleForRegularPremium ? round2(paidHours * rates.regular_premium) : 0,
     short_notice:     shift.short_notice ? round2(paidHours * rates.short_notice) : 0,
     responsibility:   shift.responsibility_pay === 'hourly'
                         ? round2(paidHours * rates.responsibility_hourly)
@@ -482,7 +483,7 @@ export function calculatePeriodBreakdown(shifts, settings, isFirstOfMonth = fals
   let specialtyTotal = 0, specialtyHours = 0;
 
   const STRAIGHT_TYPES = ['casual', 'regular', 'isn', 'vacation', 'paid_vacation', 'sick', 'paid_sick', 'special_leave', 'pdo_pst', 'other_leave'];
-  const REGULAR_PREMIUM_TYPES = ['casual', 'regular', 'isn'];
+  const REGULAR_PREMIUM_TYPES = ['regular', 'isn'];
 
   for (const shift of shifts) {
     // Per-shift time-window premiums (evening/night/weekend/super_shift are time-based, not date-based)
