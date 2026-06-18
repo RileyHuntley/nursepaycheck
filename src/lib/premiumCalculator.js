@@ -2,7 +2,7 @@
  * NBA Collective Agreement Premium & Pay Calculator
  * Pure functions — no side effects, no API calls.
  */
-import { VCH_PAY_PERIODS_2026, getStatType } from './statHolidays.js';
+import { VCH_PAY_PERIODS, getStatType } from './statHolidays.js';
 
 function round2(n) {
   return Math.round(n * 100) / 100;
@@ -624,7 +624,7 @@ export function getPayPeriodName(startDate, endDate) {
  */
 export function getCurrentPayPeriodDates(refDate) {
   const today = (refDate ? new Date(refDate) : new Date()).toISOString().split('T')[0];
-  const found = VCH_PAY_PERIODS_2026.find(p => today >= p.start && today <= p.end);
+  const found = VCH_PAY_PERIODS.find(p => today >= p.start && today <= p.end);
   if (found) {
     return { start_date: found.start, end_date: found.end };
   }
@@ -640,7 +640,7 @@ export function getPayPeriodForDate(date) {
   const dateStr = d.toISOString().split('T')[0];
 
   // Check VCH periods first
-  const found = VCH_PAY_PERIODS_2026.find(p => dateStr >= p.start && dateStr <= p.end);
+  const found = VCH_PAY_PERIODS.find(p => dateStr >= p.start && dateStr <= p.end);
   if (found) {
     return { start_date: found.start, end_date: found.end };
   }
