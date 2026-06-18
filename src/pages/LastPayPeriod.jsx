@@ -11,7 +11,7 @@ import { toast } from '@/components/ui/use-toast';
 import { Plus, Loader2, CalendarPlus, ArrowUpDown, ClipboardList, FileDown } from 'lucide-react';
 import BulkAddShift from '@/components/payroll/BulkAddShift';
 import ShiftCalendarGrid from '@/components/payroll/ShiftCalendarGrid';
-import { getVCHPeriodNumber, getPayDate } from '@/lib/statHolidays';
+import { getVCHPeriodNumber, getVCHPayDate } from '@/lib/statHolidays';
 
 export default function LastPayPeriod() {
   const [settings, setSettings] = useState(null);
@@ -397,8 +397,8 @@ export default function LastPayPeriod() {
                 </span>
               )}
               <span>{period.name} · {displayShifts.length} shift{displayShifts.length !== 1 ? 's' : ''}</span>
-              {getPayDate(period.start_date) && (
-                <span className="text-xs text-muted-foreground/70">· paid {new Date(getPayDate(period.start_date) + 'T12:00:00').toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}</span>
+              {getVCHPayDate(period.start_date) && (
+                <span className="text-xs text-muted-foreground/70">· paid {new Date(getVCHPayDate(period.start_date) + 'T12:00:00').toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}</span>
               )}
             </p>
           )}

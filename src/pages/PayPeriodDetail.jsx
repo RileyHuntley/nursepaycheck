@@ -10,7 +10,7 @@ import ShiftRow from '@/components/payroll/ShiftRow';
 import { calculateShiftPremiums } from '@/lib/premiumCalculator';
 import { useToast } from '@/components/ui/use-toast';
 import { getPayPeriodForDate, getCurrentPayPeriodDates, calculatePeriodBreakdown, getPayPeriodName, getFirstPeriodsOfMonths, isDuplicateShift } from '@/lib/premiumCalculator';
-import { getVCHPayPeriod } from '@/lib/statHolidays';
+import { getVCHPayPeriod, getVCHPeriodNumber, getVCHPayDate } from '@/lib/statHolidays';
 import PayPeriodSummary from '@/components/payroll/PayPeriodSummary';
 
 function getDefaultStatus(dateStr) {
@@ -230,8 +230,15 @@ export default function PayPeriodDetail() {
               {getPayPeriodName(period.start_date, period.end_date)}
             </h2>
             {vcpPeriod && (
-              <p className="text-xs text-muted-foreground mt-0.5">
-                VCH Pay Period {vcpPeriod.id} &middot; Paid {new Date(vcpPeriod.pay_date + 'T12:00:00').toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })}
+              <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-2 flex-wrap">
+                {getVCHPeriodNumber(period.start_date) && (
+                  <span className="text-[11px] font-mono font-bold bg-muted text-muted-foreground px-1.5 py-0.5 rounded">
+                    PP {getVCHPeriodNumber(period.start_date)}
+                  </span>
+                )}
+                {getVCHPayDate(period.start_date) && (
+                  <span>Paid {new Date(getVCHPayDate(period.start_date) + 'T12:00:00').toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                )}
               </p>
             )}
           </div>
