@@ -108,7 +108,7 @@ const defaultSettings = {
     short_notice: 2.00, responsibility_hourly: 2.50, responsibility_flat: 18.75,
     preceptor: 1.50, specialty: 2.00, on_call_first_72: 7.00, on_call_beyond_72: 7.50,
   },
-  active_allowances: ['isolation'],
+  active_allowances: [],
   allowance_rates: { isolation: 150, business: 150 },
   active_qualifications: [],
   qualification_rates: {
