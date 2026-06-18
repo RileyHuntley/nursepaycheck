@@ -138,6 +138,69 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Screenshot showcase */}
+      <section className="py-20 px-4">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-14">
+            <h2 className="text-3xl sm:text-4xl font-display font-bold text-foreground">
+              See it in action
+            </h2>
+            <p className="mt-3 text-muted-foreground text-lg">
+              Designed specifically for BC nurses. No spreadsheets, no guesswork.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Calendar screenshot */}
+            <div className="space-y-4">
+              <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
+                <img
+                  src="https://media.base44.com/images/public/6a31b0e0893c88b82b838191/40d92cf16_Screenshot2026-06-18at110332AM.png"
+                  alt="Visual shift calendar with colour-coded day and night shifts, stat holidays, and pay date badges"
+                  className="w-full h-auto"
+                  loading="lazy"
+                />
+              </div>
+              <div className="text-center">
+                <h3 className="text-base font-display font-semibold text-foreground">Visual Shift Calendar</h3>
+                <p className="text-sm text-muted-foreground mt-1">Colour-coded shifts with stat holidays, pay dates, and hospital/unit filters.</p>
+              </div>
+            </div>
+
+            {/* Dashboard screenshot */}
+            <div className="space-y-4">
+              <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
+                <img
+                  src="https://media.base44.com/images/public/6a31b0e0893c88b82b838191/e4cfa326b_Screenshot2026-06-18at110346AM.png"
+                  alt="Dashboard showing pay period summaries with gross pay, net pay, and tax deduction estimates"
+                  className="w-full h-auto"
+                  loading="lazy"
+                />
+              </div>
+              <div className="text-center">
+                <h3 className="text-base font-display font-semibold text-foreground">Pay Period Dashboard</h3>
+                <p className="text-sm text-muted-foreground mt-1">Compare past, current, and upcoming periods with estimated deductions at a glance.</p>
+              </div>
+            </div>
+
+            {/* Premiums screenshot */}
+            <div className="space-y-4">
+              <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
+                <img
+                  src="https://media.base44.com/images/public/6a31b0e0893c88b82b838191/e156f5372_Screenshot2026-06-18at110305AM.png"
+                  alt="Detailed premium breakdown showing evening, night, weekend, super shift, and other NBA premiums"
+                  className="w-full h-auto"
+                  loading="lazy"
+                />
+              </div>
+              <div className="text-center">
+                <h3 className="text-base font-display font-semibold text-foreground">Premium Calculations</h3>
+                <p className="text-sm text-muted-foreground mt-1">Every NBA premium auto-calculated with full transparency and override support.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="py-20 px-4">
         <div className="max-w-4xl mx-auto text-center">
