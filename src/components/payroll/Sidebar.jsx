@@ -98,7 +98,6 @@ export default function Sidebar() {
     const entries = [];
     if (portal.schedule) entries.push({ ...portal.schedule, ha, haLabel: portal.label, type: 'schedule' });
     if (portal.pay) entries.push({ ...portal.pay, ha, haLabel: portal.label, type: 'pay' });
-    if (portal.payInquiry) entries.push({ ...portal.payInquiry, ha, haLabel: portal.label, type: 'payInquiry' });
     return entries;
   });
 
@@ -172,16 +171,28 @@ export default function Sidebar() {
             )}
           </div>
           <a
-            href="https://memberportal.bcnu.org/"
-            target="_blank"
-            rel="noopener noreferrer"
-            title={collapsed ? 'Contact Your Steward' : undefined}
-            className={`flex items-center gap-3 rounded-lg text-sm font-medium transition-colors duration-150 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground ${
-              collapsed ? 'justify-center px-0 py-2.5 w-full' : 'px-3 py-2.5'
-            }`}
+          href="https://memberportal.bcnu.org/"
+          target="_blank"
+          rel="noopener noreferrer"
+          title={collapsed ? 'Contact Your Steward' : undefined}
+          className={`flex items-center gap-3 rounded-lg text-sm font-medium transition-colors duration-150 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground ${
+            collapsed ? 'justify-center px-0 py-2.5 w-full' : 'px-3 py-2.5'
+          }`}
           >
             <ExternalLink className="w-4 h-4 flex-shrink-0" />
             {!collapsed && <span className="truncate">Contact Your Steward</span>}
+          </a>
+          <a
+          href="https://www.bcnu.org/Contracts-Bargaining/Documents/nba-pca_2022_2025.pdf"
+          target="_blank"
+          rel="noopener noreferrer"
+          title={collapsed ? 'Collective Agreement' : undefined}
+          className={`flex items-center gap-3 rounded-lg text-sm font-medium transition-colors duration-150 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground ${
+            collapsed ? 'justify-center px-0 py-2.5 w-full' : 'px-3 py-2.5'
+          }`}
+          >
+            <ExternalLink className="w-4 h-4 flex-shrink-0" />
+            {!collapsed && <span className="truncate">Collective Agreement</span>}
           </a>
         </>
 
