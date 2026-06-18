@@ -6,6 +6,7 @@ import EarningsTrendChart from '@/components/payroll/EarningsTrendChart';
 import { calculatePeriodBreakdown, getCurrentPayPeriodDates } from '@/lib/premiumCalculator';
 import { Button } from '@/components/ui/button';
 import { CalendarPlus } from 'lucide-react';
+import SetupBanner from '@/components/payroll/SetupBanner';
 
 // Helper: add 14 days to an ISO date string
 const addDays = (dateStr, days) => {
@@ -71,6 +72,10 @@ export default function Dashboard() {
     ...p,
     computedBreakdown: p.breakdown || (settings && p.shifts?.length ? calculatePeriodBreakdown(p.shifts, settings) : null),
   }));
+
+  const totalShifts = periods.reduce((sum, p) => sum + (p.shifts?.length || 0), 0);
+  const hasCustomWage = settings && settings.hourly_wage !== 45;
+  const hasTaxSettings = settings?.tax_settings?.annual_federal_income > 0 || settings?.tax_settings?.annual_provincial_income > 0;
 
   const now = new Date();
   const todayStr = now.toISOString().split('T')[0];
@@ -216,6 +221,14 @@ export default function Dashboard() {
           </Button>
         </Link>
       </div>
+
+      {!loading && (
+        <SetupBanner
+          hasShifts={totalShifts > 0}
+          hasWage={hasCustomWage}
+          hasTaxSettings={hasTaxSettings}
+        />
+      )}
 
       {/* ── Pay Period Row ── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/select';
 import BulkAddShift from '@/components/payroll/BulkAddShift';
 import EditShiftDialog from '@/components/payroll/EditShiftDialog';
+import SetupBanner from '@/components/payroll/SetupBanner';
 import { Checkbox } from '@/components/ui/checkbox';
 
 export default function ShiftLog() {
@@ -592,6 +593,14 @@ export default function ShiftLog() {
         />
       ) : (
         <>
+          {allShifts.length === 0 && !loading && (
+            <SetupBanner
+              hasShifts={false}
+              hasWage={settings && settings.hourly_wage !== 45}
+              hasTaxSettings={settings?.tax_settings?.annual_federal_income > 0 || settings?.tax_settings?.annual_provincial_income > 0}
+            />
+          )}
+
           <div className="bg-card border border-border rounded-xl overflow-hidden">
             <div className="px-5 py-4 border-b border-border flex items-center justify-between">
               <h3 className="text-sm font-semibold text-foreground">All Shifts</h3>
