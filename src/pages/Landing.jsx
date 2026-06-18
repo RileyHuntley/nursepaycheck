@@ -10,7 +10,7 @@ const features = [
   {
     icon: Calculator,
     title: 'Auto-Calculate NBA Premiums',
-    description: 'Evening, night, weekend, super shift, specialty, preceptor, and more — all calculated per the BCNU collective agreement so you never miss a dollar.',
+    description: 'Evening, night, weekend, super shift, specialty, regular, and more — all calculated per the BCNU collective agreement so you never miss a dollar.',
   },
   {
     icon: ClipboardCheck,
@@ -30,7 +30,7 @@ const features = [
   {
     icon: BarChart3,
     title: 'Export & Share',
-    description: 'Generate PDF pay period summaries and optionally share your calendar (without pay info) with family or colleagues.',
+    description: 'Generate PDF pay period summaries and optionally share your calendar (with or without pay info) with family or colleagues.',
   },
   {
     icon: Shield,
@@ -108,7 +108,7 @@ export default function Landing() {
             </Link>
           </div>
           <p className="mt-4 text-xs sm:text-sm text-muted-foreground">
-            No credit card. No subscription. Just a tool for nurses, by nurses.
+            Just a tool for nurses, by nurses.
           </p>
         </div>
       </section>
@@ -208,7 +208,7 @@ export default function Landing() {
             Started by a BC nurse who was tired of spreadsheet math
           </h2>
           <p className="mt-3 sm:mt-4 text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto">
-            The NBA has dozens of premiums that change based on shift type, time of day, and stat holidays.
+            Premiums and overtime change based on shift type, length, time of day, and stat holidays.
             NursePayCheck handles all of it automatically — so you can focus on what matters.
           </p>
           <div className="mt-6 sm:mt-8">
