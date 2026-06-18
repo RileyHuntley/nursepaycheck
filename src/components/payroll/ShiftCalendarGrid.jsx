@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { ChevronLeft, ChevronRight, Filter, X, Calendar } from 'lucide-react';
 import { getStatType, getStatName, getPayDate } from '@/lib/statHolidays';
 import EditShiftDialog from '@/components/payroll/EditShiftDialog';
@@ -69,6 +69,16 @@ export default function ShiftCalendarGrid({ settings, shiftsMap, onShiftUpdate, 
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
   const [pickerOpen, setPickerOpen] = useState(false);
+  const periodRefs = useRef(new Map());
+
+  useEffect(() => {
+    if (pickerOpen && periodNav?.currentId) {
+      const el = periodRefs.current.get(periodNav.currentId);
+      if (el) {
+        el.scrollIntoView({ block: 'center' });
+      }
+    }
+  }, [pickerOpen, periodNav?.currentId]);
 
   // Sync calendar month when period changes
   useEffect(() => {
@@ -246,6 +256,7 @@ export default function ShiftCalendarGrid({ settings, shiftsMap, onShiftUpdate, 
                   {periodNav.periods?.map((p) => (
                     <button
                       key={p.id}
+                      ref={(el) => { if (el) periodRefs.current.set(p.id, el); else periodRefs.current.delete(p.id); }}
                       onClick={() => { periodNav.onSelectPeriod?.(p.id); setPickerOpen(false); }}
                       className={`w-full text-left px-3 py-2 hover:bg-accent hover:text-accent-foreground transition-colors flex items-center gap-2 ${
                         p.id === periodNav.currentId ? 'bg-primary/10' : ''
