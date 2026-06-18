@@ -34,9 +34,8 @@ const TYPE_COLORS = {
 const NIGHT_COLOR = 'bg-chart-3/15 text-chart-3 border-chart-3/30';
 const DAY_COLOR   = 'bg-chart-2/15 text-chart-2 border-chart-2/30';
 
-function getShiftColor(shiftType, isNight) {
-  if (shiftType === 'regular') return isNight ? NIGHT_COLOR : DAY_COLOR;
-  return TYPE_COLORS[shiftType] || DAY_COLOR;
+function getShiftColor(isNight) {
+  return isNight ? NIGHT_COLOR : DAY_COLOR;
 }
 
 const TYPE_SHORT = {
@@ -450,6 +449,7 @@ export default function ShiftCalendarGrid({ settings, shiftsMap, onShiftUpdate, 
             const statType = getStatType(cell.dateStr);
             const statName = getStatName(cell.dateStr);
             const payPeriod = getPayDate(cell.dateStr);
+            const shiftTypes = [...new Set(shifts.map(s => TYPE_SHORT[s.shift_type] || s.shift_type))];
 
             let bgClass = 'bg-card';
             if (isOutsidePeriod) bgClass = 'bg-muted/50 opacity-50';
@@ -462,15 +462,20 @@ export default function ShiftCalendarGrid({ settings, shiftsMap, onShiftUpdate, 
                 className={`min-h-[80px] border-b border-r border-border flex flex-col ${bgClass}`}
               >
                 <div className="px-2 pt-1.5 flex items-start justify-between gap-1">
-                  {cell.isAdjacentMonth ? (
-                    <span className="text-xs font-medium text-muted-foreground">
-                      {new Date(cell.dateStr + 'T12:00:00').toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}
-                    </span>
-                  ) : (
-                    <span className={`text-xs font-medium ${isToday ? 'text-primary font-bold' : 'text-foreground'}`}>
-                      {cell.day}
-                    </span>
-                  )}
+                  <div className="flex items-baseline gap-1 min-w-0">
+                    {cell.isAdjacentMonth ? (
+                      <span className="text-xs font-medium text-muted-foreground">
+                        {new Date(cell.dateStr + 'T12:00:00').toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}
+                      </span>
+                    ) : (
+                      <span className={`text-xs font-medium ${isToday ? 'text-primary font-bold' : 'text-foreground'}`}>
+                        {cell.day}
+                      </span>
+                    )}
+                    {shiftTypes.map(t => (
+                      <span key={t} className="text-[9px] font-semibold text-muted-foreground">{t}</span>
+                    ))}
+                  </div>
                   <div className="flex items-center gap-0.5 flex-wrap justify-end">
                     {payPeriod && (
                       <span className="text-[9px] font-bold bg-primary text-primary-foreground px-1 py-0.5 rounded leading-none">
@@ -499,12 +504,11 @@ export default function ShiftCalendarGrid({ settings, shiftsMap, onShiftUpdate, 
                   {shifts.map((shift, si) => {
                     const premiums = settings ? calculateShiftPremiums(shift, settings) : null;
                     const isNight = premiums && premiums.night > 0;
-                    const colors = getShiftColor(shift.shift_type, isNight);
+                    const colors = getShiftColor(isNight);
                     const content = (
                       <>
                         <div className="flex items-center gap-1">
                           <span className="text-[11px]">{isNight ? '🌙' : '☀️'}</span>
-                          <span className="font-semibold">{TYPE_SHORT[shift.shift_type] || shift.shift_type}</span>
                           <span className="opacity-70 font-mono">{shift.start_time}–{shift.end_time}</span>
                         </div>
                         <div className="flex items-center gap-1 mt-0.5 text-[9px] opacity-80">
@@ -560,11 +564,6 @@ export default function ShiftCalendarGrid({ settings, shiftsMap, onShiftUpdate, 
           <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium border ${DAY_COLOR}`}>
             ☀️ Day Shift
           </span>
-          {Object.entries(TYPE_COLORS).map(([key, colors]) => (
-            <span key={key} className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium border ${colors}`}>
-              {TYPE_SHORT[key]}
-            </span>
-          ))}
         </div>
       </div>
     </div>
