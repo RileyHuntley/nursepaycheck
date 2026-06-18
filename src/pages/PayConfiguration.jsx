@@ -166,7 +166,21 @@ export default function PayConfiguration() {
   const loadSettings = useCallback(async () => {
     const list = await base44.entities.Settings.list();
     if (list.length > 0) {
-      const merged = { ...defaultSettings, ...list[0] };
+      const merged = {
+        ...defaultSettings,
+        ...list[0],
+        premium_rates: { ...defaultSettings.premium_rates, ...(list[0].premium_rates || {}) },
+        ot_multipliers: { ...defaultSettings.ot_multipliers, ...(list[0].ot_multipliers || {}) },
+        allowance_rates: { ...defaultSettings.allowance_rates, ...(list[0].allowance_rates || {}) },
+        qualification_rates: { ...defaultSettings.qualification_rates, ...(list[0].qualification_rates || {}) },
+        preset_times: { ...(defaultSettings.preset_times || {}), ...(list[0].preset_times || {}) },
+        tax_settings: { ...defaultSettings.tax_settings, ...(list[0].tax_settings || {}) },
+        shift_lines: list[0].shift_lines || defaultSettings.shift_lines,
+        active_allowances: list[0].active_allowances || defaultSettings.active_allowances,
+        active_qualifications: list[0].active_qualifications || defaultSettings.active_qualifications,
+        hospitals: list[0].hospitals || [],
+        units: list[0].units || [],
+      };
       setSettings(merged);
       savedRef.current = cloneDeep(merged);
     } else {
