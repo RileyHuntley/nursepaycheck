@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, DollarSign, MapPin, CalendarPlus } from 'lucide-react';
 
-export default function SetupBanner({ hasShifts, hasWage, hasTaxSettings }) {
+export default function SetupBanner({ hasShifts, hasWage, hasTaxSettings, hasHospitals }) {
   if (hasShifts) return null;
 
   const steps = [
@@ -16,7 +16,7 @@ export default function SetupBanner({ hasShifts, hasWage, hasTaxSettings }) {
       icon: MapPin,
       label: 'Add your hospitals & shift defaults',
       to: '/shift-configuration',
-      done: false, // we don't track this granularly; always show as actionable
+      done: hasHospitals,
     },
     {
       icon: CalendarPlus,
