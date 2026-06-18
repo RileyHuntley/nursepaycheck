@@ -55,7 +55,7 @@ const HA_FULL_NAMES = {
   PHC:   'Providence Health Care',
 };
 
-export default function ShiftCalendarGrid({ settings, shiftsMap, onShiftUpdate, onReload, showHeader = true, readOnly = false }) {
+export default function ShiftCalendarGrid({ settings, shiftsMap, onShiftUpdate, onReload, showHeader = true, readOnly = false, periodStart, periodEnd }) {
   const [editingShift, setEditingShift] = useState(null);
   const [hospitalFilter, setHospitalFilter] = useState('all');
   const [haFilter, setHaFilter] = useState('all');
@@ -311,6 +311,7 @@ export default function ShiftCalendarGrid({ settings, shiftsMap, onShiftUpdate, 
             }
 
             const isToday = cell.dateStr === todayStr;
+            const isOutsidePeriod = periodStart && periodEnd && (cell.dateStr < periodStart || cell.dateStr > periodEnd);
             const shifts = filteredMap[cell.dateStr] || [];
             const statType = getStatType(cell.dateStr);
             const statName = getStatName(cell.dateStr);
@@ -320,6 +321,7 @@ export default function ShiftCalendarGrid({ settings, shiftsMap, onShiftUpdate, 
               <div
                 key={cell.dateStr}
                 className={`min-h-[80px] border-b border-r border-border flex flex-col ${
+                  isOutsidePeriod ? 'bg-muted/50 opacity-50' :
                   statType === 'super_stat' || statType === 'stat' ? 'bg-destructive/5' :
                   isToday ? 'bg-primary/5 ring-1 ring-inset ring-primary/20' : 'bg-card'
                 }`}

@@ -301,6 +301,8 @@ export default function PayPeriodDetail() {
 
       {/* Calendar Grid */}
       <ShiftCalendarGrid
+        periodStart={period.start_date}
+        periodEnd={period.end_date}
         shiftsMap={shifts.reduce((map, s, i) => {
           if (!s.date) return map;
           if (!map[s.date]) map[s.date] = [];
