@@ -2,15 +2,26 @@ import { useState } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { KeyRound, Mail, Loader2, Check, Shield, AlertCircle, Trash2, ExternalLink } from 'lucide-react';
+import { KeyRound, Mail, Loader2, Check, Shield, AlertCircle, Trash2, AlertTriangle } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 export default function AccountSecurity() {
   const { user } = useAuth();
   const [resetSent, setResetSent] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
   const [resetError, setResetError] = useState(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState(null);
 
   if (!user) return null;
 
@@ -24,6 +35,18 @@ export default function AccountSecurity() {
       setResetError('Something went wrong. Please try again.');
     } finally {
       setResetLoading(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeleteLoading(true);
+    setDeleteError(null);
+    try {
+      await base44.functions.invoke('deleteAccount', {});
+      base44.auth.logout('/login');
+    } catch (e) {
+      setDeleteError('Something went wrong. Please try again.');
+      setDeleteLoading(false);
     }
   };
 
@@ -147,19 +170,56 @@ export default function AccountSecurity() {
             </p>
           </div>
         </div>
-        <p className="text-xs text-muted-foreground">
-          Account deletion is managed through your Base44 account settings. You&apos;ll have a 7-day grace period to cancel if you change your mind.
-        </p>
+
+        {deleteError && (
+          <div className="text-xs px-3 py-2 rounded-lg bg-destructive/15 text-destructive flex items-center gap-1.5">
+            <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+            {deleteError}
+          </div>
+        )}
+
         <Button
           variant="destructive"
           size="sm"
           className="text-xs"
-          onClick={() => window.open('https://base44.com/account-settings', '_blank', 'noopener,noreferrer')}
+          onClick={() => setDeleteOpen(true)}
+          disabled={deleteLoading}
         >
-          <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
-          Open Account Settings
+          {deleteLoading ? (
+            <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> Deleting...</>
+          ) : (
+            <><Trash2 className="w-3.5 h-3.5 mr-1.5" /> Delete My Account</>
+          )}
         </Button>
       </div>
+
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-destructive" />
+              Delete Your Account?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently erase your account, all shift logs, pay periods, and settings. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteLoading}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteAccount}
+              disabled={deleteLoading}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteLoading ? (
+                <><Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> Deleting...</>
+              ) : (
+                'Yes, Delete My Account'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 }
