@@ -160,6 +160,9 @@ export default function Settings() {
         </div>
       )}
 
+      {/* About */}
+      <About />
+
       {/* Account Profile */}
       <AccountProfile />
 
@@ -211,9 +214,6 @@ export default function Settings() {
           </button>
         </div>
       </section>
-
-      {/* About */}
-      <About />
 
       {/* Share Link */}
       <section className="bg-card border border-border rounded-xl p-5 space-y-4">
