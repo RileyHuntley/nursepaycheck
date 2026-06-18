@@ -7,16 +7,16 @@ export default function SetupBanner({ hasShifts, hasWage, hasTaxSettings, hasHos
 
   const steps = [
     {
-      icon: DollarSign,
-      label: 'Set your hourly wage, monthly allowances, & shift differentials',
-      to: '/pay-configuration',
-      done: hasWage,
-    },
-    {
       icon: MapPin,
       label: 'Add your hospitals & shift defaults',
       to: '/shift-configuration',
       done: hasHospitals,
+    },
+    {
+      icon: DollarSign,
+      label: 'Set your hourly wage, monthly allowances, & shift differentials',
+      to: '/pay-configuration',
+      done: hasWage,
     },
     {
       icon: CalendarPlus,

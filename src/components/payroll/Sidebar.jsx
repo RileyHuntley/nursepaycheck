@@ -28,8 +28,8 @@ const links = [
   { to: '/pay-period', icon: CalendarPlus, label: 'Current Pay Period' },
   { to: '/last-pay-period', icon: ClipboardCheck, label: 'Last Pay Period' },
   { to: '/pay-periods', icon: Clock, label: 'Pay Period History' },
-  { to: '/pay-configuration', icon: DollarSign, label: 'Pay Configuration' },
   { to: '/shift-configuration', icon: MapPin, label: 'Shift Configuration' },
+  { to: '/pay-configuration', icon: DollarSign, label: 'Pay Configuration' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ];
 
