@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Save, Loader2, X, AlertTriangle, Link2, Copy, RefreshCw } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import AccountProfile from '@/components/payroll/AccountProfile';
+import AccountSecurity from '@/components/payroll/AccountSecurity';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -157,6 +158,9 @@ export default function Settings() {
 
       {/* Account Profile */}
       <AccountProfile />
+
+      {/* Account Security */}
+      <AccountSecurity />
 
       {/* Share Link */}
       <section className="bg-card border border-border rounded-xl p-5 space-y-4">
