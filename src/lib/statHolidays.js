@@ -347,14 +347,14 @@ export function getStatName(dateStr) {
  * Get the VCH pay date for a given date string (returns pay_date if dateStr is a pay_date)
  */
 export function getPayDate(dateStr) {
-  return VCH_PAY_PERIODS_2026.find(p => p.pay_date === dateStr) || null;
+  return VCH_PAY_PERIODS.find(p => p.pay_date === dateStr) || null;
 }
 
 /**
  * Get the VCH pay period number (e.g. "2613") for a pay period by matching its start date
  */
 export function getVCHPeriodNumber(startDate) {
-  const match = VCH_PAY_PERIODS_2026.find(p => p.start === startDate);
+  const match = VCH_PAY_PERIODS.find(p => p.start === startDate);
   return match ? match.id : null;
 }
 
@@ -362,9 +362,39 @@ export function getVCHPeriodNumber(startDate) {
  * Get the VCH pay date for a pay period by matching its start date
  */
 export function getVCHPayDate(startDate) {
-  const match = VCH_PAY_PERIODS_2026.find(p => p.start === startDate);
+  const match = VCH_PAY_PERIODS.find(p => p.start === startDate);
   return match ? match.pay_date : null;
 }
+
+// VCH 2025 pay periods (calculated from the official biweekly Fri–Thu pattern)
+export const VCH_PAY_PERIODS_2025 = [
+  { id: '2501', start: '2024-12-20', end: '2025-01-02', pay_date: '2025-01-10' },
+  { id: '2502', start: '2025-01-03', end: '2025-01-16', pay_date: '2025-01-24' },
+  { id: '2503', start: '2025-01-17', end: '2025-01-30', pay_date: '2025-02-07' },
+  { id: '2504', start: '2025-01-31', end: '2025-02-13', pay_date: '2025-02-21' },
+  { id: '2505', start: '2025-02-14', end: '2025-02-27', pay_date: '2025-03-07' },
+  { id: '2506', start: '2025-02-28', end: '2025-03-13', pay_date: '2025-03-21' },
+  { id: '2507', start: '2025-03-14', end: '2025-03-27', pay_date: '2025-04-04' },
+  { id: '2508', start: '2025-03-28', end: '2025-04-10', pay_date: '2025-04-17' }, // Good Friday Apr 18 → Apr 17
+  { id: '2509', start: '2025-04-11', end: '2025-04-24', pay_date: '2025-05-02' },
+  { id: '2510', start: '2025-04-25', end: '2025-05-08', pay_date: '2025-05-16' },
+  { id: '2511', start: '2025-05-09', end: '2025-05-22', pay_date: '2025-05-30' },
+  { id: '2512', start: '2025-05-23', end: '2025-06-05', pay_date: '2025-06-13' },
+  { id: '2513', start: '2025-06-06', end: '2025-06-19', pay_date: '2025-06-27' },
+  { id: '2514', start: '2025-06-20', end: '2025-07-03', pay_date: '2025-07-11' },
+  { id: '2515', start: '2025-07-04', end: '2025-07-17', pay_date: '2025-07-25' },
+  { id: '2516', start: '2025-07-18', end: '2025-07-31', pay_date: '2025-08-08' },
+  { id: '2517', start: '2025-08-01', end: '2025-08-14', pay_date: '2025-08-22' },
+  { id: '2518', start: '2025-08-15', end: '2025-08-28', pay_date: '2025-09-05' },
+  { id: '2519', start: '2025-08-29', end: '2025-09-11', pay_date: '2025-09-19' },
+  { id: '2520', start: '2025-09-12', end: '2025-09-25', pay_date: '2025-10-03' },
+  { id: '2521', start: '2025-09-26', end: '2025-10-09', pay_date: '2025-10-17' },
+  { id: '2522', start: '2025-10-10', end: '2025-10-23', pay_date: '2025-10-31' },
+  { id: '2523', start: '2025-10-24', end: '2025-11-06', pay_date: '2025-11-14' },
+  { id: '2524', start: '2025-11-07', end: '2025-11-20', pay_date: '2025-11-28' },
+  { id: '2525', start: '2025-11-21', end: '2025-12-04', pay_date: '2025-12-12' },
+  { id: '2526', start: '2025-12-05', end: '2025-12-18', pay_date: '2025-12-24' }, // Dec 26 Boxing Day → Dec 24
+];
 
 // VCH 2026 pay periods (from official calendar)
 export const VCH_PAY_PERIODS_2026 = [
@@ -397,11 +427,81 @@ export const VCH_PAY_PERIODS_2026 = [
   { id: '2701', start: '2026-12-18', end: '2026-12-31', pay_date: '2027-01-08' },
 ];
 
+// VCH 2027 pay periods (calculated from the official biweekly Fri–Thu pattern)
+// Note: 2701 is the last entry of VCH_PAY_PERIODS_2026; this array starts at 2702
+export const VCH_PAY_PERIODS_2027 = [
+  { id: '2702', start: '2027-01-01', end: '2027-01-14', pay_date: '2027-01-22' },
+  { id: '2703', start: '2027-01-15', end: '2027-01-28', pay_date: '2027-02-05' },
+  { id: '2704', start: '2027-01-29', end: '2027-02-11', pay_date: '2027-02-19' },
+  { id: '2705', start: '2027-02-12', end: '2027-02-25', pay_date: '2027-03-05' },
+  { id: '2706', start: '2027-02-26', end: '2027-03-11', pay_date: '2027-03-19' },
+  { id: '2707', start: '2027-03-12', end: '2027-03-25', pay_date: '2027-04-02' },
+  { id: '2708', start: '2027-03-26', end: '2027-04-08', pay_date: '2027-04-16' },
+  { id: '2709', start: '2027-04-09', end: '2027-04-22', pay_date: '2027-04-30' },
+  { id: '2710', start: '2027-04-23', end: '2027-05-06', pay_date: '2027-05-14' },
+  { id: '2711', start: '2027-05-07', end: '2027-05-20', pay_date: '2027-05-28' },
+  { id: '2712', start: '2027-05-21', end: '2027-06-03', pay_date: '2027-06-11' },
+  { id: '2713', start: '2027-06-04', end: '2027-06-17', pay_date: '2027-06-25' },
+  { id: '2714', start: '2027-06-18', end: '2027-07-01', pay_date: '2027-07-09' },
+  { id: '2715', start: '2027-07-02', end: '2027-07-15', pay_date: '2027-07-23' },
+  { id: '2716', start: '2027-07-16', end: '2027-07-29', pay_date: '2027-08-06' },
+  { id: '2717', start: '2027-07-30', end: '2027-08-12', pay_date: '2027-08-20' },
+  { id: '2718', start: '2027-08-13', end: '2027-08-26', pay_date: '2027-09-03' },
+  { id: '2719', start: '2027-08-27', end: '2027-09-09', pay_date: '2027-09-17' },
+  { id: '2720', start: '2027-09-10', end: '2027-09-23', pay_date: '2027-10-01' },
+  { id: '2721', start: '2027-09-24', end: '2027-10-07', pay_date: '2027-10-15' },
+  { id: '2722', start: '2027-10-08', end: '2027-10-21', pay_date: '2027-10-29' },
+  { id: '2723', start: '2027-10-22', end: '2027-11-04', pay_date: '2027-11-12' },
+  { id: '2724', start: '2027-11-05', end: '2027-11-18', pay_date: '2027-11-26' },
+  { id: '2725', start: '2027-11-19', end: '2027-12-02', pay_date: '2027-12-10' },
+  { id: '2726', start: '2027-12-03', end: '2027-12-16', pay_date: '2027-12-24' },
+  { id: '2801', start: '2027-12-17', end: '2027-12-30', pay_date: '2028-01-07' },
+];
+
+// VCH 2028 pay periods (calculated from the official biweekly Fri–Thu pattern)
+// Note: 2801 is the last entry of VCH_PAY_PERIODS_2027; this array starts at 2802
+export const VCH_PAY_PERIODS_2028 = [
+  { id: '2802', start: '2027-12-31', end: '2028-01-13', pay_date: '2028-01-21' },
+  { id: '2803', start: '2028-01-14', end: '2028-01-27', pay_date: '2028-02-04' },
+  { id: '2804', start: '2028-01-28', end: '2028-02-10', pay_date: '2028-02-18' },
+  { id: '2805', start: '2028-02-11', end: '2028-02-24', pay_date: '2028-03-03' },
+  { id: '2806', start: '2028-02-25', end: '2028-03-09', pay_date: '2028-03-17' },
+  { id: '2807', start: '2028-03-10', end: '2028-03-23', pay_date: '2028-03-31' },
+  { id: '2808', start: '2028-03-24', end: '2028-04-06', pay_date: '2028-04-13' }, // Good Friday Apr 14 → Apr 13
+  { id: '2809', start: '2028-04-07', end: '2028-04-20', pay_date: '2028-04-28' },
+  { id: '2810', start: '2028-04-21', end: '2028-05-04', pay_date: '2028-05-12' },
+  { id: '2811', start: '2028-05-05', end: '2028-05-18', pay_date: '2028-05-26' },
+  { id: '2812', start: '2028-05-19', end: '2028-06-01', pay_date: '2028-06-09' },
+  { id: '2813', start: '2028-06-02', end: '2028-06-15', pay_date: '2028-06-23' },
+  { id: '2814', start: '2028-06-16', end: '2028-06-29', pay_date: '2028-07-07' },
+  { id: '2815', start: '2028-06-30', end: '2028-07-13', pay_date: '2028-07-21' },
+  { id: '2816', start: '2028-07-14', end: '2028-07-27', pay_date: '2028-08-04' },
+  { id: '2817', start: '2028-07-28', end: '2028-08-10', pay_date: '2028-08-18' },
+  { id: '2818', start: '2028-08-11', end: '2028-08-24', pay_date: '2028-09-01' },
+  { id: '2819', start: '2028-08-25', end: '2028-09-07', pay_date: '2028-09-15' },
+  { id: '2820', start: '2028-09-08', end: '2028-09-21', pay_date: '2028-09-29' },
+  { id: '2821', start: '2028-09-22', end: '2028-10-05', pay_date: '2028-10-13' },
+  { id: '2822', start: '2028-10-06', end: '2028-10-19', pay_date: '2028-10-27' },
+  { id: '2823', start: '2028-10-20', end: '2028-11-02', pay_date: '2028-11-10' },
+  { id: '2824', start: '2028-11-03', end: '2028-11-16', pay_date: '2028-11-24' },
+  { id: '2825', start: '2028-11-17', end: '2028-11-30', pay_date: '2028-12-08' },
+  { id: '2826', start: '2028-12-01', end: '2028-12-14', pay_date: '2028-12-22' },
+  { id: '2901', start: '2028-12-15', end: '2028-12-28', pay_date: '2029-01-05' },
+];
+
+// Combined pay periods across all supported years
+export const VCH_PAY_PERIODS = [
+  ...VCH_PAY_PERIODS_2025,
+  ...VCH_PAY_PERIODS_2026,
+  ...VCH_PAY_PERIODS_2027,
+  ...VCH_PAY_PERIODS_2028,
+];
+
 /**
  * Get the VCH pay period that contains a given date
  */
 export function getVCHPayPeriod(dateStr) {
-  return VCH_PAY_PERIODS_2026.find(p => dateStr >= p.start && dateStr <= p.end) || null;
+  return VCH_PAY_PERIODS.find(p => dateStr >= p.start && dateStr <= p.end) || null;
 }
 
 /**
