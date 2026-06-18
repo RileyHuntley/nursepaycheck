@@ -299,12 +299,18 @@ export default function PayPeriodDetail() {
 
       {/* Calendar Grid */}
       <ShiftCalendarGrid
-        shifts={shifts}
-        periodStart={period.start_date}
-        periodEnd={period.end_date}
+        shiftsMap={shifts.reduce((map, s, i) => {
+          if (!s.date) return map;
+          if (!map[s.date]) map[s.date] = [];
+          map[s.date].push({ ...s, periodId: period.id, periodShiftIdx: i });
+          return map;
+        }, {})}
         settings={settings}
-        onEdit={(shift, index) => { setEditingShift(shift); setEditingIndex(index); setShowForm(false); }}
-        onDelete={deleteShift}
+        showHeader={false}
+        onShiftUpdate={async (shiftData, editInfo) => {
+          await updateShift(editInfo.periodShiftIdx, shiftData);
+        }}
+        onReload={loadData}
       />
 
       {/* Pay Summary */}
