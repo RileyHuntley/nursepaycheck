@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import ShiftForm from '@/components/payroll/ShiftForm';
 import ShiftRow from '@/components/payroll/ShiftRow';
 import PayBreakdown from '@/components/payroll/PayBreakdown';
-import { calculatePeriodBreakdown, calculateShiftPremiums, getPayPeriodForDate, getPayPeriodName, isDuplicateShift } from '@/lib/premiumCalculator';
+import { calculatePeriodBreakdown, calculateShiftPremiums, getPayPeriodForDate, getPayPeriodName, isDuplicateShift, getFirstPeriodsOfMonths } from '@/lib/premiumCalculator';
 import { toast } from '@/components/ui/use-toast';
 import { Plus, Loader2, CalendarPlus, ArrowUpDown, ClipboardList, FileDown } from 'lucide-react';
 import BulkAddShift from '@/components/payroll/BulkAddShift';
@@ -16,6 +16,7 @@ export default function LastPayPeriod() {
   const [settings, setSettings] = useState(null);
   const [period, setPeriod] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [allPeriods, setAllPeriods] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [showBulkForm, setShowBulkForm] = useState(false);
   const [editingShift, setEditingShift] = useState(null);
@@ -58,6 +59,7 @@ export default function LastPayPeriod() {
 
       // Find the last (most recently completed) pay period
       const periodList = await base44.entities.PayPeriod.list('-start_date', 50);
+      setAllPeriods(periodList);
       const pastPeriods = periodList
         .filter(p => p.end_date < todayStr)
         .sort((a, b) => b.end_date.localeCompare(a.end_date));
@@ -107,6 +109,8 @@ export default function LastPayPeriod() {
 
   const getDefaultStatus = (date) => date > todayStr ? 'upcoming' : 'pending';
 
+  const isFirstForPeriod = (startDate) => getFirstPeriodsOfMonths(allPeriods).has(startDate);
+
   const addShift = async (shiftData) => {
     shiftData.status = shiftData.status || getDefaultStatus(shiftData.date);
 
@@ -126,7 +130,7 @@ export default function LastPayPeriod() {
           return;
         }
         const updatedShifts = [...(existing.shifts || []), { ...shiftData }];
-        const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings) : null;
+        const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings, getFirstPeriodsOfMonths(allPeriods).has(start_date)) : null;
         await base44.entities.PayPeriod.update(existing.id, { shifts: updatedShifts, ...(breakdown ? { breakdown } : {}) });
       } else {
         await base44.entities.PayPeriod.create({ name: getPayPeriodName(start_date, end_date), start_date, end_date, shifts: [{ ...shiftData }] });
@@ -137,7 +141,7 @@ export default function LastPayPeriod() {
     }
 
     const updatedShifts = [...(period.shifts || []), { ...shiftData }];
-    const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings) : null;
+    const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings, isFirstOfMonth) : null;
     const updated = await base44.entities.PayPeriod.update(period.id, { shifts: updatedShifts, ...(breakdown ? { breakdown } : {}) });
     setPeriod(updated);
     setShowForm(false);
@@ -309,10 +313,14 @@ export default function LastPayPeriod() {
     );
   }
 
+  // Determine if this period is the first of its month with shifts
+  const firstPeriodsSet = getFirstPeriodsOfMonths(allPeriods);
+  const isFirstOfMonth = period && firstPeriodsSet.has(period.start_date);
+
   // Filter shifts to only those within this period's date range
   const allWithIdx = (period.shifts || []).map((s, i) => ({ ...s, _origIdx: i }));
   const displayShifts = allWithIdx.filter(s => isValidForPeriod(s.date));
-  const breakdown = settings && displayShifts.length ? calculatePeriodBreakdown(displayShifts, settings) : null;
+  const breakdown = settings && displayShifts.length ? calculatePeriodBreakdown(displayShifts, settings, isFirstOfMonth) : null;
 
   const sortedShifts = [...displayShifts];
   sortedShifts.sort((a, b) => {

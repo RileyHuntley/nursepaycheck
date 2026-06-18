@@ -410,39 +410,59 @@ export function calculateOnCallPay(shifts, settings) {
 }
 
 /**
- * Calculate monthly allowance total per pay period
- * Monthly allowance × 12 months ÷ 26 pay periods
+ * Get the set of pay period start_dates that are the first period (earliest start_date)
+ * in each calendar month containing at least one shift.
  */
-export function calculateAllowances(settings) {
+export function getFirstPeriodsOfMonths(periods) {
+  const monthFirstPeriod = new Map();
+  for (const p of periods) {
+    const shifts = p.shifts || [];
+    for (const shift of shifts) {
+      const monthKey = shift.date.substring(0, 7);
+      const existing = monthFirstPeriod.get(monthKey);
+      if (!existing || p.start_date < existing) {
+        monthFirstPeriod.set(monthKey, p.start_date);
+      }
+    }
+  }
+  return new Set(monthFirstPeriod.values());
+}
+
+/**
+ * Calculate monthly allowance pay for a given pay period.
+ * Paid in full on the first pay period of each month that has shifts; zero otherwise.
+ */
+export function calculateAllowances(settings, isFirstOfMonth = false) {
   const active = settings.active_allowances || [];
   const rates = settings.allowance_rates || {};
   const monthlyTotal = active.reduce((sum, key) => sum + (rates[key] || 0), 0);
   return {
     monthly_total: monthlyTotal,
-    per_period: monthlyTotal * 12 / 26,
+    per_period: isFirstOfMonth ? monthlyTotal : 0,
   };
 }
 
 /**
- * Calculate qualification differential per pay period
- * Formula: (total annual differential ÷ 1950) × regular hours paid in period
+ * Calculate qualification differential pay for a given pay period.
+ * Paid in full on the first pay period of each month that has shifts; zero otherwise.
  */
-export function calculateQualificationPay(regularHoursInPeriod, settings) {
+export function calculateQualificationPay(settings, isFirstOfMonth = false) {
   const active = settings.active_qualifications || [];
   const rates = settings.qualification_rates || {};
   const annualTotal = active.reduce((sum, key) => sum + (rates[key] || 0), 0) * 12;
   const hourlyRate = annualTotal / 1950;
+  const monthlyTotal = annualTotal / 12;
   return {
     annual_total: annualTotal,
     hourly_rate: hourlyRate,
-    period_total: hourlyRate * regularHoursInPeriod,
+    period_total: isFirstOfMonth ? monthlyTotal : 0,
   };
 }
 
 /**
  * Full pay period breakdown
  */
-export function calculatePeriodBreakdown(shifts, settings) {
+export function calculatePeriodBreakdown(shifts, settings, isFirstOfMonth = false) {
   const wage = settings.hourly_wage || 0;
 
   let straightTimePay = 0;
@@ -519,11 +539,11 @@ export function calculatePeriodBreakdown(shifts, settings) {
   // On-call (treat per-period — proxy for monthly; handle month boundaries in dashboard)
   const onCall = calculateOnCallPay(shifts, settings);
 
-  // Allowances
-  const allowances = calculateAllowances(settings);
+  // Allowances (full monthly on first period of month, zero otherwise)
+  const allowances = calculateAllowances(settings, isFirstOfMonth);
 
-  // Qualification differential
-  const qualification = calculateQualificationPay(regularHours, settings);
+  // Qualification differential (full monthly on first period of month, zero otherwise)
+  const qualification = calculateQualificationPay(settings, isFirstOfMonth);
 
   // Union dues: 2% of straight-time pay only
   const unionDues = straightTimePay * 0.02;

@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
 import PaySummaryPanel from '@/components/payroll/PaySummaryPanel';
 import EarningsTrendChart from '@/components/payroll/EarningsTrendChart';
-import { calculatePeriodBreakdown, getCurrentPayPeriodDates } from '@/lib/premiumCalculator';
+import { calculatePeriodBreakdown, getCurrentPayPeriodDates, getFirstPeriodsOfMonths } from '@/lib/premiumCalculator';
 import { Button } from '@/components/ui/button';
 import { CalendarPlus } from 'lucide-react';
 import SetupBanner from '@/components/payroll/SetupBanner';
@@ -68,10 +68,17 @@ export default function Dashboard() {
     return () => { unsub1(); unsub2(); };
   }, [debouncedLoad]);
 
-  const computedPeriods = periods.map(p => ({
-    ...p,
-    computedBreakdown: (p.shifts?.length && settings) ? (p.breakdown || calculatePeriodBreakdown(p.shifts, settings)) : null,
-  }));
+  const firstPeriodsOfMonth = settings ? getFirstPeriodsOfMonths(periods) : new Set();
+
+  const computedPeriods = periods.map(p => {
+    const isFirstOfMonth = firstPeriodsOfMonth.has(p.start_date);
+    return {
+      ...p,
+      computedBreakdown: (p.shifts?.length && settings)
+        ? (p.breakdown || calculatePeriodBreakdown(p.shifts, settings, isFirstOfMonth))
+        : null,
+    };
+  });
 
   const totalShifts = periods.reduce((sum, p) => sum + (p.shifts?.length || 0), 0);
   const hasCustomWage = settings && settings.hourly_wage !== 45;
@@ -137,16 +144,18 @@ export default function Dashboard() {
 
     if (!base) return null;
 
-    // Replace prorated period allowances with monthly-capped total, adjust gross
-    const oldAllowance = periodsList.reduce((sum, p) => {
-      const shifts = p.shifts || [];
-      const filtered = maxDate ? shifts.filter(s => s.date <= maxDate) : shifts;
-      const b = filtered.length > 0 && settings ? calculatePeriodBreakdown(filtered, settings) : null;
-      return sum + (b?.allowance_total || 0);
-    }, 0);
+    // Monthly allowances: paid in full for each month with shifts
     base.allowance_total = allowanceTotal;
     base.allowance_monthly = monthlyAllowance;
-    base.gross_pay = (base.gross_pay || 0) - oldAllowance + allowanceTotal;
+
+    // Qualification differentials: paid in full for each month with shifts
+    const annualQualTotal = (settings.active_qualifications || []).reduce((sum, k) => sum + (settings.qualification_rates?.[k] || 0), 0) * 12;
+    base.qualification_total = monthsWithShifts.size * (annualQualTotal / 12);
+    base.qualification_annual = annualQualTotal;
+    base.qualification_hourly = annualQualTotal / 1950;
+
+    // Gross pay: add allowance and qualification (per-period breakdowns compute these as 0 by default)
+    base.gross_pay = (base.gross_pay || 0) + allowanceTotal + base.qualification_total;
 
     return base;
   };
