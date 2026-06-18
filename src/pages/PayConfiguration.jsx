@@ -26,6 +26,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
+
 const QUALIFICATION_OPTIONS = [
   { key: 'special_clinical_prep', label: 'Special Clinical Prep', rate: 50, article: 'Art. 53.01', desc: 'Nurse must have successfully completed a course and received a certificate or diploma from an accredited hospital, college, university, or institute. Only regular nurses qualify.' },
   { key: 'bsn', label: 'BSN Degree', rate: 100, article: 'Art. 53.05', desc: 'Applicable only to employees hired prior to the first pay period after April 1, 2016. Nurses who have successfully completed a bachelor\'s degree in nursing.' },
@@ -99,8 +100,13 @@ const OT_TYPES = [
     article: 'NBA CBA',
   },
 ];
-
 const defaultSettings = {
+  nurse_profile: {
+    license_type: '',
+    bccnm_license: '',
+    bccnm_expiry: '',
+    employee_number: '',
+  },
   hourly_wage: 45.00,
   ot_multipliers: { overtime: 1.5, overtime_extended: 2.0, stat_holiday: 1.5, ot_stat_holiday: 3.0 },
   premium_rates: {
@@ -169,6 +175,8 @@ export default function PayConfiguration() {
       const merged = {
         ...defaultSettings,
         ...list[0],
+        nurse_profile: { ...defaultSettings.nurse_profile, ...(list[0].nurse_profile || {}) },
+        premium_rates: { ...defaultSettings.premium_rates, ...(list[0].premium_rates || {}) },
         premium_rates: { ...defaultSettings.premium_rates, ...(list[0].premium_rates || {}) },
         ot_multipliers: { ...defaultSettings.ot_multipliers, ...(list[0].ot_multipliers || {}) },
         allowance_rates: { ...defaultSettings.allowance_rates, ...(list[0].allowance_rates || {}) },
@@ -291,7 +299,61 @@ export default function PayConfiguration() {
           {message.text}
         </div>
       )}
-
+      {/* Nurse Profile */}
+      <section className="bg-card border border-border rounded-xl p-5 space-y-4">
+        <div>
+          <h3 className="text-sm font-semibold text-foreground">Nurse Profile</h3>
+          <p className="text-xs text-muted-foreground mt-1">Your license and employment details.</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">License Type</Label>
+            <Select
+              value={settings.nurse_profile?.license_type || ''}
+              onValueChange={v => set('nurse_profile.license_type', v)}
+            >
+              <SelectTrigger className="h-9 text-sm">
+                <SelectValue placeholder="Select license" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ESN">Employed Student Nurse (ESN)</SelectItem>
+                <SelectItem value="LPN">Licensed Practical Nurse (LPN)</SelectItem>
+                <SelectItem value="RN">Registered Nurse (RN)</SelectItem>
+                <SelectItem value="NP">Nurse Practitioner (NP)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Employee Number</Label>
+            <Input
+              type="text"
+              value={settings.nurse_profile?.employee_number || ''}
+              onChange={e => set('nurse_profile.employee_number', e.target.value)}
+              className="h-9 text-sm font-mono"
+              placeholder="e.g. 123456"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">BCCNM License Number</Label>
+            <Input
+              type="text"
+              value={settings.nurse_profile?.bccnm_license || ''}
+              onChange={e => set('nurse_profile.bccnm_license', e.target.value)}
+              className="h-9 text-sm font-mono"
+              placeholder="e.g. RN12345"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">BCCNM License Expiry</Label>
+            <Input
+              type="date"
+              value={settings.nurse_profile?.bccnm_expiry || ''}
+              onChange={e => set('nurse_profile.bccnm_expiry', e.target.value)}
+              className="h-9 text-sm font-mono"
+            />
+          </div>
+        </div>
+      </section>
       {/* Base Hourly Wage */}
       <section className="bg-card border border-border rounded-xl p-5 space-y-4">
         <h3 className="text-sm font-semibold text-foreground">Base Hourly Wage</h3>
