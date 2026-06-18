@@ -1,9 +1,8 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Loader2, Shield, UserCircle, RefreshCw } from 'lucide-react';
+import { Search, Loader2, UserCircle, RefreshCw } from 'lucide-react';
 
 export default function Admin() {
   const [users, setUsers] = useState([]);
@@ -76,28 +75,21 @@ export default function Admin() {
       ) : (
         <div className="space-y-2">
           {filtered.map(u => (
-            <Link
+            <div
               key={u.id}
-              to={`/admin/support/${u.id}`}
-              className="flex items-center gap-3 bg-card border border-border rounded-lg p-4 hover:bg-muted/50 transition-colors"
+              className="flex items-center gap-3 bg-card border border-border rounded-lg p-4"
             >
               <UserCircle className="w-5 h-5 text-muted-foreground flex-shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground truncate">
-                  {u.full_name || u.display_name || 'Unnamed User'}
+                  {u.display_name || u.full_name || 'Unnamed User'}
                 </p>
                 <p className="text-xs text-muted-foreground truncate">{u.email}</p>
               </div>
-              <div className="flex items-center gap-1.5 flex-shrink-0">
-                {u.role === 'admin' && (
-                  <span className="flex items-center gap-1 text-[11px] font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-                    <Shield className="w-3 h-3" />
-                    Admin
-                  </span>
-                )}
-                <span className="text-xs text-muted-foreground">View →</span>
-              </div>
-            </Link>
+              <span className="text-xs text-muted-foreground flex-shrink-0">
+                Joined {new Date(u.created_date).toLocaleDateString('en-CA', { year: 'numeric', month: 'short', day: 'numeric' })}
+              </span>
+            </div>
           ))}
         </div>
       )}
