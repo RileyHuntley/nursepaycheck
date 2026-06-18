@@ -2,16 +2,15 @@ import { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from '@/components/payroll/Sidebar';
 import NamePrompt from '@/components/payroll/NamePrompt';
-import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function Layout() {
+  const { user, isLoadingAuth } = useAuth();
   const [showNamePrompt, setShowNamePrompt] = useState(false);
 
   useEffect(() => {
-    base44.auth.me().then(user => {
-      if (user && !user.full_name && !user.display_name) setShowNamePrompt(true);
-    }).catch(() => {});
-  }, []);
+    if (!isLoadingAuth && user && !user.full_name && !user.display_name) setShowNamePrompt(true);
+  }, [user, isLoadingAuth]);
 
   return (
     <div className="flex h-screen overflow-hidden">

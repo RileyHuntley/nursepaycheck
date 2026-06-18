@@ -94,7 +94,15 @@ export const AuthProvider = ({ children }) => {
       // Now check if the user is authenticated
       setIsLoadingAuth(true);
       const currentUser = await base44.auth.me();
-      setUser(currentUser);
+      // Also fetch User entity to get custom fields like display_name
+      let enrichedUser = currentUser;
+      try {
+        const userRecords = await base44.entities.User.filter({ id: currentUser.id });
+        if (userRecords.length > 0) {
+          enrichedUser = { ...currentUser, ...userRecords[0] };
+        }
+      } catch (_) { /* entity fetch optional — fall back to auth.me() result */ }
+      setUser(enrichedUser);
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
       setAuthChecked(true);
