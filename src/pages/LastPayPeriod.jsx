@@ -47,7 +47,7 @@ export default function LastPayPeriod() {
           ot_multipliers: { overtime: 1.5, overtime_extended: 2, stat_holiday: 1.5, ot_stat_holiday: 3 },
           premium_rates: { evening: 1.4, night: 5, weekend: 3.5, super_shift: 1.85, regular_premium: 2.15, specialty: 2, short_notice: 2, responsibility_hourly: 2.5, responsibility_flat: 18.75, preceptor: 1.5, on_call_first_72: 7, on_call_beyond_72: 7.5 },
           preset_times: { day_12h_start: '07:00', day_12h_end: '19:00', night_12h_start: '19:00', night_12h_end: '07:00', day_8h_start: '08:00', day_8h_end: '16:00' },
-          active_allowances: ['isolation'],
+          active_allowances: [],
           active_qualifications: [],
           hospitals: [],
           units: [],
@@ -61,7 +61,7 @@ export default function LastPayPeriod() {
         ot_multipliers: { overtime: 1.5, overtime_extended: 2, stat_holiday: 1.5, ot_stat_holiday: 3 },
         premium_rates: { evening: 1.4, night: 5, weekend: 3.5, super_shift: 1.85, regular_premium: 2.15, specialty: 2, short_notice: 2, responsibility_hourly: 2.5, responsibility_flat: 18.75, preceptor: 1.5, on_call_first_72: 7, on_call_beyond_72: 7.5 },
         preset_times: { day_12h_start: '07:00', day_12h_end: '19:00', night_12h_start: '19:00', night_12h_end: '07:00', day_8h_start: '08:00', day_8h_end: '16:00' },
-        active_allowances: ['isolation'],
+        active_allowances: [],
         active_qualifications: [],
         hospitals: [],
         units: [],
@@ -108,7 +108,7 @@ export default function LastPayPeriod() {
 
   const debouncedLoad = useCallback(() => {
     if (loadRef.current) clearTimeout(loadRef.current);
-    loadRef.current = setTimeout(() => loadData(), 500);
+    loadRef.current = setTimeout(() => loadData(), 700);
   }, [loadData]);
 
   useEffect(() => {
