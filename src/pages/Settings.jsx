@@ -11,6 +11,8 @@ import { Switch } from '@/components/ui/switch';
 import { useTheme } from 'next-themes';
 import AccountProfile from '@/components/payroll/AccountProfile';
 import AccountSecurity from '@/components/payroll/AccountSecurity';
+import NotificationSettings from '@/components/payroll/NotificationSettings';
+import About from '@/components/payroll/About';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -164,6 +166,9 @@ export default function Settings() {
       {/* Account Security */}
       <AccountSecurity />
 
+      {/* Notifications */}
+      <NotificationSettings settings={settings} setSettings={set} />
+
       {/* Theme */}
       <section className="bg-card border border-border rounded-xl p-5 space-y-4">
         <div>
@@ -206,6 +211,9 @@ export default function Settings() {
           </button>
         </div>
       </section>
+
+      {/* About */}
+      <About />
 
       {/* Share Link */}
       <section className="bg-card border border-border rounded-xl p-5 space-y-4">

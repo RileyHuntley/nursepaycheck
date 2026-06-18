@@ -293,6 +293,15 @@
       "type": "boolean",
       "default": false,
       "description": "Whether to include pay information in the shared view"
+    },
+    "notification_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Send email when a pay period ends and is ready for verification"
+    },
+    "notification_email": {
+      "type": "string",
+      "description": "Email address to send pay period verification notifications to"
     }
   },
   "required": [],

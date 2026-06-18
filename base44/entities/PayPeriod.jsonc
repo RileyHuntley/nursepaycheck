@@ -223,6 +223,11 @@
     "notes": {
       "type": "string"
     },
+    "verification_notified_at": {
+      "type": "string",
+      "format": "date",
+      "description": "Date when the verification reminder email was last sent for this period"
+    },
     "verified_deductions": {
       "type": "object",
       "description": "User-transcribed deductions from a pay stub for this period, replacing estimated values",
