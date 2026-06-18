@@ -326,7 +326,7 @@ export default function PayConfiguration() {
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Employee Number</Label>
+            <Label className="text-xs text-muted-foreground">Employee ID Number</Label>
             <Input
               type="text"
               value={settings.nurse_profile?.employee_number || ''}
