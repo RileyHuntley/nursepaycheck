@@ -83,7 +83,7 @@ export default function Dashboard() {
   const totalShifts = periods.reduce((sum, p) => sum + (p.shifts?.length || 0), 0);
   const hasCustomWage = settings && settings.hourly_wage !== 45;
   const hasTaxSettings = settings?.tax_settings?.annual_federal_income > 0 || settings?.tax_settings?.annual_provincial_income > 0;
-  const hasHospitals = (settings?.hospitals?.length || 0) > 0;
+  const hasHospitals = (settings?.hospitals?.length || 0) > 0 && (settings?.units?.length || 0) > 0;
 
   const now = new Date();
   const todayStr = now.toISOString().split('T')[0];
