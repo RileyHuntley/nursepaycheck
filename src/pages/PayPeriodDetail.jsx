@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Plus, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
 import ShiftForm from '@/components/payroll/ShiftForm';
 import BulkAddShift from '@/components/payroll/BulkAddShift';
 import ShiftCalendarGrid from '@/components/payroll/ShiftCalendarGrid';
 import { useToast } from '@/components/ui/use-toast';
-import { getPayPeriodForDate, calculatePeriodBreakdown, getPayPeriodName, getFirstPeriodsOfMonths, isDuplicateShift } from '@/lib/premiumCalculator';
+import { getPayPeriodForDate, getCurrentPayPeriodDates, calculatePeriodBreakdown, getPayPeriodName, getFirstPeriodsOfMonths, isDuplicateShift } from '@/lib/premiumCalculator';
 import { getVCHPayPeriod } from '@/lib/statHolidays';
 import PayPeriodSummary from '@/components/payroll/PayPeriodSummary';
 
@@ -17,7 +17,7 @@ function getDefaultStatus(dateStr) {
 }
 
 export default function PayPeriodDetail() {
-  const { id } = useParams();
+  const { id: paramId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [period, setPeriod] = useState(null);
@@ -35,11 +35,27 @@ export default function PayPeriodDetail() {
     if (loadingRef.current) return;
     loadingRef.current = true;
     setLoading(true);
-    const [fetched, settingsList, allList] = await Promise.all([
-      base44.entities.PayPeriod.get(id),
+    const [settingsList, allList] = await Promise.all([
       base44.entities.Settings.list(),
       base44.entities.PayPeriod.list('-start_date', 50),
     ]);
+
+    let fetched;
+    if (paramId) {
+      fetched = allList.find(p => p.id === paramId) || await base44.entities.PayPeriod.get(paramId);
+    } else {
+      const { start_date, end_date } = getCurrentPayPeriodDates();
+      fetched = allList.find(p => p.start_date === start_date && p.end_date === end_date);
+      if (!fetched) {
+        fetched = await base44.entities.PayPeriod.create({
+          name: getPayPeriodName(start_date, end_date),
+          start_date,
+          end_date,
+          shifts: [],
+        });
+        allList.push(fetched);
+      }
+    }
     const userSettings = settingsList[0]
       ? {
           hourly_wage: 45,
@@ -61,7 +77,7 @@ export default function PayPeriodDetail() {
     setSettings(userSettings);
     loadingRef.current = false;
     setLoading(false);
-  }, [id]);
+  }, [paramId]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
