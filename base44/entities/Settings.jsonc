@@ -300,6 +300,31 @@
     "notification_email": {
       "type": "string",
       "description": "Email address to send pay period verification notifications to"
+    },
+    "nurse_profile": {
+      "type": "object",
+      "properties": {
+        "license_type": {
+          "type": "string",
+          "default": ""
+        },
+        "license_status": {
+          "type": "string",
+          "default": ""
+        },
+        "employee_number": {
+          "type": "string",
+          "default": ""
+        },
+        "bccnm_license": {
+          "type": "string",
+          "default": ""
+        },
+        "bccnm_expiry": {
+          "type": "string",
+          "default": ""
+        }
+      }
     }
   },
   "required": [],
