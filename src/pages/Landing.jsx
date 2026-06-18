@@ -83,7 +83,7 @@ export default function Landing() {
       </header>
 
       {/* Hero */}
-      <section className="pt-12 pb-8 sm:pt-20 sm:pb-12 lg:pt-28 lg:pb-16 px-4">
+      <section className="pt-12 pb-4 sm:pt-16 sm:pb-6 lg:pt-20 lg:pb-8 px-4">
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-chart-4/10 text-chart-4 text-xs font-semibold mb-4 sm:mb-6">
             <Shield className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Free
@@ -107,16 +107,16 @@ export default function Landing() {
               </Button>
             </Link>
           </div>
-          <p className="mt-4 text-xs sm:text-sm text-muted-foreground">
+          <p className="mt-2 text-xs sm:text-sm text-muted-foreground">
             Just a tool for nurses, by nurses.
           </p>
         </div>
       </section>
 
       {/* Screenshot showcase */}
-      <section className="py-12 sm:py-16 px-4">
+      <section className="pt-4 pb-10 sm:pt-6 sm:pb-12 px-4">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-10 sm:mb-14">
+          <div className="text-center mb-6 sm:mb-8">
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-display font-bold text-foreground">
               See it in action
             </h2>
@@ -177,9 +177,9 @@ export default function Landing() {
       </section>
 
       {/* Features grid */}
-      <section className="py-12 sm:py-16 bg-muted/30 px-4">
+      <section className="py-10 sm:py-12 bg-muted/30 px-4">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-10 sm:mb-14">
+          <div className="text-center mb-8 sm:mb-10">
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-display font-bold text-foreground">
               Everything you need to audit your pay
             </h2>
@@ -202,7 +202,7 @@ export default function Landing() {
       </section>
 
       {/* CTA */}
-      <section className="py-12 sm:py-16 px-4">
+      <section className="py-10 sm:py-12 px-4">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-display font-bold text-foreground">
             Started by a BC nurse who was tired of spreadsheet math
