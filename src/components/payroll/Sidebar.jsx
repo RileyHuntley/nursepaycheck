@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, CalendarPlus, Clock, Settings, PanelLeftClose, PanelLeftOpen, ExternalLink, List, ClipboardCheck, DollarSign, MapPin, Shield } from 'lucide-react';
+import { LayoutDashboard, CalendarPlus, Clock, Settings, PanelLeftClose, PanelLeftOpen, ExternalLink, List, ClipboardCheck, DollarSign, MapPin, Shield, LogOut } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { HA_PORTALS, getUserHealthAuthorities } from '@/lib/healthAuthorityPortals';
 // Theme toggle moved to Settings page
@@ -215,13 +215,20 @@ export default function Sidebar() {
           </>
         )}
       </nav>
-      <div className={`border-t border-sidebar-border flex items-center ${collapsed ? 'justify-center px-2 py-4' : 'justify-between px-5 py-4'}`}>
+      <div className={`border-t border-sidebar-border flex items-center gap-2 ${collapsed ? 'flex-col justify-center px-2 py-3' : 'justify-between px-5 py-4'}`}>
         <button
           onClick={toggle}
           className="text-muted-foreground hover:text-sidebar-foreground transition-colors p-1 rounded-md hover:bg-sidebar-accent"
           title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           {collapsed ? <PanelLeftOpen className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
+        </button>
+        <button
+          onClick={() => base44.auth.logout('/login')}
+          className="text-muted-foreground hover:text-destructive transition-colors p-1 rounded-md hover:bg-sidebar-accent"
+          title="Logout"
+        >
+          <LogOut className="w-4 h-4" />
         </button>
       </div>
     </aside>
