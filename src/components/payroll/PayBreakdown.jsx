@@ -237,9 +237,9 @@ export default function PayBreakdown({ breakdown, wage, title = 'Pay Period Brea
       <LineItem label="Preceptor" amount={breakdown.preceptor_total} sublabel={breakdown.preceptor_hours > 0 ? `${breakdown.preceptor_hours}h × $1.50/hr` : null} infoKey="preceptor" openInfo={openInfo} onToggleInfo={toggle} />
       <LineItem label="On-Call Pay" amount={breakdown.on_call_total} sublabel={breakdown.on_call_hours ? `${breakdown.on_call_hours}h total` : null} infoKey="on_call" openInfo={openInfo} onToggleInfo={toggle} />
 
-      <SectionHeader title="Monthly Allowances & Qualifications" />
+      <SectionHeader title="Monthly Allowances & Differentials" />
       <LineItem label="Allowances (per period)" amount={breakdown.allowance_total} sublabel={breakdown.allowance_monthly > 0 ? `$${breakdown.allowance_monthly}/mo (full)` : null} infoKey="allowances" openInfo={openInfo} onToggleInfo={toggle} />
-      <LineItem label="Qualification Diff." amount={breakdown.qualification_total} sublabel={`$${breakdown.qualification_hourly}/hr × ${breakdown.regular_hours || 0} reg hrs`} infoKey="qualification" openInfo={openInfo} onToggleInfo={toggle} />
+      <LineItem label="Differentials" amount={breakdown.qualification_total} sublabel={`$${breakdown.qualification_hourly}/hr × ${breakdown.regular_hours || 0} reg hrs`} infoKey="qualification" openInfo={openInfo} onToggleInfo={toggle} />
 
       <SectionHeader title="Deductions" />
       <LineItem
