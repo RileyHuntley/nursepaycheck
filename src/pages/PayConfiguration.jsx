@@ -103,6 +103,7 @@ const OT_TYPES = [
 const defaultSettings = {
   nurse_profile: {
     license_type: '',
+    license_status: '',
     bccnm_license: '',
     bccnm_expiry: '',
     employee_number: '',
@@ -320,6 +321,7 @@ export default function PayConfiguration() {
                 <SelectItem value="LPN">Licensed Practical Nurse (LPN)</SelectItem>
                 <SelectItem value="RN">Registered Nurse (RN)</SelectItem>
                 <SelectItem value="NP">Nurse Practitioner (NP)</SelectItem>
+                <SelectItem value="MW">Midwife (MW)</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -332,6 +334,23 @@ export default function PayConfiguration() {
               className="h-9 text-sm font-mono"
               placeholder="e.g. 123456"
             />
+          </div>
+          <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">License Status</Label>
+          <Select
+            value={settings.nurse_profile?.license_status || ''}
+            onValueChange={v => set('nurse_profile.license_status', v)}
+          >
+            <SelectTrigger className="h-9 text-sm">
+              <SelectValue placeholder="Select status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="current_practising">Current Practising</SelectItem>
+              <SelectItem value="non_practising">Non Practising</SelectItem>
+              <SelectItem value="provisional_registration">Provisional Registration</SelectItem>
+              <SelectItem value="former_licensee">Former Licensee</SelectItem>
+            </SelectContent>
+          </Select>
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">BCCNM License Number</Label>
