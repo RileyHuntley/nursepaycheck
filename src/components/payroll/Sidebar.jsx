@@ -98,6 +98,7 @@ export default function Sidebar() {
     const entries = [];
     if (portal.schedule) entries.push({ ...portal.schedule, ha, haLabel: portal.label, type: 'schedule' });
     if (portal.pay) entries.push({ ...portal.pay, ha, haLabel: portal.label, type: 'pay' });
+    if (portal.payInquiry) entries.push({ ...portal.payInquiry, ha, haLabel: portal.label, type: 'payInquiry' });
     return entries;
   });
 
