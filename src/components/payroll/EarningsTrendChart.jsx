@@ -153,8 +153,10 @@ export default function EarningsTrendChart({ periods, settings, chartType, title
 
     data = sorted.map(p => {
       const b = p.computedBreakdown || p.breakdown || {};
+      const startDate = new Date(p.start_date + 'T12:00:00');
+      const shortLabel = startDate.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' });
       return {
-        label: p.name,
+        label: shortLabel,
         straightTime: Math.round((b.straight_time_pay || 0) * 100) / 100,
         overtime:     Math.round((b.overtime_pay || 0) * 100) / 100,
         premiums:     Math.round(premiumTotal(b) * 100) / 100,
