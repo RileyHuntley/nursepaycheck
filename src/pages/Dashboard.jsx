@@ -7,6 +7,7 @@ import { calculatePeriodBreakdown, getCurrentPayPeriodDates, getFirstPeriodsOfMo
 import { Button } from '@/components/ui/button';
 import { CalendarPlus } from 'lucide-react';
 import SetupBanner from '@/components/payroll/SetupBanner';
+import { getVCHPeriodNumber, getVCHPayDate } from '@/lib/statHolidays';
 
 // Helper: add 14 days to an ISO date string
 const addDays = (dateStr, days) => {
@@ -269,7 +270,9 @@ export default function Dashboard() {
         />
         <PaySummaryPanel
           title="Current Pay Period"
-          subtitle={currentPeriod ? currentPeriod.name : 'No pay period yet'}
+          subtitle={currentPeriod
+            ? `${currentPeriod.name}${getVCHPayDate(currentPeriod.start_date) ? ` · Paid ${new Date(getVCHPayDate(currentPeriod.start_date) + 'T12:00:00').toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}` : ''}`
+            : 'No pay period yet'}
           breakdown={currentPeriod?.computedBreakdown}
           loading={loading}
           taxSettings={settings?.tax_settings}
@@ -277,7 +280,9 @@ export default function Dashboard() {
         />
         <PaySummaryPanel
           title="Next Pay Period"
-          subtitle={nextPeriod ? nextPeriod.name : 'Not yet created'}
+          subtitle={nextPeriod
+            ? `${nextPeriod.name}${getVCHPayDate(nextPeriod.start_date) ? ` · Paid ${new Date(getVCHPayDate(nextPeriod.start_date) + 'T12:00:00').toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}` : ''}`
+            : 'Not yet created'}
           breakdown={nextPeriod?.computedBreakdown}
           loading={loading}
           taxSettings={settings?.tax_settings}
