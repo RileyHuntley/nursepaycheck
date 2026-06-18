@@ -153,6 +153,10 @@ export default function ShiftCalendarGrid({ settings, shiftsMap, onShiftUpdate, 
     return { unitOptions: opts, unitComboToName: comboMap };
   }, [allShifts, hospitals, units]);
 
+  const showHospitalFilter = shiftHospitals.length > 1;
+  const showUnitFilter = unitOptions.length > 1;
+  const showFilters = showHospitalFilter || showUnitFilter || shiftHAs.length > 1;
+
   // Apply filters
   const filteredMap = {};
   for (const [dateStr, shifts] of Object.entries(shiftsMap)) {
@@ -239,73 +243,79 @@ export default function ShiftCalendarGrid({ settings, shiftsMap, onShiftUpdate, 
       )}
 
       {/* Filters */}
-      <div className="bg-card border border-border rounded-xl p-4">
-        <div className="flex items-center gap-3 flex-wrap">
-          <Filter className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-          <span className="text-xs font-medium text-muted-foreground mr-1">Filters:</span>
+      {showFilters && (
+        <div className="bg-card border border-border rounded-xl p-4">
+          <div className="flex items-center gap-3 flex-wrap">
+            <Filter className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+            <span className="text-xs font-medium text-muted-foreground mr-1">Filters:</span>
 
-          <Select
-            value={hospitalFilter}
-            onValueChange={(v) => { setHospitalFilter(v); setUnitFilter('all'); }}
-          >
-            <SelectTrigger className="h-8 w-[180px] text-xs">
-              <SelectValue placeholder="All Hospitals" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Hospitals</SelectItem>
-              {shiftHospitals.map(hName => {
-                const h = hospitals.find(x => x.name === hName);
-                return (
-                  <SelectItem key={hName} value={hName}>
-                    {h?.acronym ? `${h.acronym} — ${hName}` : hName}
-                  </SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
+            {showHospitalFilter && (
+              <Select
+                value={hospitalFilter}
+                onValueChange={(v) => { setHospitalFilter(v); setUnitFilter('all'); }}
+              >
+                <SelectTrigger className="h-8 w-[180px] text-xs">
+                  <SelectValue placeholder="All Hospitals" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Hospitals</SelectItem>
+                  {shiftHospitals.map(hName => {
+                    const h = hospitals.find(x => x.name === hName);
+                    return (
+                      <SelectItem key={hName} value={hName}>
+                        {h?.acronym ? `${h.acronym} — ${hName}` : hName}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            )}
 
-          {shiftHAs.length > 1 && (
-            <Select
-              value={haFilter}
-              onValueChange={(v) => { setHaFilter(v); setHospitalFilter('all'); setUnitFilter('all'); }}
-            >
-              <SelectTrigger className="h-8 w-[200px] text-xs">
-                <SelectValue placeholder="All Health Authorities" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Health Authorities</SelectItem>
-                {shiftHAs.map(ha => (
-                  <SelectItem key={ha} value={ha}>{HA_FULL_NAMES[ha] || ha}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
+            {shiftHAs.length > 1 && (
+              <Select
+                value={haFilter}
+                onValueChange={(v) => { setHaFilter(v); setHospitalFilter('all'); setUnitFilter('all'); }}
+              >
+                <SelectTrigger className="h-8 w-[200px] text-xs">
+                  <SelectValue placeholder="All Health Authorities" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Health Authorities</SelectItem>
+                  {shiftHAs.map(ha => (
+                    <SelectItem key={ha} value={ha}>{HA_FULL_NAMES[ha] || ha}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
 
-          <Select
-            value={unitFilter}
-            onValueChange={setUnitFilter}
-          >
-            <SelectTrigger className="h-8 w-[220px] text-xs">
-              <SelectValue placeholder="All Units" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Units</SelectItem>
-              {unitOptions.map(opt => (
-                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            {showUnitFilter && (
+              <Select
+                value={unitFilter}
+                onValueChange={setUnitFilter}
+              >
+                <SelectTrigger className="h-8 w-[220px] text-xs">
+                  <SelectValue placeholder="All Units" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Units</SelectItem>
+                  {unitOptions.map(opt => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
 
-          {(hospitalFilter !== 'all' || haFilter !== 'all' || unitFilter !== 'all') && (
-            <button
-              onClick={() => { setHospitalFilter('all'); setHaFilter('all'); setUnitFilter('all'); }}
-              className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <X className="w-3 h-3" /> Clear all
-            </button>
-          )}
+            {(hospitalFilter !== 'all' || haFilter !== 'all' || unitFilter !== 'all') && (
+              <button
+                onClick={() => { setHospitalFilter('all'); setHaFilter('all'); setUnitFilter('all'); }}
+                className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <X className="w-3 h-3" /> Clear all
+              </button>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="bg-card border border-border rounded-xl overflow-hidden">
         <div className="grid grid-cols-7 border-b border-border">
