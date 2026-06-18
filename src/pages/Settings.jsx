@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Save, Loader2, X, AlertTriangle, Link2, Copy, RefreshCw } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import AccountProfile from '@/components/payroll/AccountProfile';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -140,7 +141,7 @@ export default function Settings() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-display font-bold text-foreground tracking-tight">Settings</h2>
-          <p className="text-sm text-muted-foreground mt-1">Share your shift calendar</p>
+          <p className="text-sm text-muted-foreground mt-1">Account profile and sharing</p>
         </div>
         <Button onClick={handleSave} disabled={saving} size="sm" className="bg-primary text-primary-foreground">
           {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
@@ -153,6 +154,9 @@ export default function Settings() {
           {message.text}
         </div>
       )}
+
+      {/* Account Profile */}
+      <AccountProfile />
 
       {/* Share Link */}
       <section className="bg-card border border-border rounded-xl p-5 space-y-4">
