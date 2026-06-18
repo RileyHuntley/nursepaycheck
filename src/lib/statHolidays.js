@@ -151,7 +151,7 @@ const REGULAR_STATS = [
 // 2029
   '2029-01-01', // New Year's Day
   '2029-02-19', // Family Day
-  '2029-04-2', // Easter Monday
+  '2029-04-02', // Easter Monday
   '2029-05-21', // Victoria Day
   '2029-07-01', // Canada Day
   '2029-08-06', // BC Day
@@ -315,7 +315,7 @@ export function getStatName(dateStr) {
     '2029-01-01': "New Year's Day",
     '2029-02-19': 'Family Day',
     '2029-03-29': 'Good Friday',
-    '2029-04-2': 'Easter Monday',
+    '2029-04-02': 'Easter Monday',
     '2029-05-21': 'Victoria Day',
     '2029-07-01': 'Canada Day',
     '2029-08-06': 'BC Day',
