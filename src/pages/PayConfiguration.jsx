@@ -326,21 +326,11 @@ export default function PayConfiguration() {
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Employee ID Number</Label>
-            <Input
-              type="text"
-              value={settings.nurse_profile?.employee_number || ''}
-              onChange={e => set('nurse_profile.employee_number', e.target.value)}
-              className="h-9 text-sm font-mono"
-              placeholder="e.g. 123456"
-            />
-          </div>
-          <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">License Status</Label>
-          <Select
-            value={settings.nurse_profile?.license_status || ''}
-            onValueChange={v => set('nurse_profile.license_status', v)}
-          >
+            <Label className="text-xs text-muted-foreground">License Status</Label>
+            <Select
+              value={settings.nurse_profile?.license_status || ''}
+              onValueChange={v => set('nurse_profile.license_status', v)}
+            >
             <SelectTrigger className="h-9 text-sm">
               <SelectValue placeholder="Select status" />
             </SelectTrigger>
@@ -351,6 +341,16 @@ export default function PayConfiguration() {
               <SelectItem value="former_licensee">Former Licensee</SelectItem>
             </SelectContent>
           </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Employee ID Number</Label>
+            <Input
+              type="text"
+              value={settings.nurse_profile?.employee_number || ''}
+              onChange={e => set('nurse_profile.employee_number', e.target.value)}
+              className="h-9 text-sm font-mono"
+              placeholder="e.g. 123456"
+            />
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">BCCNM License Number</Label>
