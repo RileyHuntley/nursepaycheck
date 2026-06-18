@@ -50,10 +50,14 @@ export default function BulkAddShift({ onSubmit, onCancel, settings }) {
   const handleHospitalChange = (h) => { setHospital(h === '_none' ? '' : h); refreshPreview({ hospital: h === '_none' ? '' : h }); };
   const handleUnitChange = (u) => { setUnit(u === '_none' ? '' : u); refreshPreview({ unit: u === '_none' ? '' : u }); };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!preview || preview.length === 0 || submitting) return;
     setSubmitting(true);
-    onSubmit(preview);
+    try {
+      await onSubmit(preview);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const cycleDays = pattern ? pattern.sequence.length : 0;

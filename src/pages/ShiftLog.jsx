@@ -421,27 +421,19 @@ export default function ShiftLog() {
   };
 
   const bulkAddShifts = async (shifts) => {
-    // Group shifts by their period, find/create each period, update accordingly
-    const groups = {};
-    for (const s of shifts) {
-      const period = await findOrCreatePeriodForDate(s.date);
-      if (!groups[period.id]) groups[period.id] = { period, shifts: [] };
-      groups[period.id].shifts.push({ ...s, status: s.status || getDefaultStatus(s.date) });
-    }
-    let skippedCount = 0;
-    for (const { period, shifts: groupShifts } of Object.values(groups)) {
-      const existing = period.shifts || [];
-      const filtered = groupShifts.filter(s => !isDuplicateShift(existing, s));
-      skippedCount += groupShifts.length - filtered.length;
-      const updatedShifts = [...existing, ...filtered];
-      const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings, firstPeriodsSet.has(period.start_date)) : null;
-      await base44.entities.PayPeriod.update(period.id, {
-        shifts: updatedShifts,
-        ...(breakdown ? { breakdown } : {}),
-      });
-    }
-    if (skippedCount > 0) {
-      toast({ title: 'Duplicates skipped', description: `${skippedCount} shift${skippedCount !== 1 ? 's' : ''} skipped — same date, start, and end time already exists.` });
+    if (shifts.length === 0) return;
+    try {
+      const res = await base44.functions.invoke('bulkAddShifts', { shifts, settings });
+      const result = res.data;
+      if (result.error) {
+        toast({ title: 'Error', description: result.error, variant: 'destructive' });
+      } else {
+        const msg = `${result.added} shift(s) added across ${result.periods} pay period(s)`;
+        const desc = result.skipped > 0 ? `${result.skipped} duplicate(s) skipped` : undefined;
+        toast({ title: msg, description: desc });
+      }
+    } catch (e) {
+      toast({ title: 'Error adding shifts', description: e.message || 'Something went wrong', variant: 'destructive' });
     }
     setShowBulkForm(false);
     loadData();

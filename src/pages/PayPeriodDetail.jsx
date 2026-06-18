@@ -158,46 +158,18 @@ export default function PayPeriodDetail() {
       shifts = shifts.filter(s => s.date >= '2025-01-01');
       if (shifts.length === 0) return;
     }
-    // Route each shift to its correct period
-    const allPeriods = await base44.entities.PayPeriod.list('-start_date', 50);
-    const groups = {};
-    for (const s of shifts) {
-      const { start_date, end_date } = getPayPeriodForDate(s.date);
-      const key = `${start_date}|${end_date}`;
-      if (!groups[key]) {
-        const existing = allPeriods.find(p => p.start_date === start_date && p.end_date === end_date);
-        if (existing) {
-          groups[key] = { period: existing, created: false };
-        } else {
-          const created = await base44.entities.PayPeriod.create({
-            name: getPayPeriodName(start_date, end_date),
-            start_date,
-            end_date,
-            shifts: [],
-            
-          });
-          groups[key] = { period: created, created: true };
-          allPeriods.push(created);
-        }
+    try {
+      const res = await base44.functions.invoke('bulkAddShifts', { shifts, settings });
+      const result = res.data;
+      if (result.error) {
+        toast({ title: 'Error', description: result.error, variant: 'destructive' });
+      } else {
+        const msg = `${result.added} shift(s) added across ${result.periods} pay period(s)`;
+        const desc = result.skipped > 0 ? `${result.skipped} duplicate(s) skipped` : undefined;
+        toast({ title: msg, description: desc });
       }
-      if (!groups[key].shifts) groups[key].shifts = [];
-      groups[key].shifts.push({ ...s, status: s.status || getDefaultStatus(s.date) });
-    }
-    let skippedCount = 0;
-    for (const { period, shifts: groupShifts } of Object.values(groups)) {
-      const existing = period.shifts || [];
-      const filtered = groupShifts.filter(s => !isDuplicateShift(existing, s));
-      skippedCount += groupShifts.length - filtered.length;
-      const updatedShifts = [...existing, ...filtered];
-      const isFirst = getFirstPeriodsOfMonths(allPeriods).has(period.start_date);
-      const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings, isFirst) : null;
-      await base44.entities.PayPeriod.update(period.id, {
-        shifts: updatedShifts,
-        ...(breakdown ? { breakdown } : {}),
-      });
-    }
-    if (skippedCount > 0) {
-      toast({ title: `${skippedCount} duplicate shift(s) skipped`, description: 'Shifts with the same date and times already exist in their pay periods.' });
+    } catch (e) {
+      toast({ title: 'Error adding shifts', description: e.message || 'Something went wrong', variant: 'destructive' });
     }
     loadData();
     setShowBulk(false);
