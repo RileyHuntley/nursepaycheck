@@ -15,7 +15,7 @@ export default function Admin() {
     if (showLoader) setLoading(true);
     else setRefreshing(true);
     base44.entities.User.list().then(list => {
-      setUsers(list.sort((a, b) => (a.full_name || a.email).localeCompare(b.full_name || b.email)));
+      setUsers(list.sort((a, b) => (a.display_name || a.full_name || a.email).localeCompare(b.display_name || b.full_name || b.email)));
       setLoading(false);
       setRefreshing(false);
     }).catch(() => {
@@ -34,6 +34,7 @@ export default function Admin() {
     if (!search.trim()) return users;
     const q = search.toLowerCase();
     return users.filter(u =>
+      (u.display_name || '').toLowerCase().includes(q) ||
       (u.full_name || '').toLowerCase().includes(q) ||
       (u.email || '').toLowerCase().includes(q)
     );
