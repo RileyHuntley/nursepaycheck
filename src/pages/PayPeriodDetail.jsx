@@ -6,6 +6,8 @@ import { Plus, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
 import ShiftForm from '@/components/payroll/ShiftForm';
 import BulkAddShift from '@/components/payroll/BulkAddShift';
 import ShiftCalendarGrid from '@/components/payroll/ShiftCalendarGrid';
+import ShiftRow from '@/components/payroll/ShiftRow';
+import { calculateShiftPremiums } from '@/lib/premiumCalculator';
 import { useToast } from '@/components/ui/use-toast';
 import { getPayPeriodForDate, getCurrentPayPeriodDates, calculatePeriodBreakdown, getPayPeriodName, getFirstPeriodsOfMonths, isDuplicateShift } from '@/lib/premiumCalculator';
 import { getVCHPayPeriod } from '@/lib/statHolidays';
@@ -312,6 +314,35 @@ export default function PayPeriodDetail() {
         }}
         onReload={loadData}
       />
+
+      {/* Shift Log */}
+      {shifts.length > 0 && (
+        <div className="bg-card border border-border rounded-xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-border">
+            <h3 className="text-sm font-display font-semibold text-foreground">
+              Shift Log <span className="text-muted-foreground font-normal">({shifts.length} shift{shifts.length !== 1 ? 's' : ''})</span>
+            </h3>
+          </div>
+          <div className="divide-y divide-border">
+            {[...shifts]
+              .map((s, i) => ({ shift: s, origIndex: i }))
+              .sort((a, b) => (a.shift.date || '').localeCompare(b.shift.date || '') || (a.shift.start_time || '').localeCompare(b.shift.start_time || ''))
+              .map(({ shift, origIndex }) => (
+                <ShiftRow
+                  key={origIndex}
+                  shift={shift}
+                  premiums={settings ? calculateShiftPremiums(shift, settings) : null}
+                  settings={settings}
+                  periodEndDate={period.end_date}
+                  onEdit={() => { setEditingShift(shift); setEditingIndex(origIndex); setShowForm(false); }}
+                  onDelete={() => deleteShift(origIndex)}
+                  onVerify={() => updateShift(origIndex, { ...shift, status: 'verified' })}
+                  onDuplicate={() => addShift({ ...shift, status: 'pending' })}
+                />
+              ))}
+          </div>
+        </div>
+      )}
 
       {/* Pay Summary */}
       {shifts.length > 0 && settings && (
