@@ -1,40 +1,47 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Plus, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
 import ShiftForm from '@/components/payroll/ShiftForm';
-import ShiftRow from '@/components/payroll/ShiftRow';
-import PayBreakdown from '@/components/payroll/PayBreakdown';
-import { calculatePeriodBreakdown, calculateShiftPremiums, getCurrentPayPeriodDates, getPayPeriodName, getPayPeriodForDate, isDuplicateShift, getFirstPeriodsOfMonths } from '@/lib/premiumCalculator';
-import { toast } from '@/components/ui/use-toast';
-import { Plus, Loader2, CalendarPlus, ArrowUpDown, FileDown } from 'lucide-react';
 import BulkAddShift from '@/components/payroll/BulkAddShift';
-import { getVCHPeriodNumber } from '@/lib/statHolidays';
+import ShiftCalendarGrid from '@/components/payroll/ShiftCalendarGrid';
+import { useToast } from '@/hooks/use-toast';
+import { getPayPeriodForDate, calculatePeriodBreakdown, getPayPeriodName, getFirstPeriodsOfMonths, isDuplicateShift } from '@/lib/premiumCalculator';
+import { getVCHPayPeriod } from '@/lib/statHolidays';
+import PayPeriodSummary from '@/components/payroll/PayPeriodSummary';
+
+function getDefaultStatus(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00');
+  return d < new Date() ? 'completed' : 'scheduled';
+}
 
 export default function PayPeriodDetail() {
-  const [settings, setSettings] = useState(null);
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [period, setPeriod] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [allPeriods, setAllPeriods] = useState([]);
+  const [settings, setSettings] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [showBulkForm, setShowBulkForm] = useState(false);
+  const [showBulk, setShowBulk] = useState(false);
   const [editingShift, setEditingShift] = useState(null);
-  const [sortAsc, setSortAsc] = useState(true);
+  const [editingIndex, setEditingIndex] = useState(null);
 
   const loadingRef = useRef(false);
-  const loadRef = useRef(null);
 
   const loadData = useCallback(async () => {
     if (loadingRef.current) return;
-    if (loadRef.current) { clearTimeout(loadRef.current); loadRef.current = null; }
     loadingRef.current = true;
     setLoading(true);
-    try {
-      const settingsList = await base44.entities.Settings.list();
-      let periodList = await base44.entities.PayPeriod.list('-start_date', 50);
-
-      // Auto-create default settings for new users
-      if (settingsList.length === 0) {
-        const created = await base44.entities.Settings.create({
+    const [fetched, settingsList, allList] = await Promise.all([
+      base44.entities.PayPeriod.get(id),
+      base44.entities.Settings.list(),
+      base44.entities.PayPeriod.list('-start_date', 50),
+    ]);
+    const userSettings = settingsList[0]
+      ? {
           hourly_wage: 45,
           ot_multipliers: { overtime: 1.5, overtime_extended: 2, stat_holiday: 1.5, ot_stat_holiday: 3 },
           premium_rates: { evening: 1.4, night: 5, weekend: 3.5, super_shift: 1.85, regular_premium: 2.15, specialty: 2, short_notice: 2, responsibility_hourly: 2.5, responsibility_flat: 18.75, preceptor: 1.5, on_call_first_72: 7, on_call_beyond_72: 7.5 },
@@ -44,73 +51,39 @@ export default function PayPeriodDetail() {
           hospitals: [],
           units: [],
           default_shift_pattern: 'DDNN',
-        });
-        settingsList = [created];
-      }
-      // Merge with defaults in case settings were created by a page that didn't include all fields
-      const loadedSettings = {
-        hourly_wage: 45,
-        ot_multipliers: { overtime: 1.5, overtime_extended: 2, stat_holiday: 1.5, ot_stat_holiday: 3 },
-        premium_rates: { evening: 1.4, night: 5, weekend: 3.5, super_shift: 1.85, regular_premium: 2.15, specialty: 2, short_notice: 2, responsibility_hourly: 2.5, responsibility_flat: 18.75, preceptor: 1.5, on_call_first_72: 7, on_call_beyond_72: 7.5 },
-        preset_times: { day_12h_start: '07:00', day_12h_end: '19:00', night_12h_start: '19:00', night_12h_end: '07:00', day_8h_start: '08:00', day_8h_end: '16:00' },
-        active_allowances: ['isolation'],
-        active_qualifications: [],
-        hospitals: [],
-        units: [],
-        default_shift_pattern: 'DDNN',
-        shift_lines: [{ status: 'full_time', fte: 1.0, hospital: '', unit: '' }],
-        tax_settings: { annual_provincial_income: 0, annual_federal_income: 0 },
-        ...settingsList[0],
-      };
-      setSettings(loadedSettings);
-      setAllPeriods(periodList);
-
-      // Find the current pay period
-      const { start_date, end_date } = getCurrentPayPeriodDates();
-      const current = periodList.find(p => p.start_date === start_date && p.end_date === end_date);
-
-      if (current) {
-        setPeriod(current);
-      } else {
-        const created = await base44.entities.PayPeriod.create({
-          name: getPayPeriodName(start_date, end_date),
-          start_date,
-          end_date,
-          shifts: [],
-        });
-        setPeriod(created);
-      }
-    } finally {
-      loadingRef.current = false;
-      setLoading(false);
-    }
-  }, []);
+          shift_lines: [{ status: 'full_time', fte: 1.0, hospital: '', unit: '' }],
+          tax_settings: { annual_provincial_income: 0, annual_federal_income: 0 },
+          ...settingsList[0],
+        }
+      : null;
+    setPeriod(fetched);
+    setAllPeriods(allList);
+    setSettings(userSettings);
+    loadingRef.current = false;
+    setLoading(false);
+  }, [id]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  // Debounced subscription reload to prevent rate limiting
-  const debouncedLoad = useCallback(() => {
-    if (loadRef.current) clearTimeout(loadRef.current);
-    loadRef.current = setTimeout(() => loadData(), 500);
+  useEffect(() => {
+    const unsub = base44.entities.PayPeriod.subscribe(() => loadData());
+    return () => unsub();
   }, [loadData]);
 
-  useEffect(() => {
-    const unsub1 = base44.entities.Settings.subscribe(() => debouncedLoad());
-    const unsub2 = base44.entities.PayPeriod.subscribe(() => debouncedLoad());
-    return () => { unsub1(); unsub2(); };
-  }, [debouncedLoad]);
+  const isValidForPeriod = (dateStr) =>
+    period && dateStr >= period.start_date && dateStr <= period.end_date;
 
-  const isValidForPeriod = (date) => {
-    if (!period) return false;
-    return date >= period.start_date && date <= period.end_date;
-  };
-
-  const getDefaultStatus = (date) => date > new Date().toISOString().slice(0, 10) ? 'upcoming' : 'pending';
+  const isFirstOfMonth = period ? getFirstPeriodsOfMonths(allPeriods).has(period.start_date) : false;
 
   const isFirstForPeriod = (startDate) => getFirstPeriodsOfMonths(allPeriods).has(startDate);
 
   const addShift = async (shiftData) => {
     shiftData.status = shiftData.status || getDefaultStatus(shiftData.date);
+
+    if (shiftData.date < '2025-01-01') {
+      toast({ title: 'Date out of range', description: 'Shifts cannot be added before January 1, 2025.', variant: 'destructive' });
+      return;
+    }
 
     // Check for duplicate: same date + same start_time + same end_time
     if (isValidForPeriod(shiftData.date) && isDuplicateShift(period.shifts || [], shiftData)) {
@@ -161,6 +134,12 @@ export default function PayPeriodDetail() {
   };
 
   const bulkAddShifts = async (shifts) => {
+    const tooOld = shifts.filter(s => s.date < '2025-01-01');
+    if (tooOld.length > 0) {
+      toast({ title: 'Date out of range', description: `${tooOld.length} shift(s) are before January 1, 2025 and were skipped.`, variant: 'destructive' });
+      shifts = shifts.filter(s => s.date >= '2025-01-01');
+      if (shifts.length === 0) return;
+    }
     // Route each shift to its correct period
     const allPeriods = await base44.entities.PayPeriod.list('-start_date', 50);
     const groups = {};
@@ -200,52 +179,15 @@ export default function PayPeriodDetail() {
       });
     }
     if (skippedCount > 0) {
-      toast({ title: 'Duplicates skipped', description: `${skippedCount} shift${skippedCount !== 1 ? 's' : ''} skipped — same date, start, and end time already exists.` });
+      toast({ title: `${skippedCount} duplicate shift(s) skipped`, description: 'Shifts with the same date and times already exist in their pay periods.' });
     }
     loadData();
-    setShowBulkForm(false);
+    setShowBulk(false);
   };
 
-  const updateShift = async (shiftData) => {
-    // If date changed and no longer in this period, route to correct period
-    if (!isValidForPeriod(shiftData.date)) {
-      const { start_date, end_date } = getPayPeriodForDate(shiftData.date);
-      const allPeriods = await base44.entities.PayPeriod.list('-start_date', 50);
-
-      // Remove from this period
-      const updatedShifts = (period.shifts || []).filter((_, i) => i !== editingShift.index);
-      const thisBreakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings, isFirstOfMonth) : null;
-      await base44.entities.PayPeriod.update(period.id, {
-        shifts: updatedShifts,
-        ...(thisBreakdown ? { breakdown: thisBreakdown } : {}),
-      });
-
-      // Add to correct period
-      const target = allPeriods.find(p => p.start_date === start_date && p.end_date === end_date);
-      if (target) {
-        const targetShifts = [...(target.shifts || []), { ...shiftData }];
-        const targetBreakdown = settings ? calculatePeriodBreakdown(targetShifts, settings, getFirstPeriodsOfMonths(allPeriods).has(start_date)) : null;
-        await base44.entities.PayPeriod.update(target.id, {
-          shifts: targetShifts,
-          ...(targetBreakdown ? { breakdown: targetBreakdown } : {}),
-        });
-      } else {
-        await base44.entities.PayPeriod.create({
-          name: getPayPeriodName(start_date, end_date),
-          start_date,
-          end_date,
-          shifts: [{ ...shiftData }],
-          
-        });
-      }
-      loadData();
-      setEditingShift(null);
-      return;
-    }
-
-    const updatedShifts = (period.shifts || []).map((s, i) =>
-      i === editingShift.index ? { ...shiftData } : s
-    );
+  const updateShift = async (index, shiftData) => {
+    const updatedShifts = [...(period.shifts || [])];
+    updatedShifts[index] = { ...updatedShifts[index], ...shiftData };
     const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings, isFirstOfMonth) : null;
     const updated = await base44.entities.PayPeriod.update(period.id, {
       shifts: updatedShifts,
@@ -253,10 +195,11 @@ export default function PayPeriodDetail() {
     });
     setPeriod(updated);
     setEditingShift(null);
+    setEditingIndex(null);
   };
 
-  const deleteShift = async (shift, idx) => {
-    const updatedShifts = (period.shifts || []).filter((_, i) => i !== idx);
+  const deleteShift = async (index) => {
+    const updatedShifts = (period.shifts || []).filter((_, i) => i !== index);
     const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings, isFirstOfMonth) : null;
     const updated = await base44.entities.PayPeriod.update(period.id, {
       shifts: updatedShifts,
@@ -265,189 +208,98 @@ export default function PayPeriodDetail() {
     setPeriod(updated);
   };
 
-  const verifyShift = async (shift, idx) => {
-    const updatedShifts = (period.shifts || []).map((s, i) =>
-      i === idx ? { ...s, status: 'verified' } : s
-    );
-    const updated = await base44.entities.PayPeriod.update(period.id, { shifts: updatedShifts });
-    setPeriod(updated);
+  const navigatePeriod = async (direction) => {
+    const sorted = [...allPeriods].sort((a, b) => a.start_date.localeCompare(b.start_date));
+    const idx = sorted.findIndex(p => p.id === period.id);
+    const next = sorted[idx + direction];
+    if (next) navigate(`/pay-period/${next.id}`);
   };
 
-  const exportPDF = async () => {
-    if (!period) return;
-    try {
-      const res = await base44.functions.invoke('exportPayPeriodPDF', { periodId: period.id });
-      const blob = new Blob([res.data], { type: 'application/pdf' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `pay-period-${period.start_date}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (e) {
-      toast({ title: 'Export failed', description: 'Could not generate PDF. Please try again.', variant: 'destructive' });
-    }
-  };
-
-  if (loading && !period) {
+  if (loading || !period) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
-  if (!period) {
-    return (
-      <div className="space-y-6">
-        <h2 className="text-2xl font-display font-bold text-foreground tracking-tight">Current Pay Period</h2>
-        <div className="bg-card border border-border rounded-xl p-8 text-center">
-          <p className="text-muted-foreground">Unable to determine current pay period.</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Determine if this period is the first of its month with shifts
-  const firstPeriodsSet = getFirstPeriodsOfMonths(allPeriods);
-  const isFirstOfMonth = period && firstPeriodsSet.has(period.start_date);
-
-  // Filter shifts to only those within this period's date range
-  const allWithIdx = (period.shifts || []).map((s, i) => ({ ...s, _origIdx: i }));
-  const displayShifts = allWithIdx.filter(s => isValidForPeriod(s.date));
-  const breakdown = settings && displayShifts.length ? calculatePeriodBreakdown(displayShifts, settings, isFirstOfMonth) : null;
-
-  // Sorted for display
-  const sortedShifts = [...displayShifts];
-  sortedShifts.sort((a, b) => {
-    const diff = (a.date || '').localeCompare(b.date || '');
-    return sortAsc ? diff : -diff;
-  });
+  const shifts = period.shifts || [];
+  const vcpPeriod = getVCHPayPeriod(period.start_date);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <h2 className="text-2xl font-display font-bold text-foreground tracking-tight">Current Pay Period</h2>
-          {period && (
-            <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
-              {getVCHPeriodNumber(period.start_date) && (
-                <span className="text-[11px] font-mono font-bold bg-muted text-muted-foreground px-1.5 py-0.5 rounded">
-                  PP {getVCHPeriodNumber(period.start_date)}
-                </span>
-              )}
-              <span>{period.name} · {displayShifts.length} shift{displayShifts.length !== 1 ? 's' : ''}</span>
-            </p>
-          )}
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigatePeriod(-1)}
+            disabled={allPeriods.findIndex(p => p.id === period.id) === [...allPeriods].sort((a,b) => a.start_date.localeCompare(b.start_date)).findIndex(p => p.id === period.id) && [...allPeriods].sort((a,b) => a.start_date.localeCompare(b.start_date)).findIndex(p => p.id === period.id) === 0}>
+            <ChevronLeft className="w-4 h-4" />
+          </Button>
+          <div>
+            <h2 className="text-xl font-display font-bold text-foreground tracking-tight">
+              {getPayPeriodName(period.start_date, period.end_date)}
+            </h2>
+            {vcpPeriod && (
+              <p className="text-xs text-muted-foreground mt-0.5">
+                VCH Pay Period {vcpPeriod.id} &middot; Paid {new Date(vcpPeriod.pay_date + 'T12:00:00').toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })}
+              </p>
+            )}
+          </div>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigatePeriod(1)}>
+            <ChevronRight className="w-4 h-4" />
+          </Button>
         </div>
-        <Button variant="outline" size="sm" onClick={exportPDF} disabled={!period || displayShifts.length === 0}>
-          <FileDown className="w-4 h-4 mr-1.5" />
-          Export PDF
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => { setShowBulk(b => !b); setShowForm(false); }}>
+            <Plus className="w-4 h-4 mr-1.5" /> Bulk Add
+          </Button>
+          <Button size="sm" className="bg-primary text-primary-foreground" onClick={() => { setShowForm(f => !f); setShowBulk(false); setEditingShift(null); }}>
+            <Plus className="w-4 h-4 mr-1.5" /> Add Shift
+          </Button>
+        </div>
       </div>
 
-      {/* Shift Log */}
-      <div className="bg-card border border-border rounded-xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-foreground">Shift Log</h3>
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setSortAsc(s => !s)}
-              className="h-8 px-2 text-xs text-muted-foreground"
-              title={sortAsc ? 'Sorted chronologically — click to reverse' : 'Sorted reverse — click for chronological'}
-            >
-              <ArrowUpDown className="w-3.5 h-3.5 mr-1" />
-              {sortAsc ? 'Oldest first' : 'Newest first'}
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => { setShowBulkForm(true); setShowForm(false); setEditingShift(null); }}
-              disabled={showBulkForm}
-            >
-              <CalendarPlus className="w-4 h-4 mr-1.5" /> Bulk Add
-            </Button>
-            <Button
-              size="sm"
-              className="bg-primary text-primary-foreground"
-              onClick={() => { setShowForm(true); setShowBulkForm(false); setEditingShift(null); }}
-              disabled={showForm}
-            >
-              <Plus className="w-4 h-4 mr-1.5" /> Add Shift
-            </Button>
-          </div>
-        </div>
+      {/* Bulk Add form */}
+      {showBulk && (
+        <BulkAddShift
+          onSubmit={bulkAddShifts}
+          onCancel={() => setShowBulk(false)}
+          periodStart={period.start_date}
+          periodEnd={period.end_date}
+          settings={settings}
+        />
+      )}
 
-        {showBulkForm && (
-          <div className="px-5 py-4 border-b border-border bg-muted/30">
-            <BulkAddShift
-              onSubmit={bulkAddShifts}
-              onCancel={() => setShowBulkForm(false)}
-              settings={settings}
-            />
-          </div>
-        )}
+      {/* Add/Edit Shift Form */}
+      {(showForm || editingShift) && (
+        <ShiftForm
+          shift={editingShift}
+          defaultDate={period.start_date}
+          settings={settings}
+          onSubmit={editingShift ? (data) => updateShift(editingIndex, data) : addShift}
+          onCancel={() => { setShowForm(false); setEditingShift(null); setEditingIndex(null); }}
+        />
+      )}
 
-        {showForm && (
-          <div className="px-5 py-4 border-b border-border bg-muted/30">
-            <ShiftForm
-              onSubmit={addShift}
-              onCancel={() => setShowForm(false)}
-              settings={settings}
-            />
-          </div>
-        )}
+      {/* Calendar Grid */}
+      <ShiftCalendarGrid
+        shifts={shifts}
+        periodStart={period.start_date}
+        periodEnd={period.end_date}
+        settings={settings}
+        onEdit={(shift, index) => { setEditingShift(shift); setEditingIndex(index); setShowForm(false); }}
+        onDelete={deleteShift}
+      />
 
-        {editingShift && (
-          <div className="px-5 py-4 border-b border-border bg-muted/30">
-            <ShiftForm
-              initial={editingShift.data}
-              onSubmit={updateShift}
-              onCancel={() => setEditingShift(null)}
-              settings={settings}
-            />
-          </div>
-        )}
-
-        <div className="divide-y divide-border">
-          {displayShifts.length === 0 && !showForm && !showBulkForm && (
-            <div className="px-5 py-12 text-center">
-              <p className="text-sm text-muted-foreground">No shifts logged yet for this pay period.</p>
-              <div className="flex items-center justify-center gap-2 mt-3">
-                <Button variant="outline" size="sm" onClick={() => setShowBulkForm(true)}>
-                  <CalendarPlus className="w-4 h-4 mr-1.5" /> Bulk Add
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => setShowForm(true)}>
-                  <Plus className="w-4 h-4 mr-1.5" /> Single Shift
-                </Button>
-              </div>
-            </div>
-          )}
-          {sortedShifts.map((shift) => (
-            <ShiftRow
-              key={shift._origIdx}
-              shift={shift}
-              premiums={settings ? calculateShiftPremiums(shift, settings) : null}
-              settings={settings}
-              periodEndDate={period.end_date}
-              hidePending
-              onEdit={(s) => setEditingShift({ data: s, index: shift._origIdx })}
-              onDelete={() => deleteShift(shift, shift._origIdx)}
-              onVerify={() => verifyShift(shift, shift._origIdx)}
-            />
-          ))}
-        </div>
-
-      </div>
-
-      {/* Breakdown */}
-      {(breakdown || period.breakdown) && (
-        <PayBreakdown breakdown={breakdown} wage={settings?.hourly_wage} taxSettings={settings?.tax_settings} />
+      {/* Pay Summary */}
+      {shifts.length > 0 && settings && (
+        <PayPeriodSummary
+          period={period}
+          shifts={shifts}
+          settings={settings}
+          isFirstOfMonth={isFirstOfMonth}
+          allPeriods={allPeriods}
+        />
       )}
     </div>
   );
