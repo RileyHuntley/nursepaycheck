@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { base44 } from '@/api/base44Client';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Mail, User, Pencil, Check, X, Loader2 } from 'lucide-react';
 
 export default function AccountProfile() {
-  const { user } = useAuth();
+  const { user, updateUserLocal } = useAuth();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState('');
   const [saving, setSaving] = useState(false);
@@ -31,6 +32,7 @@ export default function AccountProfile() {
     setMessage(null);
     try {
       await base44.functions.invoke('updateUserName', { full_name: name.trim() });
+      updateUserLocal({ display_name: name.trim() });
       setMessage({ type: 'success', text: 'Name updated.' });
       setEditing(false);
       setTimeout(() => setMessage(null), 3000);
