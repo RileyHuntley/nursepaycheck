@@ -12,6 +12,7 @@ import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
 import Layout from '@/components/payroll/Layout';
+import Landing from '@/pages/Landing';
 import Dashboard from '@/pages/Dashboard';
 import PayPeriodDetail from '@/pages/PayPeriodDetail';
 import LastPayPeriod from '@/pages/LastPayPeriod';
@@ -34,6 +35,7 @@ const router = createBrowserRouter([
       { path: "/register", element: <Register /> },
       { path: "/forgot-password", element: <ForgotPassword /> },
       { path: "/reset-password", element: <ResetPassword /> },
+      { path: "/", element: <Landing /> },
       { path: "/share", element: <SharedShifts /> },
       {
         element: <ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />,
@@ -41,7 +43,7 @@ const router = createBrowserRouter([
           {
             element: <Layout />,
             children: [
-              { path: "/", element: <Dashboard /> },
+              { path: "/dashboard", element: <Dashboard /> },
               { path: "/pay-period", element: <PayPeriodDetail /> },
               { path: "/pay-period/:id", element: <PayPeriodDetail /> },
               { path: "/last-pay-period", element: <LastPayPeriod /> },

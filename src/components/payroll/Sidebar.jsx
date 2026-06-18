@@ -23,7 +23,7 @@ function countPendingVerification(periods) {
 }
 
 const links = [
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/shift-log', icon: List, label: 'Shifts' },
   { to: '/pay-period', icon: CalendarPlus, label: 'Current Pay Period' },
   { to: '/last-pay-period', icon: ClipboardCheck, label: 'Last Pay Period' },
