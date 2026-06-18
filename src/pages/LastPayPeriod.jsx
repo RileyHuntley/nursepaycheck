@@ -331,6 +331,30 @@ export default function LastPayPeriod() {
     setPeriod(updated);
   };
 
+  const navigatePeriod = (direction) => {
+    const pastPeriods = allPeriods
+      .filter(p => p.end_date < todayStr)
+      .sort((a, b) => b.end_date.localeCompare(a.end_date));
+    const idx = pastPeriods.findIndex(p => p.id === period.id);
+    const next = pastPeriods[idx + direction];
+    if (next) {
+      setPeriod(next);
+      const vd = next.verified_deductions || {};
+      setDeductionsForm({
+        cpp: vd.cpp ?? '',
+        cpp2: vd.cpp2 ?? '',
+        ei: vd.ei ?? '',
+        federal_tax: vd.federal_tax ?? '',
+        provincial_tax: vd.provincial_tax ?? '',
+        union_dues: vd.union_dues ?? '',
+        other_deductions: vd.other_deductions ?? '',
+        other_label: vd.other_label ?? '',
+        notes: vd.notes ?? '',
+      });
+      setDeductionsDirty(false);
+    }
+  };
+
   const clearDeductions = async () => {
     if (!period) return;
     setSavingDeductions(true);
@@ -424,6 +448,20 @@ export default function LastPayPeriod() {
           showHeader={false}
           onShiftUpdate={calendarUpdateShift}
           onReload={loadData}
+          periodNav={{
+            label: getPayPeriodName(period.start_date, period.end_date),
+            badge: getVCHPeriodNumber(period.start_date),
+            hasPrev: () => {
+              const past = allPeriods.filter(p => p.end_date < todayStr).sort((a, b) => b.end_date.localeCompare(a.end_date));
+              return past.findIndex(p => p.id === period.id) > 0;
+            },
+            hasNext: () => {
+              const past = allPeriods.filter(p => p.end_date < todayStr).sort((a, b) => b.end_date.localeCompare(a.end_date));
+              return past.findIndex(p => p.id === period.id) < past.length - 1;
+            },
+            onPrev: () => navigatePeriod(-1),
+            onNext: () => navigatePeriod(1),
+          }}
         />
       )}
 
