@@ -116,6 +116,7 @@ const defaultSettings = {
     rpn_dual: 50, cha_bcit: 25, university_prep: 25,
   },
   shift_lines: [{ status: 'full_time', fte: 1.0, hospital: '', unit: '' }],
+  tax_settings: { annual_provincial_income: 0, annual_federal_income: 0 },
 };
 
 function InfoPopover({ infoKey, infoMap, onClose }) {
@@ -650,6 +651,71 @@ export default function PayConfiguration() {
           <p>• Eligible nurses may not qualify for more than one payment under Articles 53.02, 53.04, 53.05, and 53.06.</p>
           <p>• RN/RPN dual registrants do not need to be employed within Psychiatry.</p>
           <p>• Most employers combine multiple differentials into a single paystub line and pay monthly.</p>
+        </div>
+      </section>
+
+      {/* Tax Estimation */}
+      <section className="bg-card border border-border rounded-xl p-5 space-y-4">
+        <div>
+          <h3 className="text-sm font-semibold text-foreground">Tax Estimation</h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            Enter your estimated annual taxable income to see marginal tax estimates on pay breakdowns.
+            Leave at $0 to disable. These are estimates only — consult a tax professional for exact figures.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">BC Provincial — Est. Annual Taxable Income</Label>
+            <div className="relative">
+              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-mono">$</span>
+              <Input
+                type="text"
+                value={(settings.tax_settings?.annual_provincial_income || 0).toLocaleString('en-CA')}
+                onChange={e => set('tax_settings.annual_provincial_income', parseInt(e.target.value.replace(/[^0-9]/g, ''), 10) || 0)}
+                className="h-9 text-sm font-mono pl-6"
+                placeholder="0"
+              />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Federal — Est. Annual Taxable Income</Label>
+            <div className="relative">
+              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-mono">$</span>
+              <Input
+                type="text"
+                value={(settings.tax_settings?.annual_federal_income || 0).toLocaleString('en-CA')}
+                onChange={e => set('tax_settings.annual_federal_income', parseInt(e.target.value.replace(/[^0-9]/g, ''), 10) || 0)}
+                className="h-9 text-sm font-mono pl-6"
+                placeholder="0"
+              />
+            </div>
+          </div>
+        </div>
+        <div className="bg-muted/50 rounded-lg p-3 space-y-1">
+          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">2026 BC Provincial Marginal Rates</p>
+          <div className="text-xs text-muted-foreground space-y-0.5">
+            <p>$0 – $50,363: 5.60%</p>
+            <p>$50,364 – $100,728: 7.70%</p>
+            <p>$100,729 – $115,648: 10.50%</p>
+            <p>$115,649 – $140,430: 12.29%</p>
+            <p>$140,431 – $190,405: 14.70%</p>
+            <p>$190,406 – $265,545: 16.80%</p>
+            <p>Over $265,545: 20.50%</p>
+          </div>
+          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mt-2">2026 Federal Marginal Rates</p>
+          <div className="text-xs text-muted-foreground space-y-0.5">
+            <p>$0 – $58,523: 14.00%</p>
+            <p>$58,524 – $117,045: 20.50%</p>
+            <p>$117,046 – $181,440: 26.00%</p>
+            <p>$181,441 – $258,482: 29.00%</p>
+            <p>Over $258,482: 33.00%</p>
+          </div>
+          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mt-2">2026 Statutory Deductions</p>
+          <div className="text-xs text-muted-foreground space-y-0.5">
+            <p>CPP: 5.95% on $3,500 – $74,600 (max $4,230.45/yr) · Overtime is not pensionable</p>
+            <p>CPP2: 4.0% on $74,600 – $85,000 (max $416.00/yr)</p>
+            <p>EI: 1.63% up to $68,900 (max $1,123.07/yr)</p>
+          </div>
         </div>
       </section>
 

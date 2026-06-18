@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, CalendarPlus, Clock, Settings, PanelLeftClose, PanelLeftOpen, ExternalLink, List, Sun, Moon, ClipboardCheck, DollarSign } from 'lucide-react';
+import { LayoutDashboard, CalendarPlus, Clock, Settings, PanelLeftClose, PanelLeftOpen, ExternalLink, List, Sun, Moon, ClipboardCheck, DollarSign, MapPin } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { HA_PORTALS, getUserHealthAuthorities } from '@/lib/healthAuthorityPortals';
 import { useTheme } from 'next-themes';
@@ -29,6 +29,7 @@ const links = [
   { to: '/last-pay-period', icon: ClipboardCheck, label: 'Last Pay Period' },
   { to: '/pay-periods', icon: Clock, label: 'Pay Period History' },
   { to: '/pay-configuration', icon: DollarSign, label: 'Pay Configuration' },
+  { to: '/shift-configuration', icon: MapPin, label: 'Shift Configuration' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ];
 

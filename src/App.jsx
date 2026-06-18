@@ -20,6 +20,7 @@ import PayPeriodHistory from '@/pages/PayPeriodHistory';
 import Settings from '@/pages/Settings';
 import ShiftCalendar from '@/pages/ShiftCalendar';
 import ShiftLog from '@/pages/ShiftLog';
+import ShiftConfiguration from '@/pages/ShiftConfiguration';
 import SharedShifts from '@/pages/SharedShifts';
 
 const router = createBrowserRouter([
@@ -41,6 +42,7 @@ const router = createBrowserRouter([
               { path: "/pay-period", element: <PayPeriodDetail /> },
               { path: "/last-pay-period", element: <LastPayPeriod /> },
               { path: "/pay-periods", element: <PayPeriodHistory /> },
+              { path: "/shift-configuration", element: <ShiftConfiguration /> },
               { path: "/settings", element: <Settings /> },
               { path: "/pay-configuration", element: <PayConfiguration /> },
               { path: "/shift-log", element: <ShiftLog /> },
