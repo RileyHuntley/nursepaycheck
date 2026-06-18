@@ -3,7 +3,7 @@ import { Link, Navigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import {
-  Calculator, ClipboardCheck, TrendingUp, Shield, ArrowRight, Moon, Sun, Calendar, BarChart3, Mail, ExternalLink
+  Calculator, ClipboardCheck, TrendingUp, Shield, ArrowRight, Calendar, BarChart3, ExternalLink
 } from 'lucide-react';
 
 const features = [
@@ -61,7 +61,7 @@ export default function Landing() {
   if (authed) return <Navigate to="/dashboard" replace />;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       {/* Header */}
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
@@ -83,75 +83,50 @@ export default function Landing() {
       </header>
 
       {/* Hero */}
-      <section className="py-20 sm:py-28 px-4">
+      <section className="py-12 sm:py-20 lg:py-28 px-4">
         <div className="max-w-4xl mx-auto text-center">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-chart-4/10 text-chart-4 text-xs font-semibold mb-6">
-            <Shield className="w-3.5 h-3.5" /> 100% Free — No Trials, No Upsells
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-chart-4/10 text-chart-4 text-xs font-semibold mb-4 sm:mb-6">
+            <Shield className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> 100% Free — No Trials, No Upsells
           </div>
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-display font-bold text-foreground tracking-tight leading-tight">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-foreground tracking-tight leading-tight">
             Know exactly what your<br />
             <span className="text-primary">paycheque should be</span>
           </h1>
-          <p className="mt-6 text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+          <p className="mt-4 sm:mt-6 text-base sm:text-lg lg:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
             Built for BC nurses under the NBA collective agreement. Log your shifts, we calculate every premium and differential — so you can verify every pay stub with confidence.
           </p>
-          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link to="/register">
-              <Button size="lg" className="bg-primary text-primary-foreground text-base px-8 h-12">
-                Create Your Free Account <ArrowRight className="w-5 h-5 ml-2" />
+          <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
+            <Link to="/register" className="w-full sm:w-auto">
+              <Button size="lg" className="bg-primary text-primary-foreground text-sm sm:text-base px-6 sm:px-8 h-11 sm:h-12 w-full sm:w-auto">
+                Create Your Free Account <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-1.5 sm:ml-2" />
               </Button>
             </Link>
-            <Link to="/login">
-              <Button variant="outline" size="lg" className="text-base px-8 h-12">
+            <Link to="/login" className="w-full sm:w-auto">
+              <Button variant="outline" size="lg" className="text-sm sm:text-base px-6 sm:px-8 h-11 sm:h-12 w-full sm:w-auto">
                 I already have an account
               </Button>
             </Link>
           </div>
-          <p className="mt-4 text-sm text-muted-foreground">
+          <p className="mt-4 text-xs sm:text-sm text-muted-foreground">
             No credit card. No subscription. Just a tool for nurses, by nurses.
           </p>
         </div>
       </section>
 
-      {/* Features grid */}
-      <section className="py-20 bg-muted/30 px-4">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-14">
-            <h2 className="text-3xl sm:text-4xl font-display font-bold text-foreground">
-              Everything you need to audit your pay
-            </h2>
-            <p className="mt-3 text-muted-foreground text-lg">
-              Built around the BCNU NBA collective agreement — not generic payroll software.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {features.map(({ icon: Icon, title, description }) => (
-              <div key={title} className="bg-card border border-border rounded-xl p-6 hover:shadow-md transition-shadow">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                  <Icon className="w-5 h-5 text-primary" />
-                </div>
-                <h3 className="text-base font-display font-semibold text-foreground mb-2">{title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Screenshot showcase */}
-      <section className="py-20 px-4">
+      <section className="py-16 sm:py-20 px-4">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-14">
-            <h2 className="text-3xl sm:text-4xl font-display font-bold text-foreground">
+          <div className="text-center mb-10 sm:mb-14">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-display font-bold text-foreground">
               See it in action
             </h2>
-            <p className="mt-3 text-muted-foreground text-lg">
+            <p className="mt-2 sm:mt-3 text-muted-foreground text-base sm:text-lg">
               Designed specifically for BC nurses. No spreadsheets, no guesswork.
             </p>
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             {/* Calendar screenshot */}
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
                 <img
                   src="https://media.base44.com/images/public/6a31b0e0893c88b82b838191/40d92cf16_Screenshot2026-06-18at110332AM.png"
@@ -160,14 +135,14 @@ export default function Landing() {
                   loading="lazy"
                 />
               </div>
-              <div className="text-center">
-                <h3 className="text-base font-display font-semibold text-foreground">Visual Shift Calendar</h3>
-                <p className="text-sm text-muted-foreground mt-1">Colour-coded shifts with stat holidays, pay dates, and hospital/unit filters.</p>
+              <div className="text-center px-1">
+                <h3 className="text-sm sm:text-base font-display font-semibold text-foreground">Visual Shift Calendar</h3>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">Colour-coded shifts with stat holidays, pay dates, and hospital/unit filters.</p>
               </div>
             </div>
 
             {/* Dashboard screenshot */}
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
                 <img
                   src="https://media.base44.com/images/public/6a31b0e0893c88b82b838191/e4cfa326b_Screenshot2026-06-18at110346AM.png"
@@ -176,14 +151,14 @@ export default function Landing() {
                   loading="lazy"
                 />
               </div>
-              <div className="text-center">
-                <h3 className="text-base font-display font-semibold text-foreground">Pay Period Dashboard</h3>
-                <p className="text-sm text-muted-foreground mt-1">Compare past, current, and upcoming periods with estimated deductions at a glance.</p>
+              <div className="text-center px-1">
+                <h3 className="text-sm sm:text-base font-display font-semibold text-foreground">Pay Period Dashboard</h3>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">Compare past, current, and upcoming periods with estimated deductions at a glance.</p>
               </div>
             </div>
 
             {/* Premiums screenshot */}
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
                 <img
                   src="https://media.base44.com/images/public/6a31b0e0893c88b82b838191/e156f5372_Screenshot2026-06-18at110305AM.png"
@@ -192,29 +167,54 @@ export default function Landing() {
                   loading="lazy"
                 />
               </div>
-              <div className="text-center">
-                <h3 className="text-base font-display font-semibold text-foreground">Premium Calculations</h3>
-                <p className="text-sm text-muted-foreground mt-1">Every NBA premium auto-calculated with full transparency and override support.</p>
+              <div className="text-center px-1">
+                <h3 className="text-sm sm:text-base font-display font-semibold text-foreground">Premium Calculations</h3>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">Every NBA premium auto-calculated with full transparency and override support.</p>
               </div>
             </div>
           </div>
         </div>
       </section>
 
+      {/* Features grid */}
+      <section className="py-16 sm:py-20 bg-muted/30 px-4">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-10 sm:mb-14">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-display font-bold text-foreground">
+              Everything you need to audit your pay
+            </h2>
+            <p className="mt-2 sm:mt-3 text-muted-foreground text-base sm:text-lg">
+              Built around the BCNU NBA collective agreement — not generic payroll software.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            {features.map(({ icon: Icon, title, description }) => (
+              <div key={title} className="bg-card border border-border rounded-xl p-5 sm:p-6 hover:shadow-md transition-shadow">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-3 sm:mb-4">
+                  <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                </div>
+                <h3 className="text-sm sm:text-base font-display font-semibold text-foreground mb-1.5 sm:mb-2">{title}</h3>
+                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">{description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* CTA */}
-      <section className="py-20 px-4">
+      <section className="py-16 sm:py-20 px-4">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl sm:text-4xl font-display font-bold text-foreground">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-display font-bold text-foreground">
             Started by a BC nurse who was tired of spreadsheet math
           </h2>
-          <p className="mt-4 text-muted-foreground text-lg max-w-2xl mx-auto">
+          <p className="mt-3 sm:mt-4 text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto">
             The NBA has dozens of premiums that change based on shift type, time of day, and stat holidays.
             NursePayCheck handles all of it automatically — so you can focus on what matters.
           </p>
-          <div className="mt-8">
+          <div className="mt-6 sm:mt-8">
             <Link to="/register">
-              <Button size="lg" className="bg-primary text-primary-foreground text-base px-10 h-12">
-                Start Tracking for Free <ArrowRight className="w-5 h-5 ml-2" />
+              <Button size="lg" className="bg-primary text-primary-foreground text-sm sm:text-base px-8 sm:px-10 h-11 sm:h-12">
+                Start Tracking for Free <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-1.5 sm:ml-2" />
               </Button>
             </Link>
           </div>
