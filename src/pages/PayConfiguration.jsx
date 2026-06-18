@@ -340,7 +340,7 @@ export default function PayConfiguration() {
               value={settings.nurse_profile?.bccnm_license || ''}
               onChange={e => set('nurse_profile.bccnm_license', e.target.value)}
               className="h-9 text-sm font-mono"
-              placeholder="e.g. RN12345"
+              placeholder="e.g. 1234567"
             />
           </div>
           <div className="space-y-1.5">
