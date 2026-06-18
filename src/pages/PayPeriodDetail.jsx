@@ -6,7 +6,7 @@ import { Plus, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
 import ShiftForm from '@/components/payroll/ShiftForm';
 import BulkAddShift from '@/components/payroll/BulkAddShift';
 import ShiftCalendarGrid from '@/components/payroll/ShiftCalendarGrid';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/components/ui/use-toast';
 import { getPayPeriodForDate, calculatePeriodBreakdown, getPayPeriodName, getFirstPeriodsOfMonths, isDuplicateShift } from '@/lib/premiumCalculator';
 import { getVCHPayPeriod } from '@/lib/statHolidays';
 import PayPeriodSummary from '@/components/payroll/PayPeriodSummary';
