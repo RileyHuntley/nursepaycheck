@@ -72,7 +72,7 @@ export default function PaySummaryPanel({ title, subtitle, breakdown, loading, t
     { label: 'Straight-Time Pay', value: breakdown.straight_time_pay },
     { label: 'Overtime / Stat Pay', value: breakdown.overtime_pay },
     { label: 'Hourly Premiums', value: (breakdown.regular_premium_total || 0) + (breakdown.evening_premium_total || 0) + (breakdown.night_premium_total || 0) + (breakdown.weekend_premium_total || 0) + (breakdown.super_shift_premium_total || 0) + (breakdown.specialty_premium_total || 0) + (breakdown.short_notice_total || 0) + (breakdown.responsibility_total || 0) + (breakdown.preceptor_total || 0) + (breakdown.on_call_total || 0) },
-    { label: 'Allowances & Qualifications', value: (breakdown.allowance_total || 0) + (breakdown.qualification_total || 0) },
+    { label: 'Allowances & Differentials', value: (breakdown.allowance_total || 0) + (breakdown.qualification_total || 0) },
     { label: 'Union Dues' + (hasVerified && verifiedDeductions.union_dues > 0 ? ' (verified)' : ''), value: unionDues, negative: true },
     ...(hasStatutory ? [
       { label: 'CPP' + (hasVerified ? ' (verified)' : ''), value: statutory.cpp, negative: true },
