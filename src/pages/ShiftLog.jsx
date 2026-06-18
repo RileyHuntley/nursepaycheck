@@ -602,6 +602,7 @@ export default function ShiftLog() {
               hasShifts={false}
               hasWage={settings && settings.hourly_wage !== 45}
               hasTaxSettings={settings?.tax_settings?.annual_federal_income > 0 || settings?.tax_settings?.annual_provincial_income > 0}
+              hasHospitals={(settings?.hospitals?.length || 0) > 0 && (settings?.units?.length || 0) > 0}
             />
           )}
 
