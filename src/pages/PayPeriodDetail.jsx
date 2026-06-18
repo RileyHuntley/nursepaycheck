@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Plus, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import ShiftForm from '@/components/payroll/ShiftForm';
 import BulkAddShift from '@/components/payroll/BulkAddShift';
 import ShiftCalendarGrid from '@/components/payroll/ShiftCalendarGrid';
@@ -10,7 +10,7 @@ import ShiftRow from '@/components/payroll/ShiftRow';
 import { calculateShiftPremiums } from '@/lib/premiumCalculator';
 import { useToast } from '@/components/ui/use-toast';
 import { getPayPeriodForDate, getCurrentPayPeriodDates, calculatePeriodBreakdown, getPayPeriodName, getFirstPeriodsOfMonths, isDuplicateShift } from '@/lib/premiumCalculator';
-import { getVCHPayPeriod, getVCHPeriodNumber, getVCHPayDate } from '@/lib/statHolidays';
+import { getVCHPeriodNumber, getVCHPayDate } from '@/lib/statHolidays';
 import PayPeriodSummary from '@/components/payroll/PayPeriodSummary';
 
 function getDefaultStatus(dateStr) {
@@ -214,37 +214,26 @@ export default function PayPeriodDetail() {
   }
 
   const shifts = period.shifts || [];
-  const vcpPeriod = getVCHPayPeriod(period.start_date);
 
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigatePeriod(-1)}
-            disabled={allPeriods.findIndex(p => p.id === period.id) === [...allPeriods].sort((a,b) => a.start_date.localeCompare(b.start_date)).findIndex(p => p.id === period.id) && [...allPeriods].sort((a,b) => a.start_date.localeCompare(b.start_date)).findIndex(p => p.id === period.id) === 0}>
-            <ChevronLeft className="w-4 h-4" />
-          </Button>
-          <div>
-            <h2 className="text-xl font-display font-bold text-foreground tracking-tight">
-              {getPayPeriodName(period.start_date, period.end_date)}
-            </h2>
-            {vcpPeriod && (
-              <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-2 flex-wrap">
-                {getVCHPeriodNumber(period.start_date) && (
-                  <span className="text-[11px] font-mono font-bold bg-muted text-muted-foreground px-1.5 py-0.5 rounded">
-                    PP {getVCHPeriodNumber(period.start_date)}
-                  </span>
-                )}
-                {getVCHPayDate(period.start_date) && (
-                  <span>Paid {new Date(getVCHPayDate(period.start_date) + 'T12:00:00').toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                )}
-              </p>
-            )}
-          </div>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigatePeriod(1)}>
-            <ChevronRight className="w-4 h-4" />
-          </Button>
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <h2 className="text-2xl font-display font-bold text-foreground tracking-tight">Current Pay Period</h2>
+          {period && (
+            <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
+              {getVCHPeriodNumber(period.start_date) && (
+                <span className="text-[11px] font-mono font-bold bg-muted text-muted-foreground px-1.5 py-0.5 rounded">
+                  PP {getVCHPeriodNumber(period.start_date)}
+                </span>
+              )}
+              <span>{getPayPeriodName(period.start_date, period.end_date)} · {shifts.length} shift{shifts.length !== 1 ? 's' : ''}</span>
+              {getVCHPayDate(period.start_date) && (
+                <span className="text-xs text-muted-foreground/70">· paid {new Date(getVCHPayDate(period.start_date) + 'T12:00:00').toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}</span>
+              )}
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => { setShowBulk(b => !b); setShowForm(false); }}>
@@ -294,6 +283,20 @@ export default function PayPeriodDetail() {
           await updateShift(editInfo.periodShiftIdx, shiftData);
         }}
         onReload={loadData}
+        periodNav={{
+          label: getPayPeriodName(period.start_date, period.end_date),
+          badge: getVCHPeriodNumber(period.start_date),
+          hasPrev: () => {
+            const sorted = [...allPeriods].sort((a, b) => a.start_date.localeCompare(b.start_date));
+            return sorted.findIndex(p => p.id === period.id) > 0;
+          },
+          hasNext: () => {
+            const sorted = [...allPeriods].sort((a, b) => a.start_date.localeCompare(b.start_date));
+            return sorted.findIndex(p => p.id === period.id) < sorted.length - 1;
+          },
+          onPrev: () => navigatePeriod(-1),
+          onNext: () => navigatePeriod(1),
+        }}
       />
 
       {/* Shift Log */}
