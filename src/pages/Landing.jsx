@@ -76,7 +76,7 @@ export default function Landing() {
               <Button variant="ghost" size="sm">Log in</Button>
             </Link>
             <Link to="/register">
-              <Button size="sm" className="bg-primary text-primary-foreground">Get Started — Free</Button>
+              <Button size="sm" className="bg-primary text-primary-foreground">Get Started</Button>
             </Link>
           </div>
         </div>
@@ -86,7 +86,7 @@ export default function Landing() {
       <section className="pt-12 pb-8 sm:pt-20 sm:pb-12 lg:pt-28 lg:pb-16 px-4">
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-chart-4/10 text-chart-4 text-xs font-semibold mb-4 sm:mb-6">
-            <Shield className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> 100% Free — No Trials, No Upsells
+            <Shield className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Free
           </div>
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-foreground tracking-tight leading-tight">
             Know exactly what your<br />
