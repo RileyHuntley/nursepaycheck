@@ -262,6 +262,9 @@ export default function Dashboard() {
         <PaySummaryPanel
           title="Past Pay Period"
           subtitle={pastPeriod ? pastPeriod.name : 'No data'}
+          subtitle={pastPeriod
+            ? `${pastPeriod.name}${getVCHPayDate(pastPeriod.start_date) ? ` · Paid ${new Date(getVCHPayDate(pastPeriod.start_date) + 'T12:00:00').toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}` : ''}`
+            : 'No data'}
           breakdown={pastPeriod?.computedBreakdown}
           loading={loading}
           taxSettings={settings?.tax_settings}
