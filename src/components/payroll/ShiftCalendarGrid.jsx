@@ -97,44 +97,46 @@ export default function ShiftCalendarGrid({ settings, shiftsMap, onShiftUpdate, 
   const daysInMonth = lastDay.getDate();
   const todayStr = new Date().toISOString().split('T')[0];
 
+  const prevMonthNum = month === 0 ? 11 : month - 1;
+  const prevYear = month === 0 ? year - 1 : year;
+  const nextMonthNum = month === 11 ? 0 : month + 1;
+  const nextYear = month === 11 ? year + 1 : year;
+  const prevMonthLast = new Date(year, month, 0).getDate();
+  const nextMonthLast = new Date(nextYear, nextMonthNum + 1, 0).getDate();
+
   const cells = [];
 
-  // Leading days from previous month when period starts before current month
-  if (periodStart && periodEnd) {
-    const periodStartDate = new Date(periodStart + 'T12:00:00');
-    const periodEndDate = new Date(periodEnd + 'T12:00:00');
-    if (periodStartDate < firstDay && periodEndDate >= firstDay) {
-      const prevMonthLastDay = new Date(year, month, 0).getDate();
-      const startDay = periodStartDate.getDate();
-      const prevMonthNum = month === 0 ? 11 : month - 1;
-      const prevYear = month === 0 ? year - 1 : year;
-      for (let d = startDay; d <= prevMonthLastDay; d++) {
-        const dateStr = `${prevYear}-${String(prevMonthNum + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-        cells.push({ day: d, dateStr, isAdjacentMonth: true });
-      }
-    }
+  // Leading days from previous month (fill all start-offset boxes)
+  for (let d = prevMonthLast - startOffset + 1; d <= prevMonthLast; d++) {
+    const dateStr = `${prevYear}-${String(prevMonthNum + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    cells.push({ day: d, dateStr, isAdjacentMonth: true });
   }
 
-  for (let i = 0; i < startOffset; i++) {
-    cells.push({ day: null, dateStr: null });
-  }
+  // Current month days
   for (let d = 1; d <= daysInMonth; d++) {
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     cells.push({ day: d, dateStr });
   }
 
-  // Trailing days from next month when period ends after current month
+  // Trailing days from next month: pay-period overflow + fill remaining row slots
+  let periodEndDay = 0;
   if (periodStart && periodEnd) {
     const periodEndDate = new Date(periodEnd + 'T12:00:00');
     if (periodEndDate > lastDay) {
-      const endDay = periodEndDate.getDate();
-      const nextMonthNum = month + 1;
-      const nextYear = nextMonthNum > 11 ? year + 1 : year;
-      const displayMonth = nextMonthNum > 11 ? 0 : nextMonthNum;
-      for (let d = 1; d <= endDay; d++) {
-        const dateStr = `${nextYear}-${String(displayMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      periodEndDay = periodEndDate.getDate();
+      for (let d = 1; d <= periodEndDay; d++) {
+        const dateStr = `${nextYear}-${String(nextMonthNum + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
         cells.push({ day: d, dateStr, isAdjacentMonth: true });
       }
+    }
+  }
+  // Fill remaining boxes to complete the grid row(s)
+  const remaining = (7 - (cells.length % 7)) % 7;
+  if (remaining > 0) {
+    const startFrom = periodEndDay > 0 ? periodEndDay + 1 : 1;
+    for (let d = startFrom; d < startFrom + remaining && d <= nextMonthLast; d++) {
+      const dateStr = `${nextYear}-${String(nextMonthNum + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      cells.push({ day: d, dateStr, isAdjacentMonth: true });
     }
   }
 
@@ -366,7 +368,6 @@ export default function ShiftCalendarGrid({ settings, shiftsMap, onShiftUpdate, 
 
             const isToday = cell.dateStr === todayStr;
             const isOutsidePeriod = periodStart && periodEnd && (cell.dateStr < periodStart || cell.dateStr > periodEnd);
-            const isAdjacentMonth = cell.isAdjacentMonth;
             const shifts = filteredMap[cell.dateStr] || [];
             const statType = getStatType(cell.dateStr);
             const statName = getStatName(cell.dateStr);
@@ -374,7 +375,6 @@ export default function ShiftCalendarGrid({ settings, shiftsMap, onShiftUpdate, 
 
             let bgClass = 'bg-card';
             if (isOutsidePeriod) bgClass = 'bg-muted/50 opacity-50';
-            else if (isAdjacentMonth) bgClass = 'bg-muted/20';
             else if (statType === 'super_stat' || statType === 'stat') bgClass = 'bg-destructive/5';
             else if (isToday) bgClass = 'bg-primary/5 ring-1 ring-inset ring-primary/20';
 
@@ -384,9 +384,15 @@ export default function ShiftCalendarGrid({ settings, shiftsMap, onShiftUpdate, 
                 className={`min-h-[80px] border-b border-r border-border flex flex-col ${bgClass}`}
               >
                 <div className="px-2 pt-1.5 flex items-start justify-between gap-1">
-                  <span className={`text-xs font-medium ${isToday ? 'text-primary font-bold' : 'text-foreground'}`}>
-                    {cell.day}
-                  </span>
+                  {cell.isAdjacentMonth ? (
+                    <span className="text-xs font-medium text-muted-foreground">
+                      {new Date(cell.dateStr + 'T12:00:00').toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}
+                    </span>
+                  ) : (
+                    <span className={`text-xs font-medium ${isToday ? 'text-primary font-bold' : 'text-foreground'}`}>
+                      {cell.day}
+                    </span>
+                  )}
                   <div className="flex items-center gap-0.5 flex-wrap justify-end">
                     {payPeriod && (
                       <span className="text-[9px] font-bold bg-primary text-primary-foreground px-1 py-0.5 rounded leading-none">
