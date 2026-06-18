@@ -515,7 +515,7 @@ export default function PayConfiguration() {
         <div>
           <h3 className="text-sm font-semibold text-foreground">Overtime & Shift Multipliers</h3>
           <p className="text-xs text-muted-foreground mt-1">
-            Multipliers are set per-shift when logging time. The NBA CBA defines how each shift type is compensated based on when and why you are working beyond your regular schedule.
+            Multipliers are set per-shift when logging time. The NBA CBA defines how each shift type is compensated based on when and why you are working beyond your regular schedule. Note: Overtime is currently configured for full time only.
           </p>
         </div>
         <div className="space-y-3">
