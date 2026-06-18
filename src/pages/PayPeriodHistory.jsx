@@ -180,7 +180,7 @@ export default function PayPeriodHistory() {
                   <div className="flex items-center gap-3 mt-1">
                     {getVCHPayDate(period.start_date) && (
                       <span className="text-xs text-muted-foreground font-medium">
-                        Pay {new Date(getVCHPayDate(period.start_date) + 'T12:00:00').toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        Paid on {new Date(getVCHPayDate(period.start_date) + 'T12:00:00').toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })}
                       </span>
                     )}
                     <span className="text-xs text-muted-foreground">{period.shifts?.length || 0} shifts</span>
