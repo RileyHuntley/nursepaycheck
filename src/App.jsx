@@ -42,7 +42,7 @@ const router = createBrowserRouter([
             element: <Layout />,
             children: [
               { path: "/", element: <Dashboard /> },
-              { path: "/pay-period", element: <PayPeriodDetail /> },
+              { path: "/pay-period/:id", element: <PayPeriodDetail /> },
               { path: "/last-pay-period", element: <LastPayPeriod /> },
               { path: "/pay-periods", element: <PayPeriodHistory /> },
               { path: "/shift-configuration", element: <ShiftConfiguration /> },
