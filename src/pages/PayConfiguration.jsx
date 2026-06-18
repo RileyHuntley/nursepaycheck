@@ -605,7 +605,7 @@ export default function PayConfiguration() {
         <div>
           <h3 className="text-sm font-semibold text-foreground">Qualification Differentials</h3>
           <p className="text-xs text-muted-foreground mt-1">
-            Only regular nurses qualify — not casuals. Combined yearly amount ÷ 1950 hrs = hourly rate, applied to all regular hours paid in the period (inclusive of regular, stat holidays, vacation, and paid leaves).
+           Only regular nurses qualify — not casuals. Paid in full on the first pay period of each month that a shift is worked.
           </p>
         </div>
         {QUALIFICATION_OPTIONS.map(({ key, label, rate, article, desc }) => (
@@ -627,7 +627,7 @@ export default function PayConfiguration() {
                   <Info className="w-3.5 h-3.5" />
                 </button>
               </div>
-              <p className="text-xs text-muted-foreground">${rate.toFixed(2)}/month → ${((rate * 12) / 1950).toFixed(3)}/hr</p>
+              <p className="text-xs text-muted-foreground">${rate.toFixed(2)}/month — paid monthly</p>
             </div>
             {openInfo === `qual_${key}` && (
               <div className="absolute z-50 left-24 bottom-full mb-2 w-72 bg-popover border border-border rounded-lg shadow-lg p-3 text-left" onClick={e => e.stopPropagation()}>
@@ -649,7 +649,7 @@ export default function PayConfiguration() {
           <p className="font-semibold text-foreground">Additional Notes (Art. 53)</p>
           <p>• Eligible nurses may not qualify for more than one payment under Articles 53.02, 53.04, 53.05, and 53.06.</p>
           <p>• RN/RPN dual registrants do not need to be employed within Psychiatry.</p>
-          <p>• Most employers combine multiple differentials into a single paystub line and pay on a pro-rated hourly basis.</p>
+          <p>• Most employers combine multiple differentials into a single paystub line and pay monthly.</p>
         </div>
       </section>
 
