@@ -353,16 +353,16 @@ Deno.serve(async (req) => {
       drawRow('On-Call Pay', bd.on_call_total, false, COL.dark, calc.join(', '));
     }
 
-    // Allowances & Qualifications
+    // Allowances & Differentials
     if (bd.allowance_total > 0 || bd.qualification_total > 0) {
-      y+=2; secHdr('MONTHLY ALLOWANCES & QUALIFICATIONS');
+      y+=2; secHdr('MONTHLY ALLOWANCES & DIFFERENTIALS');
       if (bd.allowance_total > 0) {
         const mo = bd.allowance_monthly||0;
         drawRow('Allowances (per period)', bd.allowance_total, false, COL.dark, mo > 0 ? `${fm$(mo)}/mo (paid in full)` : null);
       }
       if (bd.qualification_total > 0) {
         const qh = bd.qualification_hourly||0, rh = bd.regular_hours||0;
-        drawRow('Qualification Diff.', bd.qualification_total, false, COL.dark, `${rh}h x ${fm$(qh)}/hr = ${fm$(bd.qualification_total)}`);
+        drawRow('Differentials', bd.qualification_total, false, COL.dark, `${rh}h x ${fm$(qh)}/hr = ${fm$(bd.qualification_total)}`);
       }
     }
 
