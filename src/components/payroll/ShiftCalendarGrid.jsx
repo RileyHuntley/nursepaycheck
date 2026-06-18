@@ -61,10 +61,22 @@ export default function ShiftCalendarGrid({ settings, shiftsMap, onShiftUpdate, 
   const [haFilter, setHaFilter] = useState('all');
   const [unitFilter, setUnitFilter] = useState('all');
   const [viewDate, setViewDate] = useState(() => {
+    if (periodStart) {
+      const d = new Date(periodStart + 'T12:00:00');
+      return new Date(d.getFullYear(), d.getMonth(), 1);
+    }
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
   const [pickerOpen, setPickerOpen] = useState(false);
+
+  // Sync calendar month when period changes
+  useEffect(() => {
+    if (periodStart) {
+      const d = new Date(periodStart + 'T12:00:00');
+      setViewDate(new Date(d.getFullYear(), d.getMonth(), 1));
+    }
+  }, [periodStart]);
 
   const goToMonth = (m, y) => {
     setViewDate(new Date(y, m, 1));
