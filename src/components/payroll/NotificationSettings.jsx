@@ -10,17 +10,6 @@ export default function NotificationSettings({ settings, setSettings }) {
   const [testSending, setTestSending] = useState(false);
   const [testResult, setTestResult] = useState(null);
 
-  const set = (path, value) => {
-    setSettings(s => {
-      const copy = { ...s };
-      const keys = path.split('.');
-      let obj = copy;
-      for (let i = 0; i < keys.length - 1; i++) obj = obj[keys[i]] = { ...obj[keys[i]] };
-      obj[keys[keys.length - 1]] = value;
-      return copy;
-    });
-  };
-
   const sendTest = async () => {
     setTestSending(true);
     setTestResult(null);
@@ -50,7 +39,7 @@ export default function NotificationSettings({ settings, setSettings }) {
       <div className="flex items-center gap-3">
         <Switch
           checked={settings.notification_enabled || false}
-          onCheckedChange={(v) => set('notification_enabled', v)}
+          onCheckedChange={(v) => setSettings('notification_enabled', v)}
         />
         <div>
           <Label className="text-xs text-foreground cursor-pointer">Enable verification reminders</Label>
@@ -67,7 +56,7 @@ export default function NotificationSettings({ settings, setSettings }) {
             <Input
               type="email"
               value={settings.notification_email || ''}
-              onChange={(e) => set('notification_email', e.target.value)}
+              onChange={(e) => setSettings('notification_email', e.target.value)}
               placeholder="you@example.com"
               className="h-8 text-sm max-w-xs"
             />
