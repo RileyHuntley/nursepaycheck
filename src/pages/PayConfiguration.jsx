@@ -178,7 +178,6 @@ export default function PayConfiguration() {
         ...list[0],
         nurse_profile: { ...defaultSettings.nurse_profile, ...(list[0].nurse_profile || {}) },
         premium_rates: { ...defaultSettings.premium_rates, ...(list[0].premium_rates || {}) },
-        premium_rates: { ...defaultSettings.premium_rates, ...(list[0].premium_rates || {}) },
         ot_multipliers: { ...defaultSettings.ot_multipliers, ...(list[0].ot_multipliers || {}) },
         allowance_rates: { ...defaultSettings.allowance_rates, ...(list[0].allowance_rates || {}) },
         qualification_rates: { ...defaultSettings.qualification_rates, ...(list[0].qualification_rates || {}) },
