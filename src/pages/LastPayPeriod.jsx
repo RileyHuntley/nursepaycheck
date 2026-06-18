@@ -10,6 +10,7 @@ import { calculatePeriodBreakdown, calculateShiftPremiums, getPayPeriodForDate, 
 import { toast } from '@/components/ui/use-toast';
 import { Plus, Loader2, CalendarPlus, ArrowUpDown, ClipboardList, FileDown } from 'lucide-react';
 import BulkAddShift from '@/components/payroll/BulkAddShift';
+import ShiftCalendarGrid from '@/components/payroll/ShiftCalendarGrid';
 import { getVCHPeriodNumber } from '@/lib/statHolidays';
 
 export default function LastPayPeriod() {
@@ -295,6 +296,41 @@ export default function LastPayPeriod() {
     }
   };
 
+  const calendarUpdateShift = async (shiftData, editInfo) => {
+    const idx = editInfo.periodShiftIdx;
+    if (idx == null) return;
+
+    // If date changed outside this period, handle the move
+    if (shiftData.date !== editInfo.data.date && !isValidForPeriod(shiftData.date)) {
+      const { start_date, end_date } = getPayPeriodForDate(shiftData.date);
+      const allPeriods = await base44.entities.PayPeriod.list('-start_date', 50);
+      // Remove from current period
+      const updatedShifts = (period.shifts || []).filter((_, i) => i !== idx);
+      const thisBreakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings, isFirstOfMonth) : null;
+      await base44.entities.PayPeriod.update(period.id, { shifts: updatedShifts, ...(thisBreakdown ? { breakdown: thisBreakdown } : {}) });
+      // Add to target period
+      const target = allPeriods.find(p => p.start_date === start_date && p.end_date === end_date);
+      if (target) {
+        const targetShifts = [...(target.shifts || []), { ...shiftData }];
+        const isTargetFirst = getFirstPeriodsOfMonths(allPeriods).has(start_date);
+        const targetBreakdown = settings ? calculatePeriodBreakdown(targetShifts, settings, isTargetFirst) : null;
+        await base44.entities.PayPeriod.update(target.id, { shifts: targetShifts, ...(targetBreakdown ? { breakdown: targetBreakdown } : {}) });
+      } else {
+        await base44.entities.PayPeriod.create({ name: getPayPeriodName(start_date, end_date), start_date, end_date, shifts: [{ ...shiftData }] });
+      }
+      loadData();
+      return;
+    }
+
+    // Same period update
+    const updatedShifts = (period.shifts || []).map((s, i) =>
+      i === idx ? { ...shiftData } : s
+    );
+    const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings, isFirstOfMonth) : null;
+    const updated = await base44.entities.PayPeriod.update(period.id, { shifts: updatedShifts, ...(breakdown ? { breakdown } : {}) });
+    setPeriod(updated);
+  };
+
   const clearDeductions = async () => {
     if (!period) return;
     setSavingDeductions(true);
@@ -370,6 +406,24 @@ export default function LastPayPeriod() {
           Export PDF
         </Button>
       </div>
+
+      {/* Shift Calendar */}
+      {displayShifts.length > 0 && (
+        <ShiftCalendarGrid
+          periodStart={period.start_date}
+          periodEnd={period.end_date}
+          shiftsMap={displayShifts.reduce((map, s) => {
+            if (!s.date) return map;
+            if (!map[s.date]) map[s.date] = [];
+            map[s.date].push({ ...s, periodId: period.id, periodShiftIdx: s._origIdx });
+            return map;
+          }, {})}
+          settings={settings}
+          showHeader={false}
+          onShiftUpdate={calendarUpdateShift}
+          onReload={loadData}
+        />
+      )}
 
       {/* Shift Log */}
       <div className="bg-card border border-border rounded-xl overflow-hidden">
