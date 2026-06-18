@@ -50,13 +50,13 @@ const router = createBrowserRouter([
               { path: "/pay-configuration", element: <PayConfiguration /> },
               { path: "/shift-log", element: <ShiftLog /> },
               { path: "/calendar", element: <ShiftCalendar /> },
-            ],
-          },
-          {
-            element: <AdminRoute />,
-            children: [
-              { path: "/admin", element: <Admin /> },
-              { path: "/admin/support/:userId", element: <AdminSupport /> },
+              {
+                element: <AdminRoute />,
+                children: [
+                  { path: "/admin", element: <Admin /> },
+                  { path: "/admin/support/:userId", element: <AdminSupport /> },
+                ],
+              },
             ],
           },
         ],
