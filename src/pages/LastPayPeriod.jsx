@@ -451,6 +451,31 @@ export default function LastPayPeriod() {
           periodNav={{
             label: getPayPeriodName(period.start_date, period.end_date),
             badge: getVCHPeriodNumber(period.start_date),
+            currentId: period.id,
+            periods: [...allPeriods]
+              .filter(p => p.end_date < todayStr)
+              .sort((a, b) => b.end_date.localeCompare(a.end_date))
+              .map(p => ({
+                id: p.id,
+                label: getPayPeriodName(p.start_date, p.end_date),
+                badge: getVCHPeriodNumber(p.start_date),
+                shiftCount: (p.shifts || []).length,
+              })),
+            onSelectPeriod: (id) => {
+              const past = allPeriods.filter(p => p.end_date < todayStr);
+              const target = past.find(p => p.id === id);
+              if (target) {
+                setPeriod(target);
+                const vd = target.verified_deductions || {};
+                setDeductionsForm({
+                  cpp: vd.cpp ?? '', cpp2: vd.cpp2 ?? '', ei: vd.ei ?? '',
+                  federal_tax: vd.federal_tax ?? '', provincial_tax: vd.provincial_tax ?? '',
+                  union_dues: vd.union_dues ?? '', other_deductions: vd.other_deductions ?? '',
+                  other_label: vd.other_label ?? '', notes: vd.notes ?? '',
+                });
+                setDeductionsDirty(false);
+              }
+            },
             hasPrev: () => {
               const past = allPeriods.filter(p => p.end_date < todayStr).sort((a, b) => b.end_date.localeCompare(a.end_date));
               return past.findIndex(p => p.id === period.id) > 0;

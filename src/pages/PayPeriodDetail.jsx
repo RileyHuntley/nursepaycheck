@@ -286,6 +286,16 @@ export default function PayPeriodDetail() {
         periodNav={{
           label: getPayPeriodName(period.start_date, period.end_date),
           badge: getVCHPeriodNumber(period.start_date),
+          currentId: period.id,
+          periods: [...allPeriods]
+            .sort((a, b) => b.start_date.localeCompare(a.start_date))
+            .map(p => ({
+              id: p.id,
+              label: getPayPeriodName(p.start_date, p.end_date),
+              badge: getVCHPeriodNumber(p.start_date),
+              shiftCount: (p.shifts || []).length,
+            })),
+          onSelectPeriod: (id) => navigate(`/pay-period/${id}`),
           hasPrev: () => {
             const sorted = [...allPeriods].sort((a, b) => a.start_date.localeCompare(b.start_date));
             return sorted.findIndex(p => p.id === period.id) > 0;

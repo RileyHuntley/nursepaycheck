@@ -238,38 +238,33 @@ export default function ShiftCalendarGrid({ settings, shiftsMap, onShiftUpdate, 
                   <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
                 </button>
               </PopoverTrigger>
-              <PopoverContent className="w-60 p-3" align="center">
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Select value={String(month)} onValueChange={(v) => goToMonth(parseInt(v), year)}>
-                      <SelectTrigger className="h-8 text-xs flex-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {['January','February','March','April','May','June',
-                          'July','August','September','October','November','December']
-                          .map((m, i) => (
-                            <SelectItem key={i} value={String(i)}>{m}</SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
-                    <Select value={String(year)} onValueChange={(v) => goToMonth(month, parseInt(v))}>
-                      <SelectTrigger className="h-8 text-xs w-[80px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Array.from({ length: 11 }, (_, i) => year - 5 + i).map(y => (
-                          <SelectItem key={y} value={String(y)}>{y}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <button
-                    onClick={goToToday}
-                    className="w-full text-xs font-medium text-primary hover:bg-accent hover:text-accent-foreground rounded-md py-1.5 transition-colors"
-                  >
-                    Jump to Today
-                  </button>
+              <PopoverContent className="w-72 p-0" align="center">
+                <div className="px-3 py-2 border-b border-border">
+                  <p className="text-xs font-semibold text-muted-foreground">Pay Periods</p>
+                </div>
+                <div className="max-h-64 overflow-y-auto">
+                  {periodNav.periods?.map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={() => { periodNav.onSelectPeriod?.(p.id); setPickerOpen(false); }}
+                      className={`w-full text-left px-3 py-2 hover:bg-accent hover:text-accent-foreground transition-colors flex items-center gap-2 ${
+                        p.id === periodNav.currentId ? 'bg-primary/10' : ''
+                      }`}
+                    >
+                      {p.badge && (
+                        <span className="text-[10px] font-mono font-bold bg-muted text-muted-foreground px-1 py-0.5 rounded flex-shrink-0">
+                          PP {p.badge}
+                        </span>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <span className="text-xs font-medium block truncate">{p.label}</span>
+                        <span className="text-[10px] text-muted-foreground">{p.shiftCount} shift{p.shiftCount !== 1 ? 's' : ''}</span>
+                      </div>
+                    </button>
+                  ))}
+                  {(!periodNav.periods || periodNav.periods.length === 0) && (
+                    <p className="px-3 py-4 text-xs text-muted-foreground text-center">No pay periods yet.</p>
+                  )}
                 </div>
               </PopoverContent>
             </Popover>
