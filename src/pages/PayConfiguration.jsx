@@ -204,6 +204,7 @@ export default function PayConfiguration() {
       if (field === 'status') {
         if (value === 'full_time') updated.fte = 1.0;
         else if (value === 'casual') updated.fte = 0.0;
+        else if (value === 'part_time') updated.fte = undefined;
       }
       lines[index] = updated;
       return { ...s, shift_lines: lines };
@@ -285,7 +286,7 @@ export default function PayConfiguration() {
             <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-mono">$</span>
             <Input
               type="number" step="0.01" min="0"
-              value={settings.hourly_wage}
+              value={typeof settings.hourly_wage === 'number' ? settings.hourly_wage.toFixed(2) : settings.hourly_wage}
               onChange={e => set('hourly_wage', parseFloat(e.target.value) || 0)}
               className="h-9 w-32 text-sm font-mono pl-6"
             />
@@ -339,16 +340,22 @@ export default function PayConfiguration() {
                   </SelectContent>
                 </Select>
                 <Label className="text-xs text-muted-foreground flex-shrink-0">FTE</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  max="1"
-                  value={line.fte}
-                  onChange={e => setShiftLine(idx, 'fte', parseFloat(e.target.value) || 0)}
-                  disabled={isFteLocked}
-                  className={`h-9 w-20 text-sm font-mono ${isFteLocked ? 'bg-muted/40 text-muted-foreground border-muted-foreground/20 cursor-not-allowed' : ''}`}
-                />
+                {isFteLocked ? (
+                  <span className="h-9 w-20 flex items-center justify-center text-sm font-mono bg-muted/40 text-muted-foreground border border-muted-foreground/20 rounded-md">
+                    {line.status === 'full_time' ? '1.0' : '0.0'}
+                  </span>
+                ) : (
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="1"
+                    placeholder="0.00"
+                    value={line.fte ?? ''}
+                    onChange={e => setShiftLine(idx, 'fte', e.target.value === '' ? undefined : (parseFloat(e.target.value) || 0))}
+                    className="h-9 w-20 text-sm font-mono"
+                  />
+                )}
                 {canRemove && (
                   <Button
                     type="button"
