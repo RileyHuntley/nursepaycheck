@@ -1,9 +1,11 @@
+// src/lib/healthAuthorityPortals.js
 // Known schedule and pay statement portals for BC health authorities
 export const HA_PORTALS = {
   VCH: {
     label: 'Vancouver Coastal',
     schedule: { label: 'My Schedule', url: 'https://myschedule.vch.ca/employee/' },
     pay: { label: 'My Info (Pay Stmt)', url: 'https://myinfo.vch.ca' },
+    payInquiry: { label: 'Pay Inquiry Form', url: 'https://one.vch.ca/working-here-site/Documents/Pay-inquiry-form.pdf' },
   },
   FH: {
     label: 'Fraser Health',
