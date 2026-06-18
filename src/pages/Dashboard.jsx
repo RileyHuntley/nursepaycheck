@@ -70,7 +70,7 @@ export default function Dashboard() {
 
   const computedPeriods = periods.map(p => ({
     ...p,
-    computedBreakdown: p.breakdown || (settings && p.shifts?.length ? calculatePeriodBreakdown(p.shifts, settings) : null),
+    computedBreakdown: (p.shifts?.length && settings) ? (p.breakdown || calculatePeriodBreakdown(p.shifts, settings)) : null,
   }));
 
   const totalShifts = periods.reduce((sum, p) => sum + (p.shifts?.length || 0), 0);
