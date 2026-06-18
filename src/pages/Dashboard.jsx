@@ -271,7 +271,7 @@ export default function Dashboard() {
         <PaySummaryPanel
           title="Current Pay Period"
           subtitle={currentPeriod
-            ? `${currentPeriod.name}${getVCHPayDate(currentPeriod.start_date) ? ` · Paid ${new Date(getVCHPayDate(currentPeriod.start_date) + 'T12:00:00').toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}` : ''}`
+            ? `${currentPeriod.name}${getVCHPayDate(currentPeriod.start_date) ? ` · Pay: ${new Date(getVCHPayDate(currentPeriod.start_date) + 'T12:00:00').toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}` : ''}`
             : 'No pay period yet'}
           breakdown={currentPeriod?.computedBreakdown}
           loading={loading}
@@ -281,7 +281,7 @@ export default function Dashboard() {
         <PaySummaryPanel
           title="Next Pay Period"
           subtitle={nextPeriod
-            ? `${nextPeriod.name}${getVCHPayDate(nextPeriod.start_date) ? ` · Paid ${new Date(getVCHPayDate(nextPeriod.start_date) + 'T12:00:00').toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}` : ''}`
+            ? `${nextPeriod.name}${getVCHPayDate(nextPeriod.start_date) ? ` · Pay: ${new Date(getVCHPayDate(nextPeriod.start_date) + 'T12:00:00').toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}` : ''}`
             : 'Not yet created'}
           breakdown={nextPeriod?.computedBreakdown}
           loading={loading}
