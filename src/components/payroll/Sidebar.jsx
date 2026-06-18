@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, CalendarPlus, Clock, Settings, PanelLeftClose, PanelLeftOpen, ExternalLink, List, ClipboardCheck, DollarSign, MapPin } from 'lucide-react';
+import { LayoutDashboard, CalendarPlus, Clock, Settings, PanelLeftClose, PanelLeftOpen, ExternalLink, List, ClipboardCheck, DollarSign, MapPin, Shield } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { HA_PORTALS, getUserHealthAuthorities } from '@/lib/healthAuthorityPortals';
 // Theme toggle moved to Settings page
@@ -37,6 +37,7 @@ export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('sidebar-collapsed') === 'true');
   const [healthAuthorities, setHealthAuthorities] = useState([]);
   const [pendingCount, setPendingCount] = useState(0);
+  const [isAdmin, setIsAdmin] = useState(false);
   const settingsDebounce = useRef(null);
   const periodsDebounce = useRef(null);
   const loadingSettings = useRef(false);
@@ -44,6 +45,7 @@ export default function Sidebar() {
 
   useEffect(() => {
     loadSettings();
+    base44.auth.me().then(u => { if (u?.role === 'admin') setIsAdmin(true); }).catch(() => {});
     const unsub = base44.entities.Settings.subscribe(() => {
       if (settingsDebounce.current) clearTimeout(settingsDebounce.current);
       settingsDebounce.current = setTimeout(() => loadSettings(), 1100);
@@ -141,6 +143,25 @@ export default function Sidebar() {
             )}
           </NavLink>
         ))}
+
+        {isAdmin && (
+          <NavLink
+            to="/admin"
+            title={collapsed ? 'Admin' : undefined}
+            className={({ isActive }) =>
+              `flex items-center gap-3 rounded-lg text-sm font-medium transition-colors duration-150 ${
+                collapsed ? 'justify-center px-0 py-2.5 w-full' : 'px-3 py-2.5'
+              } ${
+                isActive
+                  ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-sm'
+                  : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+              }`
+            }
+          >
+            <Shield className="w-4 h-4 flex-shrink-0" />
+            {!collapsed && 'Admin'}
+          </NavLink>
+        )}
 
         {/* BCNU Union Resources */}
         <>

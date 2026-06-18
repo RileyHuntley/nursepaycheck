@@ -18,6 +18,9 @@ import LastPayPeriod from '@/pages/LastPayPeriod';
 import PayConfiguration from '@/pages/PayConfiguration';
 import PayPeriodHistory from '@/pages/PayPeriodHistory';
 import Settings from '@/pages/Settings';
+import Admin from '@/pages/Admin';
+import AdminSupport from '@/pages/AdminSupport';
+import AdminRoute from '@/components/payroll/AdminRoute';
 import ShiftCalendar from '@/pages/ShiftCalendar';
 import ShiftLog from '@/pages/ShiftLog';
 import ShiftConfiguration from '@/pages/ShiftConfiguration';
@@ -47,6 +50,13 @@ const router = createBrowserRouter([
               { path: "/pay-configuration", element: <PayConfiguration /> },
               { path: "/shift-log", element: <ShiftLog /> },
               { path: "/calendar", element: <ShiftCalendar /> },
+            ],
+          },
+          {
+            element: <AdminRoute />,
+            children: [
+              { path: "/admin", element: <Admin /> },
+              { path: "/admin/support/:userId", element: <AdminSupport /> },
             ],
           },
         ],
