@@ -51,7 +51,7 @@ const PREMIUM_INFO = {
 };
 
 const ALLOWANCE_INFO = {
-  isolation: { article: 'Art. 54', title: 'Isolation Allowance', desc: 'Lump-sum of $150/month for nurses working in communities identified in Article 54. Pro-rated for Part-Time & Casual nurses. Paid per period as: ($150 × 12) ÷ 26.' },
+  isolation: { article: 'Art. 54', title: 'Isolation Allowance', desc: 'Lump-sum of $150/month for nurses working in communities identified in Article 54. Pro-rated for Part-Time & Casual nurses. Paid in full on the first pay period of each month that a shift is worked.' },
   business: { article: 'Art. 57.06', title: 'Business Allowance', desc: 'Lump-sum of $150/month for all regular nurses employed in community-based services. Does not include clinic-type services aligned with acute care (e.g. hospital outpatient clinics).' },
 };
 
@@ -558,7 +558,7 @@ export default function PayConfiguration() {
       <section className="bg-card border border-border rounded-xl p-5 space-y-4" onClick={() => setOpenInfo(null)}>
         <div>
           <h3 className="text-sm font-semibold text-foreground">Monthly Allowances</h3>
-          <p className="text-xs text-muted-foreground mt-1">Prorated per bi-weekly pay period: monthly × 12 ÷ 26. Toggle on only allowances that apply to your position.</p>
+          <p className="text-xs text-muted-foreground mt-1">Paid in full on the first pay period of each month that a shift is worked. Toggle on only allowances that apply to your position.</p>
         </div>
         {[
           { key: 'isolation', label: 'Isolation Allowance', rate: 150 },
@@ -580,7 +580,7 @@ export default function PayConfiguration() {
                   <Info className="w-3.5 h-3.5" />
                 </button>
               </div>
-              <p className="text-xs text-muted-foreground">${rate.toFixed(2)}/month = ${(rate * 12 / 26).toFixed(2)}/period</p>
+              <p className="text-xs text-muted-foreground">${rate.toFixed(2)}/month — paid monthly</p>
             </div>
             {openInfo === `allow_${key}` && ALLOWANCE_INFO[key] && (
               <div className="absolute z-50 left-24 bottom-full mb-2 w-72 bg-popover border border-border rounded-lg shadow-lg p-3 text-left" onClick={e => e.stopPropagation()}>

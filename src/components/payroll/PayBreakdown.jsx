@@ -57,12 +57,12 @@ const PREMIUM_INFO = {
   allowances: {
     article: 'Articles 54 & 57.06',
     title: 'Monthly Allowances',
-    description: 'Isolation Allowance (Article 54): $150/month lump-sum for nurses working in communities identified in Article 54. Pro-rated for Part-Time & Casual nurses.\n\nBusiness Allowance (Article 57.06): $150/month for all regular nurses employed in community-based services. Does not include clinic-type services aligned with acute care such as hospital outpatient clinics.\n\nPaid per pay period as: (monthly total × 12) ÷ 26 pay periods.',
+    description: 'Isolation Allowance (Article 54): $150/month lump-sum for nurses working in communities identified in Article 54. Pro-rated for Part-Time & Casual nurses.\n\nBusiness Allowance (Article 57.06): $150/month for all regular nurses employed in community-based services. Does not include clinic-type services aligned with acute care such as hospital outpatient clinics.\n\nPaid in full on the first pay period of each month that a shift is worked.',
   },
   qualification: {
     article: 'Article 53',
     title: 'Qualification Differentials',
-    description: 'Special Clinical Preparation (Art. 53.01): $50/month\nCHA/BCIT Courses (Art. 53.02): $25/month\nRPN Dual Registration (Art. 53.03): $50/month\nUniversity Preparation (Art. 53.04): $25/month\nBaccalaureate Degree (Art. 53.05): $100/month\nMaster\'s Degree (Art. 53.06): $125/month\n\nOnly regular nurses qualify. The combined yearly amount is divided by 1950 hours/year to produce an hourly rate, then multiplied by all regular hours paid in the pay period.',
+    description: 'Special Clinical Preparation (Art. 53.01): $50/month\nCHA/BCIT Courses (Art. 53.02): $25/month\nRPN Dual Registration (Art. 53.03): $50/month\nUniversity Preparation (Art. 53.04): $25/month\nBaccalaureate Degree (Art. 53.05): $100/month\nMaster\'s Degree (Art. 53.06): $125/month\n\nOnly regular nurses qualify. Paid in full on the first pay period of each month that a shift is worked. The combined yearly amount is divided by 1950 hours/year to produce an hourly rate for the breakdown display.',
   },
   straight_time: {
     article: 'NBA CBA',
@@ -238,7 +238,7 @@ export default function PayBreakdown({ breakdown, wage, title = 'Pay Period Brea
       <LineItem label="On-Call Pay" amount={breakdown.on_call_total} sublabel={breakdown.on_call_hours ? `${breakdown.on_call_hours}h total` : null} infoKey="on_call" openInfo={openInfo} onToggleInfo={toggle} />
 
       <SectionHeader title="Monthly Allowances & Qualifications" />
-      <LineItem label="Allowances (per period)" amount={breakdown.allowance_total} sublabel={`$${breakdown.allowance_monthly}/mo prorated`} infoKey="allowances" openInfo={openInfo} onToggleInfo={toggle} />
+      <LineItem label="Allowances (per period)" amount={breakdown.allowance_total} sublabel={breakdown.allowance_monthly > 0 ? `$${breakdown.allowance_monthly}/mo (full)` : null} infoKey="allowances" openInfo={openInfo} onToggleInfo={toggle} />
       <LineItem label="Qualification Diff." amount={breakdown.qualification_total} sublabel={`$${breakdown.qualification_hourly}/hr × ${breakdown.regular_hours || 0} reg hrs`} infoKey="qualification" openInfo={openInfo} onToggleInfo={toggle} />
 
       <SectionHeader title="Deductions" />

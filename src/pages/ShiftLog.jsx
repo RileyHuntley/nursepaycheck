@@ -4,7 +4,7 @@ import ShiftRow from '@/components/payroll/ShiftRow';
 import ShiftForm from '@/components/payroll/ShiftForm';
 import PayBreakdown from '@/components/payroll/PayBreakdown';
 import ShiftCalendarGrid from '@/components/payroll/ShiftCalendarGrid';
-import { calculatePeriodBreakdown, calculateShiftPremiums, getPayPeriodForDate, getPayPeriodName, isDuplicateShift } from '@/lib/premiumCalculator';
+import { calculatePeriodBreakdown, calculateShiftPremiums, getPayPeriodForDate, getPayPeriodName, isDuplicateShift, getFirstPeriodsOfMonths } from '@/lib/premiumCalculator';
 import { toast } from '@/components/ui/use-toast';
 import { formatCurrency } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -86,7 +86,7 @@ export default function ShiftLog() {
           const [keeper, ...extras] = dupes;
           const allShifts = extras.reduce((acc, p) => acc.concat(p.shifts || []), keeper.shifts || []);
           const mergedSettings = settingsList.length > 0 ? settingsList[0] : null;
-          const mergedBreakdown = mergedSettings ? calculatePeriodBreakdown(allShifts, mergedSettings) : null;
+          const mergedBreakdown = mergedSettings ? calculatePeriodBreakdown(allShifts, mergedSettings, getFirstPeriodsOfMonths(periodList).has(keeper.start_date)) : null;
           await base44.entities.PayPeriod.update(keeper.id, {
             shifts: allShifts,
             ...(mergedBreakdown ? { breakdown: mergedBreakdown } : {}),
@@ -130,6 +130,9 @@ export default function ShiftLog() {
     return () => { unsub1(); unsub2(); };
   }, [debouncedLoad]);
 
+  // Compute which periods are first of their month with shifts
+  const firstPeriodsSet = useMemo(() => getFirstPeriodsOfMonths(Object.values(periodMap)), [periodMap]);
+
   // Build shiftsMap for calendar view
   const shiftsMap = useMemo(() => {
     const map = {};
@@ -152,7 +155,7 @@ export default function ShiftLog() {
       const oldPeriod = periodMap[periodId];
       if (oldPeriod) {
         const oldShifts = (oldPeriod.shifts || []).filter((_, i) => i !== shiftIdx);
-        const oldBreakdown = settings ? calculatePeriodBreakdown(oldShifts, settings) : null;
+        const oldBreakdown = settings ? calculatePeriodBreakdown(oldShifts, settings, firstPeriodsSet.has(oldPeriod.start_date)) : null;
         await base44.entities.PayPeriod.update(oldPeriod.id, {
           shifts: oldShifts,
           ...(oldBreakdown ? { breakdown: oldBreakdown } : {}),
@@ -160,7 +163,7 @@ export default function ShiftLog() {
       }
       // Add to new period
       const newShifts = [...(newPeriod.shifts || []), { ...shiftData }];
-      const newBreakdown = settings ? calculatePeriodBreakdown(newShifts, settings) : null;
+      const newBreakdown = settings ? calculatePeriodBreakdown(newShifts, settings, firstPeriodsSet.has(newPeriod.start_date)) : null;
       await base44.entities.PayPeriod.update(newPeriod.id, {
         shifts: newShifts,
         ...(newBreakdown ? { breakdown: newBreakdown } : {}),
@@ -174,7 +177,7 @@ export default function ShiftLog() {
     const updatedShifts = (period.shifts || []).map((s, i) =>
       i === shiftIdx ? { ...shiftData } : s
     );
-    const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings) : null;
+    const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings, firstPeriodsSet.has(period.start_date)) : null;
     await base44.entities.PayPeriod.update(period.id, {
       shifts: updatedShifts,
       ...(breakdown ? { breakdown } : {}),
@@ -208,7 +211,7 @@ export default function ShiftLog() {
       if (!stillInOldPeriod) {
         // Remove from old period
         const oldShifts = (oldPeriod.shifts || []).filter((_, i) => i !== editingShift._shiftIdx);
-        const oldBreakdown = settings ? calculatePeriodBreakdown(oldShifts, settings) : null;
+        const oldBreakdown = settings ? calculatePeriodBreakdown(oldShifts, settings, firstPeriodsSet.has(oldPeriod.start_date)) : null;
         await base44.entities.PayPeriod.update(oldPeriod.id, {
           shifts: oldShifts,
           ...(oldBreakdown ? { breakdown: oldBreakdown } : {}),
@@ -216,7 +219,7 @@ export default function ShiftLog() {
         // Find or create new period
         const newPeriod = await findOrCreatePeriodForDate(shiftData.date);
         const newShifts = [...(newPeriod.shifts || []), { ...shiftData }];
-        const newBreakdown = settings ? calculatePeriodBreakdown(newShifts, settings) : null;
+        const newBreakdown = settings ? calculatePeriodBreakdown(newShifts, settings, firstPeriodsSet.has(newPeriod.start_date)) : null;
         await base44.entities.PayPeriod.update(newPeriod.id, {
           shifts: newShifts,
           ...(newBreakdown ? { breakdown: newBreakdown } : {}),
@@ -230,7 +233,7 @@ export default function ShiftLog() {
     const updatedShifts = (oldPeriod.shifts || []).map((s, i) =>
       i === editingShift._shiftIdx ? { ...shiftData } : s
     );
-    const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings) : null;
+    const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings, firstPeriodsSet.has(oldPeriod.start_date)) : null;
     await base44.entities.PayPeriod.update(oldPeriod.id, {
       shifts: updatedShifts,
       ...(breakdown ? { breakdown } : {}),
@@ -243,7 +246,7 @@ export default function ShiftLog() {
     const period = periodMap[shift._periodId];
     if (!period) return;
     const updatedShifts = (period.shifts || []).filter((_, i) => i !== shift._shiftIdx);
-    const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings) : null;
+    const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings, firstPeriodsSet.has(period.start_date)) : null;
     await base44.entities.PayPeriod.update(period.id, {
       shifts: updatedShifts,
       ...(breakdown ? { breakdown } : {}),
@@ -308,7 +311,7 @@ export default function ShiftLog() {
       const updatedShifts = (period.shifts || []).map((s, i) =>
         indexSet.has(i) ? { ...s, status: 'verified' } : s
       );
-      const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings) : null;
+      const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings, firstPeriodsSet.has(period.start_date)) : null;
       await base44.entities.PayPeriod.update(period.id, {
         shifts: updatedShifts,
         ...(breakdown ? { breakdown } : {}),
@@ -333,7 +336,7 @@ export default function ShiftLog() {
       const updatedShifts = (period.shifts || []).map((s, i) =>
         indexSet.has(i) ? { ...s, shift_type: newType } : s
       );
-      const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings) : null;
+      const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings, firstPeriodsSet.has(period.start_date)) : null;
       await base44.entities.PayPeriod.update(period.id, {
         shifts: updatedShifts,
         ...(breakdown ? { breakdown } : {}),
@@ -355,7 +358,7 @@ export default function ShiftLog() {
       const period = periodMap[periodId];
       if (!period) continue;
       const updatedShifts = (period.shifts || []).filter((_, i) => !indexSet.has(i));
-      const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings) : null;
+      const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings, firstPeriodsSet.has(period.start_date)) : null;
       await base44.entities.PayPeriod.update(period.id, {
         shifts: updatedShifts,
         ...(breakdown ? { breakdown } : {}),
@@ -393,7 +396,7 @@ export default function ShiftLog() {
     }
 
     const updatedShifts = [...periodShifts, { ...shiftData, status: shiftData.status || getDefaultStatus(shiftData.date) }];
-    const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings) : null;
+    const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings, firstPeriodsSet.has(period.start_date)) : null;
     await base44.entities.PayPeriod.update(period.id, {
       shifts: updatedShifts,
       ...(breakdown ? { breakdown } : {}),
@@ -416,7 +419,7 @@ export default function ShiftLog() {
       const filtered = groupShifts.filter(s => !isDuplicateShift(existing, s));
       skippedCount += groupShifts.length - filtered.length;
       const updatedShifts = [...existing, ...filtered];
-      const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings) : null;
+      const breakdown = settings ? calculatePeriodBreakdown(updatedShifts, settings, firstPeriodsSet.has(period.start_date)) : null;
       await base44.entities.PayPeriod.update(period.id, {
         shifts: updatedShifts,
         ...(breakdown ? { breakdown } : {}),
@@ -476,7 +479,8 @@ export default function ShiftLog() {
     }
     breakdown = Object.values(periodGroups).reduce((acc, groupShifts) => {
       const cleanShifts = groupShifts.map(({ _periodName, _periodId, _periodStart, _shiftIdx, ...shift }) => shift);
-      const pb = calculatePeriodBreakdown(cleanShifts, settings);
+      const pd = getPayPeriodForDate(cleanShifts[0]?.date || todayStr);
+      const pb = calculatePeriodBreakdown(cleanShifts, settings, firstPeriodsSet.has(pd.start_date));
       return {
         straight_time_pay: (acc.straight_time_pay || 0) + pb.straight_time_pay,
         overtime_pay: (acc.overtime_pay || 0) + pb.overtime_pay,
@@ -710,7 +714,7 @@ export default function ShiftLog() {
                 return (
                   <>
                     {visibleGroups.map((group) => {
-                      const periodBreakdown = settings && group.shifts.length > 0 ? calculatePeriodBreakdown(group.shifts, settings) : null;
+                      const periodBreakdown = settings && group.shifts.length > 0 ? calculatePeriodBreakdown(group.shifts, settings, firstPeriodsSet.has(group.periodStart)) : null;
                       return (
                         <div key={group.key}>
                           <div className="px-4 py-3 bg-secondary/30 border-b border-border flex items-center justify-between">

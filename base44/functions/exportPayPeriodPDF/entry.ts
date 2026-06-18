@@ -358,7 +358,7 @@ Deno.serve(async (req) => {
       y+=2; secHdr('MONTHLY ALLOWANCES & QUALIFICATIONS');
       if (bd.allowance_total > 0) {
         const mo = bd.allowance_monthly||0;
-        drawRow('Allowances (per period)', bd.allowance_total, false, COL.dark, `${fm$(mo)}/mo x 12mo / 26 PP = ${fm$(bd.allowance_total)}`);
+        drawRow('Allowances (per period)', bd.allowance_total, false, COL.dark, mo > 0 ? `${fm$(mo)}/mo (paid in full)` : null);
       }
       if (bd.qualification_total > 0) {
         const qh = bd.qualification_hourly||0, rh = bd.regular_hours||0;
