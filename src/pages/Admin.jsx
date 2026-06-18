@@ -1,20 +1,34 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Loader2, Shield, UserCircle } from 'lucide-react';
+import { Search, Loader2, Shield, UserCircle, RefreshCw } from 'lucide-react';
 
 export default function Admin() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
 
-  useEffect(() => {
+  const loadUsers = useCallback((showLoader = true) => {
+    if (showLoader) setLoading(true);
+    else setRefreshing(true);
     base44.entities.User.list().then(list => {
       setUsers(list.sort((a, b) => (a.full_name || a.email).localeCompare(b.full_name || b.email)));
       setLoading(false);
-    }).catch(() => setLoading(false));
+      setRefreshing(false);
+    }).catch(() => {
+      setLoading(false);
+      setRefreshing(false);
+    });
   }, []);
+
+  useEffect(() => {
+    loadUsers(true);
+    const unsub = base44.entities.User.subscribe(() => loadUsers(false));
+    return unsub;
+  }, [loadUsers]);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return users;
@@ -35,9 +49,15 @@ export default function Admin() {
 
   return (
     <div className="max-w-4xl space-y-6">
-      <div>
-        <h2 className="text-2xl font-display font-bold text-foreground tracking-tight">Admin</h2>
-        <p className="text-sm text-muted-foreground mt-1">View and support other users</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-display font-bold text-foreground tracking-tight">Admin</h2>
+          <p className="text-sm text-muted-foreground mt-1">View and support other users</p>
+        </div>
+        <Button size="sm" variant="outline" onClick={() => loadUsers(false)} disabled={refreshing}>
+          <RefreshCw className={`w-4 h-4 mr-1 ${refreshing ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
       </div>
 
       <div className="relative">

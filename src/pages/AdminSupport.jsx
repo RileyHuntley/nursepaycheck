@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
+import { Button } from '@/components/ui/button';
 import PaySummaryPanel from '@/components/payroll/PaySummaryPanel';
 import { calculatePeriodBreakdown, getCurrentPayPeriodDates } from '@/lib/premiumCalculator';
-import { ArrowLeft, Loader2, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Loader2, AlertTriangle, RefreshCw } from 'lucide-react';
 
 const addDays = (dateStr, days) => {
   const d = new Date(dateStr + 'T12:00:00');
@@ -59,20 +60,26 @@ export default function AdminSupport() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    setLoading(true);
+  const fetchData = (showLoader = true) => {
+    if (showLoader) setLoading(true);
+    else setRefreshing(true);
     setError(null);
     base44.functions.invoke('getUserData', { userId })
       .then(res => {
         setData(res.data);
         setLoading(false);
+        setRefreshing(false);
       })
       .catch(e => {
         setError(e.response?.data?.error || e.message || 'Failed to load user data');
         setLoading(false);
+        setRefreshing(false);
       });
-  }, [userId]);
+  };
+
+  useEffect(() => { fetchData(true); }, [userId]);
 
   if (loading) {
     return (
@@ -127,6 +134,10 @@ export default function AdminSupport() {
             {targetUser?.email} · {totalShifts} shifts · {periods.length} pay periods
           </p>
         </div>
+        <Button size="sm" variant="outline" onClick={() => fetchData(false)} disabled={refreshing} className="ml-auto">
+          <RefreshCw className={`w-4 h-4 mr-1 ${refreshing ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
       </div>
 
       {totalShifts === 0 ? (
