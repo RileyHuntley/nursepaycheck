@@ -6,8 +6,9 @@ import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Save, Loader2, X, AlertTriangle, Link2, Copy, RefreshCw } from 'lucide-react';
+import { Save, Loader2, X, AlertTriangle, Link2, Copy, RefreshCw, Sun, Moon, Monitor } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import { useTheme } from 'next-themes';
 import AccountProfile from '@/components/payroll/AccountProfile';
 import AccountSecurity from '@/components/payroll/AccountSecurity';
 import {
@@ -29,6 +30,7 @@ export default function Settings() {
   const [message, setMessage] = useState(null);
   const [savedVersion, setSavedVersion] = useState(0);
   const savedRef = useRef(null);
+  const { theme, setTheme } = useTheme();
 
   const isDirty = useMemo(() => {
     if (!settings || !savedRef.current) return false;
@@ -161,6 +163,49 @@ export default function Settings() {
 
       {/* Account Security */}
       <AccountSecurity />
+
+      {/* Theme */}
+      <section className="bg-card border border-border rounded-xl p-5 space-y-4">
+        <div>
+          <h3 className="text-sm font-semibold text-foreground">Appearance</h3>
+          <p className="text-xs text-muted-foreground mt-1">Choose your preferred color theme for the app.</p>
+        </div>
+        <div className="grid grid-cols-3 gap-3">
+          <button
+            onClick={() => setTheme('light')}
+            className={`flex flex-col items-center gap-2 p-3 rounded-lg border transition-colors ${
+              theme === 'light'
+                ? 'border-primary bg-primary/10 text-primary'
+                : 'border-border bg-muted/30 text-muted-foreground hover:bg-muted/60'
+            }`}
+          >
+            <Sun className="w-5 h-5" />
+            <span className="text-xs font-medium">Light</span>
+          </button>
+          <button
+            onClick={() => setTheme('dark')}
+            className={`flex flex-col items-center gap-2 p-3 rounded-lg border transition-colors ${
+              theme === 'dark'
+                ? 'border-primary bg-primary/10 text-primary'
+                : 'border-border bg-muted/30 text-muted-foreground hover:bg-muted/60'
+            }`}
+          >
+            <Moon className="w-5 h-5" />
+            <span className="text-xs font-medium">Dark</span>
+          </button>
+          <button
+            onClick={() => setTheme('system')}
+            className={`flex flex-col items-center gap-2 p-3 rounded-lg border transition-colors ${
+              theme === 'system'
+                ? 'border-primary bg-primary/10 text-primary'
+                : 'border-border bg-muted/30 text-muted-foreground hover:bg-muted/60'
+            }`}
+          >
+            <Monitor className="w-5 h-5" />
+            <span className="text-xs font-medium">System</span>
+          </button>
+        </div>
+      </section>
 
       {/* Share Link */}
       <section className="bg-card border border-border rounded-xl p-5 space-y-4">
