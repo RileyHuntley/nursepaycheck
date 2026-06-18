@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, DollarSign, Settings, CalendarPlus } from 'lucide-react';
+import { ArrowRight, DollarSign, MapPin, CalendarPlus } from 'lucide-react';
 
 export default function SetupBanner({ hasShifts, hasWage, hasTaxSettings }) {
   if (hasShifts) return null;
@@ -8,14 +8,14 @@ export default function SetupBanner({ hasShifts, hasWage, hasTaxSettings }) {
   const steps = [
     {
       icon: DollarSign,
-      label: 'Set your hourly wage & premiums',
+      label: 'Set your hourly wage, monthly allowances, & shift differentials',
       to: '/pay-configuration',
       done: hasWage,
     },
     {
-      icon: Settings,
+      icon: MapPin,
       label: 'Add your hospitals & shift defaults',
-      to: '/settings',
+      to: '/shift-configuration',
       done: false, // we don't track this granularly; always show as actionable
     },
     {
