@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { User, Loader2 } from 'lucide-react';
 
 export default function NamePrompt({ onDone }) {
+  const { checkUserAuth } = useAuth();
   const [name, setName] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -21,7 +23,8 @@ export default function NamePrompt({ onDone }) {
     setError('');
     try {
       await base44.functions.invoke('updateUserName', { full_name: trimmed });
-      window.location.reload();
+      await checkUserAuth();
+      onDone();
     } catch (err) {
       setError(err.response?.data?.error || err.message || 'Failed to save name.');
       setSaving(false);
