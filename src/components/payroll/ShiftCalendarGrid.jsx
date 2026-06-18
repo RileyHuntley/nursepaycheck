@@ -73,10 +73,14 @@ export default function ShiftCalendarGrid({ settings, shiftsMap, onShiftUpdate, 
 
   useEffect(() => {
     if (pickerOpen && periodNav?.currentId) {
-      const el = periodRefs.current.get(periodNav.currentId);
-      if (el) {
-        el.scrollIntoView({ block: 'center' });
-      }
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const el = periodRefs.current.get(periodNav.currentId);
+          if (el) {
+            el.scrollIntoView({ block: 'center' });
+          }
+        });
+      });
     }
   }, [pickerOpen, periodNav?.currentId]);
 
