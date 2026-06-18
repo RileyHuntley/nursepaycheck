@@ -10,9 +10,9 @@ Deno.serve(async (req) => {
     const name = (body.full_name || '').trim();
     if (!name) return Response.json({ error: 'Name is required' }, { status: 400 });
 
-    await base44.asServiceRole.entities.User.update(user.id, { full_name: name });
+    await base44.auth.updateMe({ display_name: name });
 
-    return Response.json({ success: true, full_name: name });
+    return Response.json({ success: true, display_name: name });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

@@ -128,7 +128,7 @@ export default function AdminSupport() {
         </Link>
         <div>
           <h2 className="text-2xl font-display font-bold text-foreground tracking-tight">
-            {targetUser?.full_name || targetUser?.email || 'Unknown User'}
+            {targetUser?.full_name || targetUser?.display_name || targetUser?.email || 'Unknown User'}
           </h2>
           <p className="text-sm text-muted-foreground">
             {targetUser?.email} · {totalShifts} shifts · {periods.length} pay periods

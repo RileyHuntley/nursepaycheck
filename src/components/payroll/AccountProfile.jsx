@@ -16,7 +16,7 @@ export default function AccountProfile() {
   if (!user) return null;
 
   const startEdit = () => {
-    setName(user.full_name || '');
+    setName(user.display_name || user.full_name || '');
     setMessage(null);
     setEditing(true);
   };
@@ -81,7 +81,7 @@ export default function AccountProfile() {
           ) : (
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <p className="text-sm font-medium text-foreground">{user.full_name || 'No name set'}</p>
+                <p className="text-sm font-medium text-foreground">{user.display_name || user.full_name || 'No name set'}</p>
                 <Button size="icon" variant="ghost" onClick={startEdit} className="h-6 w-6 text-muted-foreground hover:text-foreground">
                   <Pencil className="w-3.5 h-3.5" />
                 </Button>

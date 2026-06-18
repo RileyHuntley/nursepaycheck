@@ -9,7 +9,7 @@ export default function Layout() {
 
   useEffect(() => {
     base44.auth.me().then(user => {
-      if (user && !user.full_name) setShowNamePrompt(true);
+      if (user && !user.full_name && !user.display_name) setShowNamePrompt(true);
     }).catch(() => {});
   }, []);
 

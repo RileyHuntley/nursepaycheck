@@ -18,7 +18,7 @@ Deno.serve(async (req) => {
     ]);
 
     return Response.json({
-      user: targetUser[0] ? { id: targetUser[0].id, email: targetUser[0].email, full_name: targetUser[0].full_name, role: targetUser[0].role } : null,
+      user: targetUser[0] ? { id: targetUser[0].id, email: targetUser[0].email, full_name: targetUser[0].full_name, display_name: targetUser[0].display_name, role: targetUser[0].role } : null,
       settings: settings[0] || null,
       periods,
     });

@@ -83,7 +83,7 @@ export default function Admin() {
               <UserCircle className="w-5 h-5 text-muted-foreground flex-shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground truncate">
-                  {u.full_name || 'Unnamed User'}
+                  {u.full_name || u.display_name || 'Unnamed User'}
                 </p>
                 <p className="text-xs text-muted-foreground truncate">{u.email}</p>
               </div>

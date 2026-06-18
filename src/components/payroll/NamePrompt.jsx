@@ -23,7 +23,7 @@ export default function NamePrompt({ onDone }) {
     setError('');
     try {
       await base44.functions.invoke('updateUserName', { full_name: trimmed });
-      updateUserLocal({ full_name: trimmed });
+      updateUserLocal({ display_name: trimmed });
       onDone();
     } catch (err) {
       setError(err.response?.data?.error || err.message || 'Failed to save name.');
