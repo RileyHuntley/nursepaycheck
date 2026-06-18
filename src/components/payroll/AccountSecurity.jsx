@@ -4,7 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { KeyRound, Mail, Loader2, Check, Shield, AlertCircle } from 'lucide-react';
+import { KeyRound, Mail, Loader2, Check, Shield, AlertCircle, Trash2, ExternalLink } from 'lucide-react';
 
 export default function AccountSecurity() {
   const { user } = useAuth();
@@ -132,6 +132,33 @@ export default function AccountSecurity() {
             <span className="text-[11px] text-muted-foreground">{user.email}</span>
           </div>
         </div>
+      </div>
+
+      {/* Danger Zone — Delete Account */}
+      <div className="p-4 rounded-lg border border-destructive/30 bg-destructive/5 space-y-3">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-full bg-destructive/10 flex items-center justify-center text-destructive flex-shrink-0">
+            <Trash2 className="w-5 h-5" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-destructive">Delete Account</p>
+            <p className="text-xs text-muted-foreground">
+              Permanently delete your account and all associated data. This cannot be undone.
+            </p>
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Account deletion is managed through your Base44 account settings. You&apos;ll have a 7-day grace period to cancel if you change your mind.
+        </p>
+        <Button
+          variant="destructive"
+          size="sm"
+          className="text-xs"
+          onClick={() => window.open('https://base44.com/account-settings', '_blank', 'noopener,noreferrer')}
+        >
+          <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+          Open Account Settings
+        </Button>
       </div>
     </section>
   );
