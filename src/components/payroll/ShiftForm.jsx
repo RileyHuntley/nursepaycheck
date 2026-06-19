@@ -39,7 +39,8 @@ const SHIFT_TYPES = [
   { value: 'unpaid_sick',     label: 'Unpaid Sick' },
   { value: 'special_leave',   label: 'Special Leave' },
   { value: 'pdo_pst',         label: 'PDO / PST' },
-  { value: 'other_leave',     label: 'Other Leave' },
+  { value: 'other_leave',        label: 'Other Leave' },
+  { value: 'student_practicum',  label: 'Student Practicum' },
 ];
 
 const RESPONSIBILITY_OPTIONS = [
