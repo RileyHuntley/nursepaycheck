@@ -197,7 +197,7 @@ export default function ShiftForm({ onSubmit, onCancel, onDelete, initial, setti
         const nextStatType = getStatType(nextDateStr);
         const nextStatName = getStatName(nextDateStr);
 
-        const STRAIGHT = ['casual', 'regular', 'isn', 'vacation', 'sick', 'special_leave', 'pdo_pst', 'other_leave'];
+        const STRAIGHT = ['casual', 'regular', 'isn', 'vacation', 'sick', 'special_leave', 'pdo_pst', 'other_leave', 'orientation', 'education'];
 
         // Only show if at least one day is a stat, or it's a day-off crossing a stat
         if (!statType && !nextStatType && shift.shift_type !== 'day_off') return null;
