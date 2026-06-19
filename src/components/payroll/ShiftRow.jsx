@@ -16,6 +16,8 @@ const TYPE_LABELS = {
   special_leave:   'Special Leave',
   pdo_pst:         'PDO/PST',
   other_leave:     'Other Leave',
+  orientation:     'Orientation',
+  education:       'Education',
 };
 
 const TYPE_COLORS = {
@@ -30,6 +32,8 @@ const TYPE_COLORS = {
   special_leave:   'bg-chart-5/15 text-chart-5',
   pdo_pst:         'bg-muted text-muted-foreground',
   other_leave:     'bg-muted text-muted-foreground',
+  orientation:     'bg-chart-3/15 text-chart-3',
+  education:       'bg-chart-3/15 text-chart-3',
 };
 
 const todayStr = new Date().toISOString().slice(0, 10);

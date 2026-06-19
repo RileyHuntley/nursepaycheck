@@ -186,6 +186,18 @@ export function superShiftHours(dateStr, startTime, endTime) {
 }
 
 /**
+ * Resolve employment status for a shift by matching hospital+unit against shift_lines.
+ * Returns 'full_time', 'part_time', or 'casual' (defaults to 'full_time' if no lines configured).
+ */
+function getShiftStatus(shift, settings) {
+  const lines = settings.shift_lines || [];
+  const match = lines.find(l => l.hospital === shift.hospital && l.unit === shift.unit)
+    || lines.find(l => l.hospital === shift.hospital)
+    || lines[0];
+  return match?.status || 'full_time';
+}
+
+/**
  * Calculate all applicable premiums for a single shift.
  * Returns amounts + the billed hours used for each premium (for display).
  * If shift.premium_overrides exists, those values are used instead of calculated ones.
@@ -194,7 +206,10 @@ export function calculateShiftPremiums(shift, settings) {
   const rates = settings.premium_rates;
   const paidHours = shift.paid_hours || 0;
   const isStraight = ['regular', 'isn', 'vacation', 'paid_vacation', 'sick', 'paid_sick', 'special_leave', 'pdo_pst', 'other_leave', 'orientation', 'education'].includes(shift.shift_type);
-  const eligibleForRegularPremium = ['regular', 'isn'].includes(shift.shift_type);
+  const status = getShiftStatus(shift, settings);
+  const isNonCasual = status === 'full_time' || status === 'part_time';
+  const eligibleForRegularPremium = ['regular', 'isn'].includes(shift.shift_type)
+    || (['orientation', 'education'].includes(shift.shift_type) && isNonCasual);
   const overrides = shift.premium_overrides || {};
 
   // --- Evening / Night ---
@@ -530,7 +545,11 @@ export function calculatePeriodBreakdown(shifts, settings, isFirstOfMonth = fals
     }
 
     // Regular premium: only on hours that actually stayed at 1× (straight-time)
-    const adjustedRegularPremium = shiftStraightHours > 0 && REGULAR_PREMIUM_TYPES.includes(shift.shift_type)
+    const shiftStatus = getShiftStatus(shift, settings);
+    const shiftIsNonCasual = shiftStatus === 'full_time' || shiftStatus === 'part_time';
+    const eligibleForPeriodRegularPremium = REGULAR_PREMIUM_TYPES.includes(shift.shift_type)
+      || (['orientation', 'education'].includes(shift.shift_type) && shiftIsNonCasual);
+    const adjustedRegularPremium = shiftStraightHours > 0 && eligibleForPeriodRegularPremium
       ? round2(shiftStraightHours * settings.premium_rates.regular_premium)
       : 0;
     regularPremiumTotal += adjustedRegularPremium;
