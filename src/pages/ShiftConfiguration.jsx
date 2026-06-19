@@ -90,6 +90,16 @@ export default function ShiftConfiguration() {
 
   useEffect(() => { loadSettings(); }, [loadSettings]);
 
+  useEffect(() => {
+    if (!settings) return;
+    const hospitals = settings.hospitals || [];
+    const units = settings.units || [];
+    const autoDefault = {};
+    if (hospitals.length === 1 && !settings.default_hospital) autoDefault.default_hospital = hospitals[0].name;
+    if (units.length === 1 && !settings.default_unit) autoDefault.default_unit = units[0].name;
+    if (Object.keys(autoDefault).length > 0) setSettings(s => ({ ...s, ...autoDefault }));
+  }, [settings?.hospitals?.length, settings?.units?.length]);
+
   const set = (path, value) => {
     setSettings(s => {
       const copy = { ...s };
