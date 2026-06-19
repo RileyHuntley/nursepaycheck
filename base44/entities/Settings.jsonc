@@ -155,6 +155,16 @@
       "items": { "type": "string" },
       "default": []
     },
+    "special_clinical_prep_units": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "cha_bcit_units": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
     "active_qualifications": {
       "type": "array",
       "items": {
