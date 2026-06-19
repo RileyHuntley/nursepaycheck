@@ -107,6 +107,8 @@ const defaultSettings = {
     bccnm_license: '',
     bccnm_expiry: '',
     employee_number: '',
+    employee_ids: {},
+    anniversary_dates: {},
   },
   hourly_wage: 45.00,
   ot_multipliers: { overtime: 1.5, overtime_extended: 2.0, stat_holiday: 1.5, ot_stat_holiday: 3.0 },
@@ -176,7 +178,12 @@ export default function PayConfiguration() {
       const merged = {
         ...defaultSettings,
         ...list[0],
-        nurse_profile: { ...defaultSettings.nurse_profile, ...(list[0].nurse_profile || {}) },
+        nurse_profile: (() => {
+          const np = { ...defaultSettings.nurse_profile, ...(list[0].nurse_profile || {}) };
+          if (!np.employee_ids) np.employee_ids = {};
+          if (!np.anniversary_dates) np.anniversary_dates = {};
+          return np;
+        })(),
         premium_rates: { ...defaultSettings.premium_rates, ...(list[0].premium_rates || {}) },
         ot_multipliers: { ...defaultSettings.ot_multipliers, ...(list[0].ot_multipliers || {}) },
         allowance_rates: { ...defaultSettings.allowance_rates, ...(list[0].allowance_rates || {}) },
@@ -341,16 +348,59 @@ export default function PayConfiguration() {
             </SelectContent>
           </Select>
           </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Employee ID Number</Label>
-            <Input
-              type="text"
-              value={settings.nurse_profile?.employee_number || ''}
-              onChange={e => set('nurse_profile.employee_number', e.target.value)}
-              className="h-9 text-sm font-mono"
-              placeholder="e.g. 123456"
-            />
-          </div>
+          {(() => {
+            const hospitals = settings.hospitals || [];
+            const uniqueHAs = [...new Set(hospitals.map(h => h.health_authority).filter(Boolean))].slice(0, 4);
+            if (uniqueHAs.length === 0) {
+              return (
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Employee ID</Label>
+                  <Input
+                    type="text"
+                    value={settings.nurse_profile?.employee_number || ''}
+                    onChange={e => set('nurse_profile.employee_number', e.target.value)}
+                    className="h-9 text-sm font-mono"
+                    placeholder="e.g. 123456"
+                  />
+                </div>
+              );
+            }
+            return uniqueHAs.map(ha => (
+              <div key={ha} className="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">{ha} Employee ID</Label>
+                  <Input
+                    type="text"
+                    value={settings.nurse_profile?.employee_ids?.[ha] || ''}
+                    onChange={e => setSettings(s => ({
+                      ...s,
+                      nurse_profile: {
+                        ...s.nurse_profile,
+                        employee_ids: { ...(s.nurse_profile?.employee_ids || {}), [ha]: e.target.value },
+                      },
+                    }))}
+                    className="h-9 text-sm font-mono"
+                    placeholder="e.g. 123456"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">{ha} Anniversary Date</Label>
+                  <Input
+                    type="date"
+                    value={settings.nurse_profile?.anniversary_dates?.[ha] || ''}
+                    onChange={e => setSettings(s => ({
+                      ...s,
+                      nurse_profile: {
+                        ...s.nurse_profile,
+                        anniversary_dates: { ...(s.nurse_profile?.anniversary_dates || {}), [ha]: e.target.value },
+                      },
+                    }))}
+                    className="h-9 text-sm font-mono"
+                  />
+                </div>
+              </div>
+            ));
+          })()}
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">BCCNM License Number</Label>
             <Input
