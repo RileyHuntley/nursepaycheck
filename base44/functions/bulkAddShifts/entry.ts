@@ -1,8 +1,21 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
 // Inline premium calculator helpers (avoiding large frontend lib import)
+function getWageForDate(settings, date) {
+  const history = settings.wage_history;
+  if (!history || history.length === 0) return settings.hourly_wage || 45;
+  const sorted = [...history]
+    .filter(e => e.wage > 0)
+    .sort((a, b) => (b.effective_date || '') > (a.effective_date || '') ? 1 : -1)
+    .reverse();
+  if (!date) return sorted[0]?.wage || settings.hourly_wage || 45;
+  for (const entry of sorted) {
+    if (!entry.effective_date || entry.effective_date <= date) return entry.wage;
+  }
+  return sorted[sorted.length - 1]?.wage || settings.hourly_wage || 45;
+}
+
 function calculatePeriodBreakdown(shifts, settings) {
-  const wage = settings.hourly_wage || 45;
   const otMult = settings.ot_multipliers || {};
   const premRates = settings.premium_rates || {};
 
@@ -17,6 +30,7 @@ function calculatePeriodBreakdown(shifts, settings) {
   for (const shift of (shifts || [])) {
     const hours = shift.paid_hours || 0;
     if (hours <= 0) continue;
+    const wage = getWageForDate(settings, shift.date);
     const startH = parseInt((shift.start_time || '07:00').split(':')[0]);
     const endH_raw = parseInt((shift.end_time || '19:00').split(':')[0]);
     const endH = endH_raw <= startH ? endH_raw + 24 : endH_raw;
@@ -48,14 +62,13 @@ function calculatePeriodBreakdown(shifts, settings) {
     regularPremiumTotal += hours * (premRates.regular_premium || 2.15);
 
     // Base pay
-    const baseRate = wage;
     const isOT = shift.shift_type === 'overtime' || shift.shift_type === 'ot_stat';
     const isExt = shift.extended_shift;
 
     if (isOT) {
       overtimePay += hours * wage * (otMult.overtime || 1.5);
     } else {
-      straightTimePay += hours * baseRate;
+      straightTimePay += hours * wage;
       regularHours += hours;
     }
     if (isExt) {

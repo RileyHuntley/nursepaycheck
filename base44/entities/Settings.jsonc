@@ -7,6 +7,17 @@
       "minimum": 0,
       "default": 45
     },
+    "wage_history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "effective_date": { "type": "string" },
+          "wage": { "type": "number" }
+        }
+      },
+      "default": []
+    },
     "ot_multipliers": {
       "type": "object",
       "properties": {

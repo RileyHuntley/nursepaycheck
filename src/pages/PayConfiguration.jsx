@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Save, Loader2, X, AlertTriangle, Info } from 'lucide-react';
+import { Save, Loader2, X, AlertTriangle, Info, Plus } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -110,6 +110,7 @@ const defaultSettings = {
     anniversary_dates: {},
   },
   hourly_wage: 45.00,
+  wage_history: [],
   ot_multipliers: { overtime: 1.5, overtime_extended: 2.0, stat_holiday: 1.5, ot_stat_holiday: 3.0 },
   premium_rates: {
     evening: 1.40, night: 5.00, weekend: 3.50, super_shift: 1.85, regular_premium: 2.15,
@@ -152,6 +153,8 @@ export default function PayConfiguration() {
   const [message, setMessage] = useState(null);
   const [savedVersion, setSavedVersion] = useState(0);
   const [openInfo, setOpenInfo] = useState(null);
+  const [newWageAmount, setNewWageAmount] = useState('');
+  const [newWageDate, setNewWageDate] = useState('');
   const savedRef = useRef(null);
 
   const isDirty = useMemo(() => {
@@ -192,6 +195,7 @@ export default function PayConfiguration() {
         shift_lines: list[0].shift_lines || defaultSettings.shift_lines,
         active_allowances: list[0].active_allowances || defaultSettings.active_allowances,
         active_qualifications: list[0].active_qualifications || defaultSettings.active_qualifications,
+        wage_history: list[0].wage_history || [],
         hospitals: list[0].hospitals || [],
         units: list[0].units || [],
       };
@@ -408,22 +412,74 @@ export default function PayConfiguration() {
           </div>
         </div>
       </section>
-      {/* Base Hourly Wage */}
+      {/* Wage History */}
       <section className="bg-card border border-border rounded-xl p-5 space-y-4">
-        <h3 className="text-sm font-semibold text-foreground">Base Hourly Wage</h3>
-        <div className="flex items-center gap-3">
-          <Label className="text-xs text-muted-foreground w-40">Hourly Rate</Label>
+        <h3 className="text-sm font-semibold text-foreground">Wage History</h3>
+        {/* Existing entries */}
+        {(settings.wage_history || []).length > 0 && (
+          <div className="space-y-2">
+            {[...(settings.wage_history || [])]
+              .filter(e => e.wage > 0)
+              .sort((a, b) => (b.effective_date || '') > (a.effective_date || '') ? 1 : -1)
+              .reverse()
+              .map((entry, idx, arr) => {
+                const origIdx = (settings.wage_history || []).indexOf(entry);
+                return (
+                  <div key={origIdx} className="flex items-center gap-3">
+                    <span className="text-xs font-mono text-foreground w-28">
+                      {entry.effective_date || 'No date'}
+                    </span>
+                    <span className="text-sm font-mono text-foreground">${entry.wage.toFixed(2)}/hr</span>
+                    {idx === 0 && (
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-chart-3/15 text-chart-3 border border-chart-3/20">Current</span>
+                    )}
+                    <button
+                      onClick={() => setSettings(s => ({ ...s, wage_history: (s.wage_history || []).filter((_, i) => i !== origIdx) }))}
+                      className="ml-auto text-muted-foreground hover:text-foreground"
+                      aria-label="Remove"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                );
+              })}
+          </div>
+        )}
+        {/* Add new entry */}
+        <div className="flex items-center gap-2 pt-1">
           <div className="relative">
             <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-mono">$</span>
             <Input
               type="number" step="0.01" min="0"
-              value={typeof settings.hourly_wage === 'number' ? settings.hourly_wage.toFixed(2) : settings.hourly_wage}
-              onChange={e => set('hourly_wage', parseFloat(e.target.value) || 0)}
-              className="h-9 w-32 text-sm font-mono pl-6"
+              placeholder="45.00"
+              value={newWageAmount}
+              onChange={e => setNewWageAmount(e.target.value)}
+              className="h-9 w-28 text-sm font-mono pl-6"
             />
           </div>
+          <Input
+            type="date"
+            value={newWageDate}
+            onChange={e => setNewWageDate(e.target.value)}
+            className="h-9 w-40 text-sm font-mono"
+          />
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={!newWageAmount || !newWageDate || parseFloat(newWageAmount) <= 0}
+            onClick={() => {
+              setSettings(s => ({
+                ...s,
+                wage_history: [...(s.wage_history || []), { effective_date: newWageDate, wage: parseFloat(newWageAmount) }],
+              }));
+              setNewWageAmount('');
+              setNewWageDate('');
+            }}
+          >
+            <Plus className="w-4 h-4 mr-1" />Add
+          </Button>
         </div>
-        <p className="text-xs text-muted-foreground">Update annually when your CBA wage scale changes.</p>
+        <p className="text-xs text-muted-foreground">Historical shifts use the wage in effect on their date.</p>
       </section>
 
       {/* Employment Status & FTE */}

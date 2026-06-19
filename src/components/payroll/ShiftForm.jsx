@@ -12,7 +12,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { X, ChevronDown, ChevronUp } from 'lucide-react';
 import { getStatType, getStatName } from '@/lib/statHolidays';
-import { calculateShiftPremiums, parseTime, splitOvernightShift, getSegmentMultiplier, formatTime } from '@/lib/premiumCalculator';
+import { calculateShiftPremiums, parseTime, splitOvernightShift, getSegmentMultiplier, formatTime, getWageForDate } from '@/lib/premiumCalculator';
 import { formatCurrency } from '@/lib/utils';
 
 // Default settings used when none provided (for premium preview in form)
@@ -342,7 +342,7 @@ export default function ShiftForm({ onSubmit, onCancel, onDelete, initial, setti
 
       {/* Calculated Wage Breakdown */}
       {shift.start_time && shift.end_time && paidHours > 0 && shift.date && (() => {
-        const wage = settings?.hourly_wage || DEFAULT_RATES.hourly_wage || 45;
+        const wage = getWageForDate(settings || DEFAULT_RATES, shift.date);
         const shiftWithHours = { ...shift, paid_hours: paidHours };
         const segments = splitOvernightShift(shiftWithHours);
         const isOvernight = parseTime(shift.start_time) >= parseTime(shift.end_time);
@@ -544,7 +544,7 @@ export default function ShiftForm({ onSubmit, onCancel, onDelete, initial, setti
 
       {/* Gross Shift Total */}
       {shift.start_time && shift.end_time && paidHours > 0 && shift.date && (() => {
-        const wage = settings?.hourly_wage || 45;
+        const wage = getWageForDate(settings || {}, shift.date);
         const shiftWithHours = { ...shift, paid_hours: paidHours };
         const segments = splitOvernightShift(shiftWithHours);
         const calcSettings = settings || DEFAULT_RATES;
