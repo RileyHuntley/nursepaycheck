@@ -323,6 +323,14 @@
         "bccnm_expiry": {
           "type": "string",
           "default": ""
+        },
+        "employee_ids": {
+          "type": "object",
+          "default": {}
+        },
+        "anniversary_dates": {
+          "type": "object",
+          "default": {}
         }
       }
     }
