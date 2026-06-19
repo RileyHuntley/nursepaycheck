@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Trash2, Sun, Moon, Check, Copy } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
-import { splitOvernightShift, getSegmentMultiplier } from '@/lib/premiumCalculator';
+import { splitOvernightShift, getSegmentMultiplier, getWageForDate } from '@/lib/premiumCalculator';
 
 const TYPE_LABELS = {
   casual:          'Casual',
@@ -50,7 +50,7 @@ export default function ShiftRow({ shift, premiums, settings, periodEndDate, onE
   const hosp = shift.hospital ? (settings?.hospitals || []).find(h => h.name === shift.hospital) : null;
   const unit = shift.unit ? (settings?.units || []).find(u => u.name === shift.unit) : null;
 
-  const wage = settings?.hourly_wage || 0;
+  const wage = settings ? getWageForDate(settings, shift.date) : 0;
   const premiumTotal = premiums
     ? (premiums.evening || 0) + (premiums.night || 0) + (premiums.weekend || 0) +
       (premiums.super_shift || 0) + (premiums.regular_premium || 0) +

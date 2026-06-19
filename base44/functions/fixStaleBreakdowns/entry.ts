@@ -1,5 +1,19 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
+function getWageForDate(settings, date) {
+  const history = settings.wage_history;
+  if (!history || history.length === 0) return settings.hourly_wage || 45;
+  const sorted = [...history]
+    .filter(e => e.wage > 0)
+    .sort((a, b) => (b.effective_date || '') > (a.effective_date || '') ? 1 : -1)
+    .reverse();
+  if (!date) return sorted[0]?.wage || settings.hourly_wage || 45;
+  for (const entry of sorted) {
+    if (!entry.effective_date || entry.effective_date <= date) return entry.wage;
+  }
+  return sorted[sorted.length - 1]?.wage || settings.hourly_wage || 45;
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -16,7 +30,6 @@ Deno.serve(async (req) => {
     }
 
     const settings = settingsList[0];
-    const wage = settings.hourly_wage || 45;
     const premRates = settings.premium_rates || {};
     const otMultipliers = settings.ot_multipliers || {};
     const activeAllowances = settings.active_allowances || [];

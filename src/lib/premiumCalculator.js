@@ -9,6 +9,24 @@ function round2(n) {
 }
 
 /**
+ * Return the correct hourly wage for a given shift date, using wage_history if present.
+ * Falls back to settings.hourly_wage for backward compatibility.
+ */
+export function getWageForDate(settings, date) {
+  const history = settings.wage_history;
+  if (!history || history.length === 0) return settings.hourly_wage || 0;
+  const sorted = [...history]
+    .filter(e => e.wage > 0)
+    .sort((a, b) => (b.effective_date || '') > (a.effective_date || '') ? 1 : -1) // ascending
+    .reverse(); // now descending: most recent first
+  if (!date) return sorted[0]?.wage || settings.hourly_wage || 0;
+  for (const entry of sorted) {
+    if (!entry.effective_date || entry.effective_date <= date) return entry.wage;
+  }
+  return sorted[sorted.length - 1]?.wage || settings.hourly_wage || 0;
+}
+
+/**
  * Parse time string "HH:MM" or "HH.MM" to decimal hours (e.g. "15:30" → 15.5)
  */
 export function parseTime(timeStr) {
@@ -479,8 +497,6 @@ export function calculateQualificationPay(settings, isFirstOfMonth = false) {
  * Full pay period breakdown
  */
 export function calculatePeriodBreakdown(shifts, settings, isFirstOfMonth = false) {
-  const wage = settings.hourly_wage || 0;
-
   let straightTimePay = 0;
   let overtimePay = 0;
   let regularHours = 0;
@@ -523,16 +539,17 @@ export function calculatePeriodBreakdown(shifts, settings, isFirstOfMonth = fals
     // Per-date segments: base pay and regular_premium depend on which day the hours land on
     const segments = splitOvernightShift(shift);
     let shiftStraightHours = 0;
+    const shiftWage = getWageForDate(settings, shift.date);
 
     for (const seg of segments) {
       const segMultiplier = getSegmentMultiplier(shift.shift_type, seg.date);
 
       if (segMultiplier === 1.0) {
-        straightTimePay += seg.hours * wage;
+        straightTimePay += seg.hours * shiftWage;
         shiftStraightHours += seg.hours;
         if (STRAIGHT_TYPES.includes(shift.shift_type)) regularHours += seg.hours;
       } else {
-        overtimePay += seg.hours * wage * segMultiplier;
+        overtimePay += seg.hours * shiftWage * segMultiplier;
         // Track into otDetail by effective rate
         if (segMultiplier === 3.0) otDetail.ot_stat = (otDetail.ot_stat || 0) + seg.hours;
         else if (segMultiplier === 2.5) otDetail.work_super_stat = (otDetail.work_super_stat || 0) + seg.hours;
