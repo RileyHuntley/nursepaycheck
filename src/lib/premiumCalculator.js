@@ -495,10 +495,22 @@ export function calculateAllowances(settings, isFirstOfMonth = false, shifts = [
  * Calculate qualification differential pay for a given pay period.
  * Paid in full on the first pay period of each month that has shifts; zero otherwise.
  */
-export function calculateQualificationPay(settings, isFirstOfMonth = false) {
+export function calculateQualificationPay(settings, isFirstOfMonth = false, shifts = []) {
   const active = settings.active_qualifications || [];
   const rates = settings.qualification_rates || {};
-  const annualTotal = active.reduce((sum, key) => sum + (rates[key] || 0), 0) * 12;
+  const specialClinicalPrepUnits = settings.special_clinical_prep_units || [];
+  const chaBcitUnits = settings.cha_bcit_units || [];
+  const shiftUnits = new Set(shifts.map(s => s.unit).filter(Boolean));
+
+  const annualTotal = active.reduce((sum, key) => {
+    if (key === 'special_clinical_prep' && specialClinicalPrepUnits.length > 0) {
+      if (!specialClinicalPrepUnits.some(u => shiftUnits.has(u))) return sum;
+    }
+    if (key === 'cha_bcit' && chaBcitUnits.length > 0) {
+      if (!chaBcitUnits.some(u => shiftUnits.has(u))) return sum;
+    }
+    return sum + (rates[key] || 0);
+  }, 0) * 12;
   const hourlyRate = annualTotal / 1950;
   const monthlyTotal = annualTotal / 12;
   return {
@@ -595,7 +607,7 @@ export function calculatePeriodBreakdown(shifts, settings, isFirstOfMonth = fals
   const allowances = calculateAllowances(settings, isFirstOfMonth, shifts);
 
   // Qualification differential (full monthly on first period of month, zero otherwise)
-  const qualification = calculateQualificationPay(settings, isFirstOfMonth);
+  const qualification = calculateQualificationPay(settings, isFirstOfMonth, shifts);
 
   // Union dues: 2% of straight-time pay only
   const unionDues = straightTimePay * 0.02;

@@ -122,6 +122,8 @@ const defaultSettings = {
   allowance_rates: { isolation: 150, business: 150 },
   isolation_allowance_hospitals: [],
   business_allowance_units: [],
+  special_clinical_prep_units: [],
+  cha_bcit_units: [],
   active_qualifications: [],
   qualification_rates: {
     special_clinical_prep: 50, bsn: 100, masters: 125,
@@ -906,43 +908,86 @@ export default function PayConfiguration() {
            Only regular nurses qualify — not casuals. Paid in full on the first pay period of each month that a shift is worked.
           </p>
         </div>
-        {QUALIFICATION_OPTIONS.map(({ key, label, rate, article, desc }) => (
-          <div key={key} className="flex items-start gap-4 relative">
-            <Switch
-              checked={(settings.active_qualifications || []).includes(key)}
-              onCheckedChange={() => toggleQualification(key)}
-              className="mt-0.5 flex-shrink-0"
-            />
-            <div className="flex-1">
-              <div className="flex items-center gap-1">
-                <Label className="text-sm text-foreground">{label}</Label>
-                <span className="text-[10px] text-primary font-mono">{article}</span>
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); setOpenInfo(openInfo === `qual_${key}` ? null : `qual_${key}`); }}
-                  className={`flex-shrink-0 p-0.5 rounded transition-colors ${openInfo === `qual_${key}` ? 'text-primary' : 'text-muted-foreground/60 hover:text-muted-foreground'}`}
-                >
-                  <Info className="w-3.5 h-3.5" />
-                </button>
-              </div>
-              <p className="text-xs text-muted-foreground">${rate.toFixed(2)}/month — paid monthly</p>
-            </div>
-            {openInfo === `qual_${key}` && (
-              <div className="absolute z-50 left-24 bottom-full mb-2 w-72 bg-popover border border-border rounded-lg shadow-lg p-3 text-left" onClick={e => e.stopPropagation()}>
-                <div className="flex items-start justify-between gap-2 mb-1.5">
-                  <div>
-                    <p className="text-xs font-semibold text-foreground leading-tight">{label}</p>
-                    <p className="text-[10px] text-primary font-mono mt-0.5">{article}</p>
+        {QUALIFICATION_OPTIONS.map(({ key, label, rate, article, desc }) => {
+          const unitScopedKeys = { special_clinical_prep: 'special_clinical_prep_units', cha_bcit: 'cha_bcit_units' };
+          const unitSettingKey = unitScopedKeys[key];
+          const isActive = (settings.active_qualifications || []).includes(key);
+          return (
+            <div key={key} className="space-y-2">
+              <div className="flex items-start gap-4 relative">
+                <Switch
+                  checked={isActive}
+                  onCheckedChange={() => toggleQualification(key)}
+                  className="mt-0.5 flex-shrink-0"
+                />
+                <div className="flex-1">
+                  <div className="flex items-center gap-1">
+                    <Label className="text-sm text-foreground">{label}</Label>
+                    <span className="text-[10px] text-primary font-mono">{article}</span>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setOpenInfo(openInfo === `qual_${key}` ? null : `qual_${key}`); }}
+                      className={`flex-shrink-0 p-0.5 rounded transition-colors ${openInfo === `qual_${key}` ? 'text-primary' : 'text-muted-foreground/60 hover:text-muted-foreground'}`}
+                    >
+                      <Info className="w-3.5 h-3.5" />
+                    </button>
                   </div>
-                  <button onClick={() => setOpenInfo(null)} className="text-muted-foreground hover:text-foreground flex-shrink-0 mt-0.5">
-                    <X className="w-3.5 h-3.5" />
-                  </button>
+                  <p className="text-xs text-muted-foreground">${rate.toFixed(2)}/month — paid monthly</p>
                 </div>
-                <p className="text-xs text-muted-foreground leading-relaxed">{desc}</p>
+                {openInfo === `qual_${key}` && (
+                  <div className="absolute z-50 left-24 bottom-full mb-2 w-72 bg-popover border border-border rounded-lg shadow-lg p-3 text-left" onClick={e => e.stopPropagation()}>
+                    <div className="flex items-start justify-between gap-2 mb-1.5">
+                      <div>
+                        <p className="text-xs font-semibold text-foreground leading-tight">{label}</p>
+                        <p className="text-[10px] text-primary font-mono mt-0.5">{article}</p>
+                      </div>
+                      <button onClick={() => setOpenInfo(null)} className="text-muted-foreground hover:text-foreground flex-shrink-0 mt-0.5">
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">{desc}</p>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        ))}
+              {unitSettingKey && isActive && (settings.units || []).length > 0 && (
+                <div className="ml-14 space-y-1.5">
+                  <p className="text-xs text-muted-foreground">Select units where this differential applies:</p>
+                  <div className="flex flex-col gap-1.5">
+                    {(settings.units || []).map(u => {
+                      const selected = (settings[unitSettingKey] || []).includes(u.name);
+                      return (
+                        <label key={u.name} className="flex items-center gap-2 cursor-pointer" onClick={e => e.stopPropagation()}>
+                          <Checkbox
+                            checked={selected}
+                            onCheckedChange={(checked) => {
+                              setSettings(s => {
+                                const current = s[unitSettingKey] || [];
+                                return {
+                                  ...s,
+                                  [unitSettingKey]: checked
+                                    ? [...current, u.name]
+                                    : current.filter(n => n !== u.name),
+                                };
+                              });
+                            }}
+                          />
+                          <span className="text-xs text-foreground">{u.name}</span>
+                          {u.code && <span className="text-xs text-muted-foreground">({u.code})</span>}
+                        </label>
+                      );
+                    })}
+                  </div>
+                  {(settings[unitSettingKey] || []).length === 0 && (
+                    <p className="text-xs text-amber-600 dark:text-amber-400">No units selected — differential will not be paid for any shifts.</p>
+                  )}
+                </div>
+              )}
+              {unitSettingKey && isActive && (settings.units || []).length === 0 && (
+                <p className="ml-14 text-xs text-muted-foreground">Add units in Shift Configuration to specify where this differential applies.</p>
+              )}
+            </div>
+          );
+        })}
         <div className="bg-muted/50 rounded-lg px-4 py-3 text-xs text-muted-foreground space-y-1 mt-2">
           <p className="font-semibold text-foreground">Additional Notes (Art. 53)</p>
           <p>• Eligible nurses may not qualify for more than one payment under Articles 53.02, 53.04, 53.05, and 53.06.</p>
