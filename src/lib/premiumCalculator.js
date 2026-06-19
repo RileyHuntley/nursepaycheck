@@ -466,10 +466,25 @@ export function getFirstPeriodsOfMonths(periods) {
  * Calculate monthly allowance pay for a given pay period.
  * Paid in full on the first pay period of each month that has shifts; zero otherwise.
  */
-export function calculateAllowances(settings, isFirstOfMonth = false) {
+export function calculateAllowances(settings, isFirstOfMonth = false, shifts = []) {
   const active = settings.active_allowances || [];
   const rates = settings.allowance_rates || {};
-  const monthlyTotal = active.reduce((sum, key) => sum + (rates[key] || 0), 0);
+  const isolationHospitals = settings.isolation_allowance_hospitals || [];
+  const businessUnits = settings.business_allowance_units || [];
+
+  const shiftHospitals = new Set(shifts.map(s => s.hospital).filter(Boolean));
+  const shiftUnits = new Set(shifts.map(s => s.unit).filter(Boolean));
+
+  const monthlyTotal = active.reduce((sum, key) => {
+    if (key === 'isolation' && isolationHospitals.length > 0) {
+      if (!isolationHospitals.some(h => shiftHospitals.has(h))) return sum;
+    }
+    if (key === 'business' && businessUnits.length > 0) {
+      if (!businessUnits.some(u => shiftUnits.has(u))) return sum;
+    }
+    return sum + (rates[key] || 0);
+  }, 0);
+
   return {
     monthly_total: monthlyTotal,
     per_period: isFirstOfMonth ? monthlyTotal : 0,
@@ -577,7 +592,7 @@ export function calculatePeriodBreakdown(shifts, settings, isFirstOfMonth = fals
   const onCall = calculateOnCallPay(shifts, settings);
 
   // Allowances (full monthly on first period of month, zero otherwise)
-  const allowances = calculateAllowances(settings, isFirstOfMonth);
+  const allowances = calculateAllowances(settings, isFirstOfMonth, shifts);
 
   // Qualification differential (full monthly on first period of month, zero otherwise)
   const qualification = calculateQualificationPay(settings, isFirstOfMonth);

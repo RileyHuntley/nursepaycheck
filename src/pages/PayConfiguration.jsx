@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Save, Loader2, X, AlertTriangle, Info, Plus } from 'lucide-react';
+import { Save, Loader2, X, AlertTriangle, Info, Plus, ChevronDown } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -119,6 +120,8 @@ const defaultSettings = {
   },
   active_allowances: [],
   allowance_rates: { isolation: 150, business: 150 },
+  isolation_allowance_hospitals: [],
+  business_allowance_units: [],
   active_qualifications: [],
   qualification_rates: {
     special_clinical_prep: 50, bsn: 100, masters: 125,
@@ -747,44 +750,152 @@ export default function PayConfiguration() {
           <h3 className="text-sm font-semibold text-foreground">Monthly Allowances</h3>
           <p className="text-xs text-muted-foreground mt-1">Paid in full on the first pay period of each month that a shift is worked. Toggle on only allowances that apply to your position.</p>
         </div>
-        {[
-          { key: 'isolation', label: 'Isolation Allowance', rate: 150 },
-          { key: 'business', label: 'Business Allowance', rate: 150 },
-        ].map(({ key, label, rate }) => (
-          <div key={key} className="flex items-center gap-4 relative">
+
+        {/* Isolation Allowance */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-4 relative">
             <Switch
-              checked={(settings.active_allowances || []).includes(key)}
-              onCheckedChange={() => toggleAllowance(key)}
+              checked={(settings.active_allowances || []).includes('isolation')}
+              onCheckedChange={() => toggleAllowance('isolation')}
             />
             <div className="flex-1">
               <div className="flex items-center gap-1">
-                <Label className="text-sm text-foreground">{label}</Label>
+                <Label className="text-sm text-foreground">Isolation Allowance</Label>
                 <button
                   type="button"
-                  onClick={(e) => { e.stopPropagation(); setOpenInfo(openInfo === `allow_${key}` ? null : `allow_${key}`); }}
-                  className={`flex-shrink-0 p-0.5 rounded transition-colors ${openInfo === `allow_${key}` ? 'text-primary' : 'text-muted-foreground/60 hover:text-muted-foreground'}`}
+                  onClick={(e) => { e.stopPropagation(); setOpenInfo(openInfo === 'allow_isolation' ? null : 'allow_isolation'); }}
+                  className={`flex-shrink-0 p-0.5 rounded transition-colors ${openInfo === 'allow_isolation' ? 'text-primary' : 'text-muted-foreground/60 hover:text-muted-foreground'}`}
                 >
                   <Info className="w-3.5 h-3.5" />
                 </button>
               </div>
-              <p className="text-xs text-muted-foreground">${rate.toFixed(2)}/month — paid monthly</p>
+              <p className="text-xs text-muted-foreground">$150.00/month — paid monthly</p>
             </div>
-            {openInfo === `allow_${key}` && ALLOWANCE_INFO[key] && (
+            {openInfo === 'allow_isolation' && (
               <div className="absolute z-50 left-24 bottom-full mb-2 w-72 bg-popover border border-border rounded-lg shadow-lg p-3 text-left" onClick={e => e.stopPropagation()}>
                 <div className="flex items-start justify-between gap-2 mb-1.5">
                   <div>
-                    <p className="text-xs font-semibold text-foreground leading-tight">{ALLOWANCE_INFO[key].title}</p>
-                    <p className="text-[10px] text-primary font-mono mt-0.5">{ALLOWANCE_INFO[key].article}</p>
+                    <p className="text-xs font-semibold text-foreground leading-tight">{ALLOWANCE_INFO.isolation.title}</p>
+                    <p className="text-[10px] text-primary font-mono mt-0.5">{ALLOWANCE_INFO.isolation.article}</p>
                   </div>
                   <button onClick={() => setOpenInfo(null)} className="text-muted-foreground hover:text-foreground flex-shrink-0 mt-0.5">
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
-                <p className="text-xs text-muted-foreground leading-relaxed">{ALLOWANCE_INFO[key].desc}</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">{ALLOWANCE_INFO.isolation.desc}</p>
               </div>
             )}
           </div>
-        ))}
+          {(settings.active_allowances || []).includes('isolation') && (settings.hospitals || []).length > 0 && (
+            <div className="ml-14 space-y-1.5">
+              <p className="text-xs text-muted-foreground">Select hospitals where this allowance applies:</p>
+              <div className="flex flex-col gap-1.5">
+                {(settings.hospitals || []).map(h => {
+                  const selected = (settings.isolation_allowance_hospitals || []).includes(h.name);
+                  return (
+                    <label key={h.name} className="flex items-center gap-2 cursor-pointer" onClick={e => e.stopPropagation()}>
+                      <Checkbox
+                        checked={selected}
+                        onCheckedChange={(checked) => {
+                          setSettings(s => {
+                            const current = s.isolation_allowance_hospitals || [];
+                            return {
+                              ...s,
+                              isolation_allowance_hospitals: checked
+                                ? [...current, h.name]
+                                : current.filter(n => n !== h.name),
+                            };
+                          });
+                        }}
+                      />
+                      <span className="text-xs text-foreground">{h.name}</span>
+                      {h.acronym && <span className="text-xs text-muted-foreground">({h.acronym})</span>}
+                    </label>
+                  );
+                })}
+              </div>
+              {(settings.isolation_allowance_hospitals || []).length === 0 && (
+                <p className="text-xs text-amber-600 dark:text-amber-400">No hospitals selected — allowance will not be paid for any shifts.</p>
+              )}
+            </div>
+          )}
+          {(settings.active_allowances || []).includes('isolation') && (settings.hospitals || []).length === 0 && (
+            <p className="ml-14 text-xs text-muted-foreground">Add hospitals in Shift Configuration to specify where this allowance applies.</p>
+          )}
+        </div>
+
+        {/* Business Allowance */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-4 relative">
+            <Switch
+              checked={(settings.active_allowances || []).includes('business')}
+              onCheckedChange={() => toggleAllowance('business')}
+            />
+            <div className="flex-1">
+              <div className="flex items-center gap-1">
+                <Label className="text-sm text-foreground">Business Allowance</Label>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setOpenInfo(openInfo === 'allow_business' ? null : 'allow_business'); }}
+                  className={`flex-shrink-0 p-0.5 rounded transition-colors ${openInfo === 'allow_business' ? 'text-primary' : 'text-muted-foreground/60 hover:text-muted-foreground'}`}
+                >
+                  <Info className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <p className="text-xs text-muted-foreground">$150.00/month — paid monthly</p>
+            </div>
+            {openInfo === 'allow_business' && (
+              <div className="absolute z-50 left-24 bottom-full mb-2 w-72 bg-popover border border-border rounded-lg shadow-lg p-3 text-left" onClick={e => e.stopPropagation()}>
+                <div className="flex items-start justify-between gap-2 mb-1.5">
+                  <div>
+                    <p className="text-xs font-semibold text-foreground leading-tight">{ALLOWANCE_INFO.business.title}</p>
+                    <p className="text-[10px] text-primary font-mono mt-0.5">{ALLOWANCE_INFO.business.article}</p>
+                  </div>
+                  <button onClick={() => setOpenInfo(null)} className="text-muted-foreground hover:text-foreground flex-shrink-0 mt-0.5">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">{ALLOWANCE_INFO.business.desc}</p>
+              </div>
+            )}
+          </div>
+          {(settings.active_allowances || []).includes('business') && (settings.units || []).length > 0 && (
+            <div className="ml-14 space-y-1.5">
+              <p className="text-xs text-muted-foreground">Select units where this allowance applies:</p>
+              <div className="flex flex-col gap-1.5">
+                {(settings.units || []).map(u => {
+                  const selected = (settings.business_allowance_units || []).includes(u.name);
+                  return (
+                    <label key={u.name} className="flex items-center gap-2 cursor-pointer" onClick={e => e.stopPropagation()}>
+                      <Checkbox
+                        checked={selected}
+                        onCheckedChange={(checked) => {
+                          setSettings(s => {
+                            const current = s.business_allowance_units || [];
+                            return {
+                              ...s,
+                              business_allowance_units: checked
+                                ? [...current, u.name]
+                                : current.filter(n => n !== u.name),
+                            };
+                          });
+                        }}
+                      />
+                      <span className="text-xs text-foreground">{u.name}</span>
+                      {u.code && <span className="text-xs text-muted-foreground">({u.code})</span>}
+                    </label>
+                  );
+                })}
+              </div>
+              {(settings.business_allowance_units || []).length === 0 && (
+                <p className="text-xs text-amber-600 dark:text-amber-400">No units selected — allowance will not be paid for any shifts.</p>
+              )}
+            </div>
+          )}
+          {(settings.active_allowances || []).includes('business') && (settings.units || []).length === 0 && (
+            <p className="ml-14 text-xs text-muted-foreground">Add units in Shift Configuration to specify where this allowance applies.</p>
+          )}
+        </div>
       </section>
 
       {/* Qualification Differentials */}

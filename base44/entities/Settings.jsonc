@@ -145,6 +145,16 @@
         }
       }
     },
+    "isolation_allowance_hospitals": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "business_allowance_units": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
     "active_qualifications": {
       "type": "array",
       "items": {
