@@ -193,7 +193,7 @@ export function superShiftHours(dateStr, startTime, endTime) {
 export function calculateShiftPremiums(shift, settings) {
   const rates = settings.premium_rates;
   const paidHours = shift.paid_hours || 0;
-  const isStraight = ['regular', 'isn', 'vacation', 'paid_vacation', 'sick', 'paid_sick', 'special_leave', 'pdo_pst', 'other_leave'].includes(shift.shift_type);
+  const isStraight = ['regular', 'isn', 'vacation', 'paid_vacation', 'sick', 'paid_sick', 'special_leave', 'pdo_pst', 'other_leave', 'orientation', 'education'].includes(shift.shift_type);
   const eligibleForRegularPremium = ['regular', 'isn'].includes(shift.shift_type);
   const overrides = shift.premium_overrides || {};
 
@@ -382,7 +382,7 @@ export function getSegmentMultiplier(shiftType, segmentDate) {
 
   // Straight-time types (casual, regular, isn, vacation, sick, paid types, leave):
   // bump to stat rate when segment lands on a stat
-  const STRAIGHT = ['casual', 'regular', 'isn', 'vacation', 'paid_vacation', 'sick', 'paid_sick', 'special_leave', 'pdo_pst', 'other_leave'];
+  const STRAIGHT = ['casual', 'regular', 'isn', 'vacation', 'paid_vacation', 'sick', 'paid_sick', 'special_leave', 'pdo_pst', 'other_leave', 'orientation', 'education'];
   if (STRAIGHT.includes(shiftType)) {
     if (statType === 'super_stat') return 2.5;
     if (statType === 'stat') return 2.0;
@@ -482,7 +482,7 @@ export function calculatePeriodBreakdown(shifts, settings, isFirstOfMonth = fals
   let preceptorTotal = 0, preceptorHours = 0;
   let specialtyTotal = 0, specialtyHours = 0;
 
-  const STRAIGHT_TYPES = ['casual', 'regular', 'isn', 'vacation', 'paid_vacation', 'sick', 'paid_sick', 'special_leave', 'pdo_pst', 'other_leave'];
+  const STRAIGHT_TYPES = ['casual', 'regular', 'isn', 'vacation', 'paid_vacation', 'sick', 'paid_sick', 'special_leave', 'pdo_pst', 'other_leave', 'orientation', 'education'];
   const REGULAR_PREMIUM_TYPES = ['regular', 'isn'];
 
   for (const shift of shifts) {

@@ -29,6 +29,8 @@ const DEFAULT_RATES = {
 const SHIFT_TYPES = [
   { value: 'casual',          label: 'Casual Shift' },
   { value: 'regular',         label: 'Regular Shift' },
+  { value: 'orientation',     label: 'Orientation Shift' },
+  { value: 'education',       label: 'Education Shift' },
   { value: 'day_off',         label: 'Working Day Off' },
   { value: 'isn',             label: 'ISN Shift' },
   { value: 'vacation',        label: 'Paid Vacation' },
@@ -195,7 +197,7 @@ export default function ShiftForm({ onSubmit, onCancel, onDelete, initial, setti
         const nextStatType = getStatType(nextDateStr);
         const nextStatName = getStatName(nextDateStr);
 
-        const STRAIGHT = ['casual', 'regular', 'isn', 'vacation', 'sick', 'special_leave', 'pdo_pst', 'other_leave'];
+        const STRAIGHT = ['casual', 'regular', 'isn', 'vacation', 'sick', 'special_leave', 'pdo_pst', 'other_leave', 'orientation', 'education'];
 
         // Only show if at least one day is a stat, or it's a day-off crossing a stat
         if (!statType && !nextStatType && shift.shift_type !== 'day_off') return null;

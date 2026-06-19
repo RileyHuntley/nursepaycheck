@@ -61,7 +61,7 @@ const OT_TYPES = [
     type: 'Regular Shift',
     multiplier: '×1.0',
     color: 'bg-chart-3/15 text-chart-3',
-    description: 'Standard straight-time pay. Applied to regular, ISN, vacation, sick, PDO/PST, and other paid leaves.',
+    description: 'Standard straight-time pay. Applied to regular, ISN, orientation, education, vacation, sick, PDO/PST, and other paid leaves.',
     article: 'NBA CBA',
   },
   {
