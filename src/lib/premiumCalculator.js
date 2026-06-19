@@ -318,8 +318,9 @@ export function calculateShiftPremiums(shift, settings) {
 export function getShiftMultiplier(shiftType) {
   switch (shiftType) {
     case 'day_off':          return 2.0;
-    case 'unpaid_vacation':  return 0;
-    case 'unpaid_sick':      return 0;
+    case 'unpaid_vacation':   return 0;
+    case 'unpaid_sick':       return 0;
+    case 'student_practicum': return 0;
     default:                 return 1.0;
   }
 }

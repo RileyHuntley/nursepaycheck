@@ -17,7 +17,8 @@ const TYPE_LABELS = {
   pdo_pst:         'PDO/PST',
   other_leave:     'Other Leave',
   orientation:     'Orientation',
-  education:       'Education',
+  education:          'Education',
+  student_practicum:  'Student Practicum',
 };
 
 const TYPE_COLORS = {
@@ -33,7 +34,8 @@ const TYPE_COLORS = {
   pdo_pst:         'bg-muted text-muted-foreground',
   other_leave:     'bg-muted text-muted-foreground',
   orientation:     'bg-chart-3/15 text-chart-3',
-  education:       'bg-chart-3/15 text-chart-3',
+  education:          'bg-chart-3/15 text-chart-3',
+  student_practicum:  'bg-muted text-muted-foreground',
 };
 
 const todayStr = new Date().toISOString().slice(0, 10);
