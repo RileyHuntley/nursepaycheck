@@ -62,13 +62,13 @@ Deno.serve(async (req) => {
         const ph = shift.paid_hours || 0;
         const type = shift.shift_type || 'regular';
         const ov = shift.premium_overrides || {};
+        const wage = getWageForDate(settings, shift.date);
 
         if (['regular', 'isn', 'vacation', 'sick', 'pdo_pst', 'other_leave'].includes(type)) {
           straight_time_pay += ph * wage;
           regularHours += ph;
         } else if (type === 'overtime') {
           overtime_pay += ph * wage * (otMultipliers.overtime || 1.5);
-          const extra = ph * wage * ((otMultipliers.overtime || 1.5) - 1);
           overtimeDetail.overtime = (overtimeDetail.overtime || 0) + ph;
         } else if (type === 'day_off') {
           overtime_pay += ph * wage * (otMultipliers.overtime_extended || 2);
