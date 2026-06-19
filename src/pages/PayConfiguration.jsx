@@ -106,7 +106,6 @@ const defaultSettings = {
     license_status: '',
     bccnm_license: '',
     bccnm_expiry: '',
-    employee_number: '',
     employee_ids: {},
     anniversary_dates: {},
   },
@@ -351,20 +350,7 @@ export default function PayConfiguration() {
           {(() => {
             const hospitals = settings.hospitals || [];
             const uniqueHAs = [...new Set(hospitals.map(h => h.health_authority).filter(Boolean))].slice(0, 4);
-            if (uniqueHAs.length === 0) {
-              return (
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">Employee ID</Label>
-                  <Input
-                    type="text"
-                    value={settings.nurse_profile?.employee_number || ''}
-                    onChange={e => set('nurse_profile.employee_number', e.target.value)}
-                    className="h-9 text-sm font-mono"
-                    placeholder="e.g. 123456"
-                  />
-                </div>
-              );
-            }
+            if (uniqueHAs.length === 0) return null;
             return uniqueHAs.map(ha => (
               <div key={ha} className="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">

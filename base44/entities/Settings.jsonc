@@ -312,10 +312,6 @@
           "type": "string",
           "default": ""
         },
-        "employee_number": {
-          "type": "string",
-          "default": ""
-        },
         "bccnm_license": {
           "type": "string",
           "default": ""
@@ -323,6 +319,14 @@
         "bccnm_expiry": {
           "type": "string",
           "default": ""
+        },
+        "employee_ids": {
+          "type": "object",
+          "default": {}
+        },
+        "anniversary_dates": {
+          "type": "object",
+          "default": {}
         }
       }
     }
