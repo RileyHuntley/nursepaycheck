@@ -414,7 +414,7 @@ export default function PayConfiguration() {
       </section>
       {/* Wage History */}
       <section className="bg-card border border-border rounded-xl p-5 space-y-4">
-        <h3 className="text-sm font-semibold text-foreground">Wage History</h3>
+        <h3 className="text-sm font-semibold text-foreground">Wage &amp; Wage History</h3>
         {/* Existing entries */}
         {(settings.wage_history || []).length > 0 && (
           <div className="space-y-2">
