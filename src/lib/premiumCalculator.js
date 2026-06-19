@@ -221,6 +221,19 @@ function getShiftStatus(shift, settings) {
  * If shift.premium_overrides exists, those values are used instead of calculated ones.
  */
 export function calculateShiftPremiums(shift, settings) {
+  if (shift.shift_type === 'student_practicum') {
+    return {
+      evening: 0, evening_hours: 0, night: 0, night_hours: 0,
+      weekend: 0, weekend_hours: 0, super_shift: 0, super_shift_hours: 0,
+      regular_premium: 0, regular_premium_hours: 0,
+      short_notice: 0, short_notice_hours: 0,
+      responsibility: 0, responsibility_hours: 0,
+      preceptor: 0, preceptor_hours: 0,
+      specialty: 0, specialty_hours: 0,
+      _overridden: [],
+    };
+  }
+
   const rates = settings.premium_rates;
   const paidHours = shift.paid_hours || 0;
   const isStraight = ['regular', 'isn', 'vacation', 'paid_vacation', 'sick', 'paid_sick', 'special_leave', 'pdo_pst', 'other_leave', 'orientation', 'education'].includes(shift.shift_type);
