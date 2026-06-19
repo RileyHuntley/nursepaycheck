@@ -6,7 +6,7 @@ import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Save, Loader2, Plus, X, AlertTriangle } from 'lucide-react';
+import { Save, Loader2, Plus, X, AlertTriangle, Pencil, Check } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -107,6 +107,43 @@ export default function ShiftConfiguration() {
   const [newUnitName, setNewUnitName] = useState('');
   const [newUnitCode, setNewUnitCode] = useState('');
 
+  const [editingHospital, setEditingHospital] = useState(null); // { originalName, name, acronym, health_authority }
+  const [editingUnit, setEditingUnit] = useState(null); // { originalName, name, code }
+
+  const startEditHospital = (h) => setEditingHospital({ originalName: h.name, name: h.name, acronym: h.acronym, health_authority: h.health_authority });
+  const cancelEditHospital = () => setEditingHospital(null);
+
+  const saveEditHospital = () => {
+    const { originalName, name, acronym, health_authority } = editingHospital;
+    const trimmedName = name.trim();
+    const trimmedAcronym = acronym.trim();
+    if (!trimmedName || !trimmedAcronym || !health_authority) return;
+    setSettings(s => ({
+      ...s,
+      hospitals: (s.hospitals || []).map(h => h.name === originalName ? { name: trimmedName, acronym: trimmedAcronym, health_authority } : h),
+      default_hospital: s.default_hospital === originalName ? trimmedName : s.default_hospital,
+      shift_lines: (s.shift_lines || []).map(sl => sl.hospital === originalName ? { ...sl, hospital: trimmedName } : sl),
+    }));
+    setEditingHospital(null);
+  };
+
+  const startEditUnit = (u) => setEditingUnit({ originalName: u.name, name: u.name, code: u.code });
+  const cancelEditUnit = () => setEditingUnit(null);
+
+  const saveEditUnit = () => {
+    const { originalName, name, code } = editingUnit;
+    const trimmedName = name.trim();
+    const trimmedCode = code.trim();
+    if (!trimmedName || !trimmedCode) return;
+    setSettings(s => ({
+      ...s,
+      units: (s.units || []).map(u => u.name === originalName ? { name: trimmedName, code: trimmedCode } : u),
+      default_unit: s.default_unit === originalName ? trimmedName : s.default_unit,
+      shift_lines: (s.shift_lines || []).map(sl => sl.unit === originalName ? { ...sl, unit: trimmedName } : sl),
+    }));
+    setEditingUnit(null);
+  };
+
   const addHospital = () => {
     const name = newHospitalName.trim();
     const acronym = newHospitalAcronym.trim();
@@ -201,12 +238,34 @@ export default function ShiftConfiguration() {
             </Button>
           </div>
           {(settings.hospitals || []).length > 0 ? (
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-col gap-2">
               {(settings.hospitals || []).map(h => (
-                <span key={h.name} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-muted text-xs font-medium text-foreground">
-                  {h.name} <span className="text-[10px] text-muted-foreground">[{h.acronym}] · {h.health_authority}</span>
-                  <button onClick={() => removeHospital(h.name)} className="ml-1 text-muted-foreground hover:text-destructive"><X className="w-3 h-3" /></button>
-                </span>
+                editingHospital?.originalName === h.name ? (
+                  <div key={h.name} className="border border-border rounded-lg p-3 space-y-2 bg-muted/40">
+                    <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr] gap-2">
+                      <Input value={editingHospital.name} onChange={e => setEditingHospital(v => ({ ...v, name: e.target.value }))} placeholder="Hospital name" className="h-8 text-sm" />
+                      <Input value={editingHospital.acronym} onChange={e => setEditingHospital(v => ({ ...v, acronym: e.target.value }))} placeholder="Abbreviation" className="h-8 text-sm" />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto] gap-2">
+                      <Select value={editingHospital.health_authority} onValueChange={v => setEditingHospital(ev => ({ ...ev, health_authority: v }))}>
+                        <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Health authority" /></SelectTrigger>
+                        <SelectContent>{HEALTH_AUTHORITIES.map(ha => <SelectItem key={ha.value} value={ha.value}>{ha.label}</SelectItem>)}</SelectContent>
+                      </Select>
+                      <Button size="sm" variant="outline" onClick={saveEditHospital} disabled={!editingHospital.name.trim() || !editingHospital.acronym.trim() || !editingHospital.health_authority} className="flex-shrink-0 h-8">
+                        <Check className="w-3 h-3 mr-1" /> Save
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={cancelEditHospital} className="flex-shrink-0 h-8 text-muted-foreground">
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <span key={h.name} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-muted text-xs font-medium text-foreground w-fit">
+                    {h.name} <span className="text-[10px] text-muted-foreground">[{h.acronym}] · {h.health_authority}</span>
+                    <button onClick={() => startEditHospital(h)} className="ml-1 text-muted-foreground hover:text-foreground" title="Edit"><Pencil className="w-3 h-3" /></button>
+                    <button onClick={() => removeHospital(h.name)} className="ml-0.5 text-muted-foreground hover:text-destructive" title="Remove"><X className="w-3 h-3" /></button>
+                  </span>
+                )
               ))}
             </div>
           ) : <p className="text-xs text-muted-foreground italic">No hospitals added yet.</p>}
@@ -222,12 +281,28 @@ export default function ShiftConfiguration() {
             </Button>
           </div>
           {(settings.units || []).length > 0 ? (
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-col gap-2">
               {(settings.units || []).map(u => (
-                <span key={u.name} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-muted text-xs font-medium text-foreground">
-                  {u.name} <span className="text-[10px] text-muted-foreground">[{u.code}]</span>
-                  <button onClick={() => removeUnit(u.name)} className="ml-1 text-muted-foreground hover:text-destructive"><X className="w-3 h-3" /></button>
-                </span>
+                editingUnit?.originalName === u.name ? (
+                  <div key={u.name} className="border border-border rounded-lg p-3 space-y-2 bg-muted/40">
+                    <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto_auto] gap-2">
+                      <Input value={editingUnit.name} onChange={e => setEditingUnit(v => ({ ...v, name: e.target.value }))} placeholder="Unit name" className="h-8 text-sm" />
+                      <Input value={editingUnit.code} onChange={e => setEditingUnit(v => ({ ...v, code: e.target.value }))} placeholder="Unit # or Abbreviation" className="h-8 text-sm" />
+                      <Button size="sm" variant="outline" onClick={saveEditUnit} disabled={!editingUnit.name.trim() || !editingUnit.code.trim()} className="flex-shrink-0 h-8">
+                        <Check className="w-3 h-3 mr-1" /> Save
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={cancelEditUnit} className="flex-shrink-0 h-8 text-muted-foreground">
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <span key={u.name} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-muted text-xs font-medium text-foreground w-fit">
+                    {u.name} <span className="text-[10px] text-muted-foreground">[{u.code}]</span>
+                    <button onClick={() => startEditUnit(u)} className="ml-1 text-muted-foreground hover:text-foreground" title="Edit"><Pencil className="w-3 h-3" /></button>
+                    <button onClick={() => removeUnit(u.name)} className="ml-0.5 text-muted-foreground hover:text-destructive" title="Remove"><X className="w-3 h-3" /></button>
+                  </span>
+                )
               ))}
             </div>
           ) : <p className="text-xs text-muted-foreground italic">No units added yet.</p>}
