@@ -312,10 +312,6 @@
           "type": "string",
           "default": ""
         },
-        "employee_number": {
-          "type": "string",
-          "default": ""
-        },
         "bccnm_license": {
           "type": "string",
           "default": ""
