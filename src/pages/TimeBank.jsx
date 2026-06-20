@@ -139,11 +139,89 @@ function CategoryCard({ category, shifts, entitlement }) {
   );
 }
 
+// ESN hour limit counts ALL shift types except unpaid ones and day_off
+const ESN_EXCLUDED_TYPES = ['day_off', 'unpaid_vacation', 'unpaid_sick'];
+
+function EsnCard({ shifts, entitlement }) {
+  const [open, setOpen] = useState(false);
+
+  const usedHours = shifts.reduce((sum, s) => sum + (s.paid_hours || 0), 0);
+  const remaining = Math.max(0, entitlement - usedHours);
+  const overLimit = usedHours > entitlement;
+  const pct = entitlement > 0 ? Math.min(100, (usedHours / entitlement) * 100) : 0;
+
+  return (
+    <div className="bg-card border border-border rounded-xl p-5 space-y-3">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-sm font-semibold text-foreground">ESN Hours</h3>
+          <p className="text-xs text-muted-foreground">Employed Student Nurse clinical hours</p>
+        </div>
+        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950 text-rose-700 dark:text-rose-300">
+          {fmt(usedHours)}h used
+        </span>
+      </div>
+
+      <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+        <div
+          className={`h-2 rounded-full transition-all duration-500 ${overLimit ? 'bg-destructive' : 'bg-rose-500'}`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <span>{fmt(usedHours)} of {fmt(entitlement)} hours used</span>
+        <span className={overLimit ? 'text-destructive font-medium' : ''}>
+          {overLimit ? `${fmt(usedHours - entitlement)}h over limit` : `${fmt(remaining)}h remaining`}
+        </span>
+      </div>
+
+      {shifts.length > 0 && (
+        <div>
+          <button
+            onClick={() => setOpen(o => !o)}
+            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {open ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+            {open ? 'Hide' : 'Show'} {shifts.length} {shifts.length === 1 ? 'shift' : 'shifts'}
+          </button>
+          {open && (
+            <div className="mt-2 rounded-lg border border-border overflow-hidden">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="bg-muted/50 text-muted-foreground">
+                    <th className="text-left px-3 py-2 font-medium">Date</th>
+                    <th className="text-left px-3 py-2 font-medium">Type</th>
+                    <th className="text-right px-3 py-2 font-medium">Hours</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {shifts.sort((a, b) => a.date.localeCompare(b.date)).map((s, i) => (
+                    <tr key={i} className="border-t border-border">
+                      <td className="px-3 py-2 font-mono">{s.date}</td>
+                      <td className="px-3 py-2 text-muted-foreground capitalize">{s.shift_type.replace(/_/g, ' ')}</td>
+                      <td className="px-3 py-2 text-right font-mono">{s.paid_hours}h</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {shifts.length === 0 && (
+        <p className="text-xs text-muted-foreground">No worked shifts recorded this year.</p>
+      )}
+    </div>
+  );
+}
+
 export default function TimeBank() {
   const currentYear = new Date().getFullYear();
   const [year, setYear] = useState(currentYear);
   const [periods, setPeriods] = useState([]);
   const [timeBank, setTimeBank] = useState({});
+  const [licenseType, setLicenseType] = useState('');
   const [loading, setLoading] = useState(true);
   const debounce = useRef(null);
 
@@ -169,6 +247,7 @@ export default function TimeBank() {
       ]);
       setPeriods(periodsData);
       setTimeBank(settingsList[0]?.time_bank || {});
+      setLicenseType(settingsList[0]?.nurse_profile?.license_type || '');
     } finally {
       setLoading(false);
     }
@@ -216,6 +295,12 @@ export default function TimeBank() {
         <div className="text-sm text-muted-foreground py-12 text-center">Loading...</div>
       ) : (
         <div className="space-y-4">
+          {licenseType === 'ESN' && (
+            <EsnCard
+              shifts={allShifts.filter(s => !ESN_EXCLUDED_TYPES.includes(s.shift_type))}
+              entitlement={timeBank.esn_hour_entitlement ?? 400}
+            />
+          )}
           {CATEGORIES.map(cat => {
             const catShifts = allShifts.filter(s => cat.types.includes(s.shift_type));
             const entitlement = cat.entitlementKey ? (timeBank[cat.entitlementKey] || 0) : 0;

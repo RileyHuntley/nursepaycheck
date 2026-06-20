@@ -1048,6 +1048,20 @@ export default function PayConfiguration() {
               placeholder="0"
             />
           </div>
+          {settings.nurse_profile?.license_type === 'ESN' && (
+            <div className="space-y-1.5 md:col-span-2">
+              <Label className="text-xs text-muted-foreground">ESN Hours Limit</Label>
+              <Input
+                type="number"
+                min="0"
+                value={settings.time_bank?.esn_hour_entitlement ?? 400}
+                onChange={e => set('time_bank.esn_hour_entitlement', parseFloat(e.target.value) || 0)}
+                className="h-9 text-sm font-mono"
+                placeholder="400"
+              />
+              <p className="text-xs text-muted-foreground">Maximum hours an ESN can work under their student license. Default is 400 hours.</p>
+            </div>
+          )}
         </div>
       </section>
 
