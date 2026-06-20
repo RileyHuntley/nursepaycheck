@@ -10,7 +10,7 @@ const DAY_SHIFT_12H = {
   end_time: '19:00',
   paid_hours: 11,
   unpaid_break: 1,
-  paid_break: 0.75,
+  paid_break: 0,
   shift_type: 'regular',
 };
 
@@ -19,7 +19,7 @@ const NIGHT_SHIFT_12H = {
   end_time: '07:00',
   paid_hours: 11,
   unpaid_break: 1,
-  paid_break: 0.75,
+  paid_break: 0,
   shift_type: 'regular',
 };
 
