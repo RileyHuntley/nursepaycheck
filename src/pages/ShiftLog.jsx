@@ -8,7 +8,9 @@ import { calculatePeriodBreakdown, calculateShiftPremiums, getPayPeriodForDate, 
 import { toast } from '@/components/ui/use-toast';
 import { formatCurrency } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Loader2, ArrowUpDown, Plus, CalendarPlus, List, CalendarDays, Filter, CheckSquare, X, Check, Trash2 } from 'lucide-react';
+import { Loader2, ArrowUpDown, Plus, CalendarPlus, List, CalendarDays, Filter, CheckSquare, X, Check, Trash2, Eye, EyeOff } from 'lucide-react';
+import { PrivacyModeProvider, usePrivacyMode } from '@/contexts/PrivacyModeContext';
+import PrivacyAmount from '@/components/payroll/PrivacyAmount';
 import {
   Select,
   SelectContent,
@@ -22,6 +24,14 @@ import SetupBanner from '@/components/payroll/SetupBanner';
 import { Checkbox } from '@/components/ui/checkbox';
 
 export default function ShiftLog() {
+  return (
+    <PrivacyModeProvider>
+      <ShiftLogInner />
+    </PrivacyModeProvider>
+  );
+}
+
+function ShiftLogInner() {
   const [settings, setSettings] = useState(null);
   const [allShifts, setAllShifts] = useState([]);
   const [periodMap, setPeriodMap] = useState({}); // id -> period
@@ -526,11 +536,22 @@ export default function ShiftLog() {
     }, {});
   }
 
+  const { privacyMode, togglePrivacyMode } = usePrivacyMode();
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h2 className="text-2xl font-display font-bold text-foreground tracking-tight">Shifts</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-2xl font-display font-bold text-foreground tracking-tight">Shifts</h2>
+            <button
+              onClick={togglePrivacyMode}
+              className="text-muted-foreground hover:text-foreground transition-colors"
+              aria-label={privacyMode ? 'Show amounts' : 'Hide amounts'}
+            >
+              {privacyMode ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+            </button>
+          </div>
           {viewMode === 'list' && (
             <p className="text-sm text-muted-foreground mt-1">
               {statusFilter !== 'all'
@@ -748,9 +769,10 @@ export default function ShiftLog() {
                               </span>
                             </div>
                             {periodBreakdown && (
-                              <span className="text-sm font-mono font-semibold text-primary">
-                                {formatCurrency(periodBreakdown.gross_pay)}
-                              </span>
+                              <PrivacyAmount
+                                value={periodBreakdown.gross_pay}
+                                className="text-sm font-mono font-semibold text-primary"
+                              />
                             )}
                           </div>
                           <div className="divide-y divide-border">

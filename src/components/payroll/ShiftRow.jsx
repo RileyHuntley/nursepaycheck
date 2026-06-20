@@ -3,6 +3,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Trash2, Sun, Moon, Check, Copy } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { splitOvernightShift, getSegmentMultiplier, getWageForDate } from '@/lib/premiumCalculator';
+import PrivacyAmount from '@/components/payroll/PrivacyAmount';
 
 const TYPE_LABELS = {
   casual:          'Casual',
@@ -202,21 +203,21 @@ export default function ShiftRow({ shift, premiums, settings, periodEndDate, onE
         return (
           <div className="flex items-center gap-1.5 mt-1.5 text-[11px] font-mono text-muted-foreground">
             {straightTime > 0 && (
-              <span className="text-foreground font-medium">{formatCurrency(straightTime)}</span>
+              <PrivacyAmount value={straightTime} className="text-foreground font-medium" />
             )}
             {otMults.map((mult, i) => (
               <span key={mult}>
                 {(straightTime > 0 || i > 0) && <span> + </span>}
                 <span>OT×{mult}</span>
-                <span className="text-foreground font-medium"> {formatCurrency(otGroups[mult])}</span>
+                <PrivacyAmount value={otGroups[mult]} className="text-foreground font-medium" />
               </span>
             ))}
             {((straightTime > 0 || otTotal > 0) && premiumTotal > 0) && <span> + </span>}
             {premiumTotal > 0 && (
-              <><span>Premiums</span> <span className="text-foreground font-medium">{formatCurrency(premiumTotal)}</span></>
+              <><span>Premiums</span> <PrivacyAmount value={premiumTotal} className="text-foreground font-medium" /></>
             )}
             {(straightTime > 0 || otTotal > 0 || premiumTotal > 0) && <span> = </span>}
-            <span className="text-primary font-semibold">{formatCurrency(grandTotal)}</span>
+            <PrivacyAmount value={grandTotal} className="text-primary font-semibold" />
           </div>
         );
       })()}
