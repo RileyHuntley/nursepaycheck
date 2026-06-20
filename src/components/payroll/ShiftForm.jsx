@@ -63,7 +63,7 @@ const getPresets = (settings) => {
     },
     {
       label: '8h Day',
-      values: { start_time: pt.day_8h_start || '08:00', end_time: pt.day_8h_end || '16:00', unpaid_break: 0.5, paid_break: 0 },
+      values: { start_time: pt.day_8h_start || '08:00', end_time: pt.day_8h_end || '16:00', unpaid_break: 0.5, paid_break: 0.25 },
     },
   ];
 };
@@ -107,10 +107,28 @@ export default function ShiftForm({ onSubmit, onCancel, onDelete, initial, setti
     if (end <= start) end += 24;
     return Math.round((end - start) * 100) / 100;
   })();
-  const entitlement = totalHours >= 10 ? 0.75 : 0;
+
+  const computeBreakEntitlements = (h) => ({
+    paid_break: h >= 10 ? 0.75 : h >= 7.5 ? 0.50 : h >= 4 ? 0.25 : 0,
+    unpaid_break: h >= 10 ? 1.0 : h >= 5.5 ? 0.5 : 0,
+  });
+
+  const entitlement = computeBreakEntitlements(totalHours).paid_break;
   const paidHours = Math.max(0, totalHours - (shift.unpaid_break || 0) + Math.max(0, entitlement - (shift.paid_break || 0)));
 
   const set = (field, value) => setShift((s) => ({ ...s, [field]: value }));
+
+  const handleTimeChange = (field, value) => {
+    setShift((s) => {
+      const updated = { ...s, [field]: value };
+      const start = parseTime(updated.start_time || '');
+      let end = parseTime(updated.end_time || '');
+      if (!updated.start_time || !updated.end_time) return updated;
+      if (end <= start) end += 24;
+      const hours = Math.round((end - start) * 100) / 100;
+      return { ...updated, ...computeBreakEntitlements(hours) };
+    });
+  };
   const setOverride = (field, value) => setShift(s => ({
     ...s,
     premium_overrides: { ...(s.premium_overrides || {}), [field]: value === '' ? null : parseFloat(value) || 0 },
@@ -232,11 +250,11 @@ export default function ShiftForm({ onSubmit, onCancel, onDelete, initial, setti
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">Start Time</Label>
-          <Input type="time" value={shift.start_time} onChange={(e) => set('start_time', e.target.value)} className="h-9 text-sm" />
+          <Input type="time" value={shift.start_time} onChange={(e) => handleTimeChange('start_time', e.target.value)} className="h-9 text-sm" />
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">End Time</Label>
-          <Input type="time" value={shift.end_time} onChange={(e) => set('end_time', e.target.value)} className="h-9 text-sm" />
+          <Input type="time" value={shift.end_time} onChange={(e) => handleTimeChange('end_time', e.target.value)} className="h-9 text-sm" />
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">Shift Type</Label>
