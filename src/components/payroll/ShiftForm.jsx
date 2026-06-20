@@ -438,7 +438,7 @@ export default function ShiftForm({ onSubmit, onCancel, onDelete, initial, setti
                 <span className="text-xs font-semibold text-foreground">Calculated Wage</span>
                 {grandTotal > 0 && (
                   <span className="text-xs text-primary font-mono">
-                    {formatCurrency(grandTotal).replace('$', '')} / {formatCurrency(wage)}/hr
+                    {formatCurrency(grandTotal)}
                   </span>
                 )}
               </div>
@@ -513,7 +513,7 @@ export default function ShiftForm({ onSubmit, onCancel, onDelete, initial, setti
                 <span className="text-xs font-semibold text-foreground">Calculated Premiums</span>
                 {hasAnyPremium && (
                   <span className="text-xs text-primary font-mono">
-                    {formatCurrency(PREMIUM_FIELDS.reduce((s, f) => s + (premiums[f.key] || 0), 0)).replace('$', '')}
+                    {formatCurrency(PREMIUM_FIELDS.reduce((s, f) => s + (premiums[f.key] || 0), 0))}
                   </span>
                 )}
                 {!hasAnyPremium && <span className="text-xs text-muted-foreground">None applicable</span>}
