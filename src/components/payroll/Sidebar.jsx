@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, CalendarPlus, Clock, Settings, PanelLeftClose, PanelLeftOpen, List, ClipboardCheck, DollarSign, MapPin, Shield, LogOut, BarChart3, ChevronDown, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, CalendarPlus, Clock, Settings, PanelLeftClose, PanelLeftOpen, List, ClipboardCheck, DollarSign, MapPin, Shield, LogOut, BarChart3, ChevronDown, ChevronUp } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { HA_PORTALS, getUserHealthAuthorities } from '@/lib/healthAuthorityPortals';
 // Theme toggle moved to Settings page
@@ -37,8 +37,8 @@ const links = [
 
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('sidebar-collapsed') === 'true');
-  const [bcnuOpen, setBcnuOpen] = useState(() => localStorage.getItem('sidebar-bcnu-open') !== 'false');
-  const [externalOpen, setExternalOpen] = useState(() => localStorage.getItem('sidebar-external-open') !== 'false');
+  const [bcnuOpen, setBcnuOpen] = useState(() => localStorage.getItem('sidebar-bcnu-open') === 'true');
+  const [externalOpen, setExternalOpen] = useState(() => localStorage.getItem('sidebar-external-open') === 'true');
   const [healthAuthorities, setHealthAuthorities] = useState([]);
   const [pendingCount, setPendingCount] = useState(0);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -176,7 +176,7 @@ export default function Sidebar() {
                 className="flex items-center gap-1 w-full text-left group"
               >
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-0 flex-1">BCNU Resources</p>
-                {bcnuOpen ? <ChevronDown className="w-3 h-3 text-muted-foreground" /> : <ChevronRight className="w-3 h-3 text-muted-foreground" />}
+                {bcnuOpen ? <ChevronUp className="w-5 h-5 text-muted-foreground" /> : <ChevronDown className="w-5 h-5 text-muted-foreground" />}
               </button>
             )}
           </div>
@@ -218,7 +218,7 @@ export default function Sidebar() {
                   className="flex items-center gap-1 w-full text-left group"
                 >
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-0 flex-1">External Links</p>
-                  {externalOpen ? <ChevronDown className="w-3 h-3 text-muted-foreground" /> : <ChevronRight className="w-3 h-3 text-muted-foreground" />}
+                  {externalOpen ? <ChevronUp className="w-5 h-5 text-muted-foreground" /> : <ChevronDown className="w-5 h-5 text-muted-foreground" />}
                 </button>
               )}
             </div>
