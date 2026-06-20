@@ -17,7 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { SHIFT_PATTERNS, getAllPatterns, describeCustomSequence } from '@/lib/shiftPatterns';
+import { SHIFT_PATTERNS, getAllPatterns, describeCustomSequence, getPatternDisplaySequence } from '@/lib/shiftPatterns';
 import { searchHospitals } from '@/lib/bcHospitals';
 import {
   Select,
@@ -390,7 +390,7 @@ export default function ShiftConfiguration() {
         <h3 className="text-sm font-semibold text-foreground">Shifts</h3>
         <p className="text-xs text-muted-foreground">Set defaults to pre-fill new shifts.</p>
 
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <Label className="text-xs text-muted-foreground">Default Shift Pattern</Label>
           <Select value={settings.default_shift_pattern || 'DDNN'} onValueChange={v => set('default_shift_pattern', v)}>
             <SelectTrigger className="h-9 text-sm max-w-xs">
@@ -402,6 +402,30 @@ export default function ShiftConfiguration() {
               ))}
             </SelectContent>
           </Select>
+          {(() => {
+            const selectedPattern = getAllPatterns(settings).find(p => p.name === (settings.default_shift_pattern || 'DDNN'));
+            const displaySeq = getPatternDisplaySequence(selectedPattern);
+            if (!displaySeq.length) return null;
+            return (
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {displaySeq.map((step, i) => {
+                  const label = step === 'D' ? 'D' : step === 'N' ? 'N' : step === '8' ? '8h' : '—';
+                  const colors = step === 'D'
+                    ? 'bg-chart-2/15 text-chart-2 border-chart-2/30'
+                    : step === 'N'
+                    ? 'bg-chart-5/15 text-chart-5 border-chart-5/30'
+                    : step === '8'
+                    ? 'bg-chart-1/15 text-chart-1 border-chart-1/30'
+                    : 'bg-muted text-muted-foreground border-border';
+                  return (
+                    <div key={i} className={`w-9 h-9 rounded-md border text-xs font-semibold font-mono flex items-center justify-center ${colors}`}>
+                      {label}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
         </div>
 
         <div className="space-y-3 pt-1">

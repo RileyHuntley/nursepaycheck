@@ -83,6 +83,18 @@ export function getAllPatterns(settings) {
   return [...SHIFT_PATTERNS, ...custom];
 }
 
+export function getPatternDisplaySequence(pattern) {
+  if (!pattern) return [];
+  return (pattern.sequence || []).map(step => {
+    if (step === null) return null;
+    if (typeof step === 'string') return step; // already a type letter from custom pattern
+    // Infer from shift template
+    if (step.paid_hours <= 8) return '8';
+    if (step.start_time && step.start_time >= '12:00') return 'N';
+    return 'D';
+  });
+}
+
 export function describeCustomSequence(sequence) {
   const workDays = sequence.filter(s => s !== null).length;
   const offDays = sequence.filter(s => s === null).length;
