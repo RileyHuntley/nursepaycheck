@@ -214,7 +214,7 @@ export default function ShiftRow({ shift, premiums, settings, periodEndDate, onE
             {premiumTotal > 0 && (
               <><span>Premiums</span> <span className="text-foreground font-medium">{formatCurrency(premiumTotal)}</span></>
             )}
-            <span> = </span>
+            {(straightTime > 0 || otTotal > 0 || premiumTotal > 0) && <span> = </span>}
             <span className="text-primary font-semibold">{formatCurrency(grandTotal)}</span>
           </div>
         );
