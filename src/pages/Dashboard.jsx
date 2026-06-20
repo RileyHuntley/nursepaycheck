@@ -6,7 +6,8 @@ import PayBreakdownPie from '@/components/payroll/PayBreakdownPie';
 import EarningsTrendChart from '@/components/payroll/EarningsTrendChart';
 import { calculatePeriodBreakdown, getCurrentPayPeriodDates, getFirstPeriodsOfMonths } from '@/lib/premiumCalculator';
 import { Button } from '@/components/ui/button';
-import { CalendarPlus, ChevronLeft, ChevronRight, Clock, CalendarCheck } from 'lucide-react';
+import { CalendarPlus, ChevronLeft, ChevronRight, Clock, CalendarCheck, Stethoscope } from 'lucide-react';
+import { formatCurrency } from '@/lib/utils';
 import SetupBanner from '@/components/payroll/SetupBanner';
 import { getVCHPeriodNumber, getVCHPayDate } from '@/lib/statHolidays';
 
@@ -383,6 +384,30 @@ export default function Dashboard() {
     ? Math.round((new Date(nextPayDate + 'T12:00:00') - new Date(todayStr + 'T12:00:00')) / 86400000)
     : null;
 
+  // ── Upcoming shifts (next 4 across all periods) ──
+  const upcomingShifts = periods
+    .flatMap(p => (p.shifts || []).map(s => ({ ...s, periodName: p.name })))
+    .filter(s => s.date && s.date >= todayStr)
+    .sort((a, b) => a.date.localeCompare(b.date) || (a.start_time || '').localeCompare(b.start_time || ''))
+    .slice(0, 4);
+
+  const SHIFT_TYPE_LABELS = {
+    casual: 'Casual', regular: 'Regular', stat_holiday: 'Stat Holiday',
+    orientation: 'Orientation', education: 'Education', isn: 'ISN',
+    vacation: 'Vacation', paid_vacation: 'Paid Vacation', sick: 'Sick',
+    paid_sick: 'Paid Sick', unpaid_vacation: 'Unpaid Leave', unpaid_sick: 'Unpaid Sick',
+    special_leave: 'Special Leave', pdo_pst: 'PDO/PST', other_leave: 'Other Leave',
+    student_practicum: 'Student Practicum',
+  };
+
+  // ── Current period progress ──
+  const curPeriodDayElapsed = Math.min(14, Math.max(0,
+    Math.round((new Date(todayStr + 'T12:00:00') - new Date(curStart + 'T12:00:00')) / 86400000) + 1
+  ));
+  const curPeriodRecord = computedPeriods.find(p => p.start_date === curStart && p.end_date === curEnd);
+  const curPeriodShifts = curPeriodRecord?.shifts || [];
+  const curPeriodGross = curPeriodRecord?.computedBreakdown?.gross_pay || 0;
+
   const gridClass = (n) => {
     if (n === 1) return 'grid-cols-1 md:grid-cols-2';
     if (n === 2) return 'grid-cols-1 md:grid-cols-2';
@@ -451,6 +476,102 @@ export default function Dashboard() {
               ) : (
                 <p className="text-sm font-medium text-muted-foreground mt-0.5">Not scheduled</p>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Upcoming Shifts + Period Progress ── */}
+      {!loading && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Upcoming shifts */}
+          <div className="bg-card border border-border rounded-xl p-5">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-foreground">Upcoming Shifts</h3>
+              <Link to="/shift-log" className="text-xs text-primary hover:underline">View all</Link>
+            </div>
+            {upcomingShifts.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4 text-center">No upcoming shifts logged.</p>
+            ) : (
+              <div className="divide-y divide-border">
+                {upcomingShifts.map((s, i) => {
+                  const d = new Date(s.date + 'T12:00:00');
+                  return (
+                    <div key={i} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
+                      <div className="text-center shrink-0 w-10">
+                        <p className="text-[10px] font-medium text-muted-foreground uppercase leading-none">
+                          {d.toLocaleDateString('en-CA', { month: 'short' })}
+                        </p>
+                        <p className="text-lg font-mono font-bold text-foreground leading-tight">
+                          {d.getDate()}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground leading-none">
+                          {d.toLocaleDateString('en-CA', { weekday: 'short' })}
+                        </p>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-foreground truncate">
+                          {SHIFT_TYPE_LABELS[s.shift_type] || s.shift_type || 'Shift'}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {[s.hospital, s.unit].filter(Boolean).join(' · ') || s.periodName || '—'}
+                        </p>
+                      </div>
+                      {(s.start_time || s.paid_hours) && (
+                        <div className="text-right shrink-0">
+                          {s.start_time && (
+                            <p className="text-xs font-mono text-muted-foreground">{s.start_time}</p>
+                          )}
+                          {s.paid_hours != null && (
+                            <p className="text-xs font-mono text-muted-foreground">{s.paid_hours}h</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Current period progress */}
+          <div className="bg-card border border-border rounded-xl p-5">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-foreground">Current Period</h3>
+              <span className="text-xs text-muted-foreground">{fmtDate(curStart)} – {fmtDate(curEnd)}</span>
+            </div>
+            <div className="mb-4">
+              <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
+                <span>Day {curPeriodDayElapsed} of 14</span>
+                <span>{Math.round((curPeriodDayElapsed / 14) * 100)}%</span>
+              </div>
+              <div className="h-2 bg-muted rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-primary rounded-full transition-all duration-500"
+                  style={{ width: `${(curPeriodDayElapsed / 14) * 100}%` }}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs text-muted-foreground mb-0.5">Shifts logged</p>
+                <p className="text-2xl font-mono font-bold text-foreground leading-tight">
+                  {curPeriodShifts.length}
+                  <span className="text-sm font-sans font-normal text-muted-foreground ml-1">
+                    shift{curPeriodShifts.length !== 1 ? 's' : ''}
+                  </span>
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-0.5">Gross so far</p>
+                {curPeriodGross > 0 ? (
+                  <p className="text-2xl font-mono font-bold text-primary leading-tight">
+                    {formatCurrency(curPeriodGross)}
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted-foreground mt-1">No shifts yet</p>
+                )}
+              </div>
             </div>
           </div>
         </div>
