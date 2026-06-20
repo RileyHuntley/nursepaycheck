@@ -119,13 +119,14 @@ export default function Dashboard() {
   const nextPeriod = computedPeriods.find(p => p.start_date === nextStart && p.end_date === nextEnd) || null;
 
   // ── Helper: sum breakdowns with monthly-allowance cap ──
-  const sumBreakdowns = (periodsList, maxDate) => {
+  const sumBreakdowns = (periodsList, minDate, maxDate) => {
     if (periodsList.length === 0 || !settings) return null;
 
     // Compute allowance: monthly max × months that have ≥1 shift
     const monthsWithShifts = new Set();
     for (const p of periodsList) {
       for (const shift of (p.shifts || [])) {
+        if (minDate && shift.date < minDate) continue;
         if (maxDate && shift.date > maxDate) continue;
         monthsWithShifts.add(shift.date.substring(0, 7));
       }
@@ -135,7 +136,9 @@ export default function Dashboard() {
 
     const base = periodsList.reduce((acc, p) => {
       const shifts = p.shifts || [];
-      const filtered = maxDate ? shifts.filter(s => s.date <= maxDate) : shifts;
+      const filtered = shifts.filter(s =>
+        (!minDate || s.date >= minDate) && (!maxDate || s.date <= maxDate)
+      );
       if (filtered.length === 0) return acc;
       const b = settings ? calculatePeriodBreakdown(filtered, settings) : null;
       if (!b) return acc;
@@ -177,10 +180,12 @@ export default function Dashboard() {
     return base;
   };
 
-  const countShifts = (periodsList, maxDate) =>
+  const countShifts = (periodsList, minDate, maxDate) =>
     periodsList.reduce((sum, p) => {
       const shifts = p.shifts || [];
-      return sum + (maxDate ? shifts.filter(s => s.date <= maxDate).length : shifts.length);
+      return sum + shifts.filter(s =>
+        (!minDate || s.date >= minDate) && (!maxDate || s.date <= maxDate)
+      ).length;
     }, 0);
 
   // ── Monthly ──
@@ -190,9 +195,11 @@ export default function Dashboard() {
   // This month
   const thisMonthStart = monthStart(now.getFullYear(), now.getMonth());
   const thisMonthEnd = monthEnd(now.getFullYear(), now.getMonth());
-  const thisMonthPeriods = computedPeriods.filter(p => p.start_date >= thisMonthStart && p.start_date <= thisMonthEnd);
-  const thisMonthBreakdown = sumBreakdowns(thisMonthPeriods, null);
-  const thisMonthShiftCount = countShifts(thisMonthPeriods, null);
+  const thisMonthPeriods = computedPeriods.filter(p =>
+    (p.shifts || []).some(s => s.date >= thisMonthStart && s.date <= thisMonthEnd)
+  );
+  const thisMonthBreakdown = sumBreakdowns(thisMonthPeriods, thisMonthStart, thisMonthEnd);
+  const thisMonthShiftCount = countShifts(thisMonthPeriods, thisMonthStart, thisMonthEnd);
   const thisMonthLabel = now.toLocaleDateString('en-CA', { month: 'long', year: 'numeric' });
 
   // Last month
@@ -200,9 +207,11 @@ export default function Dashboard() {
   const lastMonthM = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
   const lastMonthStart = monthStart(lastMonthY, lastMonthM);
   const lastMonthEnd = monthEnd(lastMonthY, lastMonthM);
-  const lastMonthPeriods = computedPeriods.filter(p => p.start_date >= lastMonthStart && p.start_date <= lastMonthEnd);
-  const lastMonthBreakdown = sumBreakdowns(lastMonthPeriods, null);
-  const lastMonthShiftCount = countShifts(lastMonthPeriods, null);
+  const lastMonthPeriods = computedPeriods.filter(p =>
+    (p.shifts || []).some(s => s.date >= lastMonthStart && s.date <= lastMonthEnd)
+  );
+  const lastMonthBreakdown = sumBreakdowns(lastMonthPeriods, lastMonthStart, lastMonthEnd);
+  const lastMonthShiftCount = countShifts(lastMonthPeriods, lastMonthStart, lastMonthEnd);
   const lastMonthLabel = new Date(lastMonthY, lastMonthM).toLocaleDateString('en-CA', { month: 'long', year: 'numeric' });
 
   // Next month
@@ -210,27 +219,29 @@ export default function Dashboard() {
   const nextMonthM = now.getMonth() === 11 ? 0 : now.getMonth() + 1;
   const nextMonthStart = monthStart(nextMonthY, nextMonthM);
   const nextMonthEnd = monthEnd(nextMonthY, nextMonthM);
-  const nextMonthPeriods = computedPeriods.filter(p => p.start_date >= nextMonthStart && p.start_date <= nextMonthEnd);
-  const nextMonthBreakdown = sumBreakdowns(nextMonthPeriods, null);
-  const nextMonthShiftCount = countShifts(nextMonthPeriods, null);
+  const nextMonthPeriods = computedPeriods.filter(p =>
+    (p.shifts || []).some(s => s.date >= nextMonthStart && s.date <= nextMonthEnd)
+  );
+  const nextMonthBreakdown = sumBreakdowns(nextMonthPeriods, nextMonthStart, nextMonthEnd);
+  const nextMonthShiftCount = countShifts(nextMonthPeriods, nextMonthStart, nextMonthEnd);
   const nextMonthLabel = new Date(nextMonthY, nextMonthM).toLocaleDateString('en-CA', { month: 'long', year: 'numeric' });
 
   // ── Yearly ──
   const yearStart = `${now.getFullYear()}-01-01`;
   const yearPeriods = computedPeriods.filter(p => p.start_date >= yearStart);
 
-  const ytdShiftCount = countShifts(yearPeriods, todayStr);
-  const ytdBreakdown = sumBreakdowns(yearPeriods, todayStr);
+  const ytdShiftCount = countShifts(yearPeriods, null, todayStr);
+  const ytdBreakdown = sumBreakdowns(yearPeriods, null, todayStr);
 
-  const thisYearShiftCount = countShifts(yearPeriods, null);
-  const thisYearBreakdown = sumBreakdowns(yearPeriods, null);
+  const thisYearShiftCount = countShifts(yearPeriods, null, null);
+  const thisYearBreakdown = sumBreakdowns(yearPeriods, null, null);
 
   // Last year (if any data exists)
   const lastYearStart = `${now.getFullYear() - 1}-01-01`;
   const lastYearEnd = `${now.getFullYear() - 1}-12-31`;
   const lastYearPeriods = computedPeriods.filter(p => p.start_date >= lastYearStart && p.start_date <= lastYearEnd);
-  const lastYearBreakdown = sumBreakdowns(lastYearPeriods, null);
-  const lastYearShiftCount = countShifts(lastYearPeriods, null);
+  const lastYearBreakdown = sumBreakdowns(lastYearPeriods, null, null);
+  const lastYearShiftCount = countShifts(lastYearPeriods, null, null);
   const lastYearLabel = `${now.getFullYear() - 1}`;
 
   return (
