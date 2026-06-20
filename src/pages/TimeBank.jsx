@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Landmark, History } from 'lucide-react';
+import { calculateSickLeaveEntitlement, sickLeaveBreakdown, SICK_MAX_DAYS } from '@/lib/sickLeaveCalculator';
 import {
   Dialog,
   DialogContent,
@@ -101,7 +102,9 @@ function ShiftLogDialog({ open, onClose, category, shifts }) {
   );
 }
 
-function CategoryCard({ category, shifts, entitlement }) {
+const STATUS_LABELS = { full_time: 'Full Time', part_time: 'Part Time', casual: 'Casual' };
+
+function CategoryCard({ category, shifts, entitlement, sickInfo }) {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const usedHours = shifts.reduce((sum, s) => sum + (s.paid_hours || 0), 0);
@@ -148,8 +151,36 @@ function CategoryCard({ category, shifts, entitlement }) {
           </>
         )}
 
-        {!hasLimit && (
+        {!hasLimit && !sickInfo && (
           <p className="text-xs text-muted-foreground">No annual limit set — configure in Pay Configuration.</p>
+        )}
+
+        {!hasLimit && sickInfo && (
+          <p className="text-xs text-muted-foreground">No employment type configured — set shift lines in Pay Configuration.</p>
+        )}
+
+        {sickInfo && entitlement > 0 && (
+          <div className="rounded-md bg-muted/40 px-3 py-2 space-y-1">
+            <p className="text-[11px] font-medium text-muted-foreground">Entitlement basis — Art. 42 (1.5 days/month)</p>
+            {sickInfo.map((line, i) => (
+              <div key={i} className="flex items-center justify-between text-[11px] text-muted-foreground">
+                <span>
+                  {STATUS_LABELS[line.status] ?? line.status}
+                  {line.status === 'part_time' && line.fte != null ? ` (FTE ${line.fte.toFixed(2)})` : ''}
+                  {line.status === 'casual' ? ' — not eligible' : ''}
+                </span>
+                {line.status !== 'casual' && (
+                  <span className="font-mono">{fmt(line.days)} days/yr</span>
+                )}
+              </div>
+            ))}
+            {sickInfo.length > 1 && (
+              <div className="flex items-center justify-between text-[11px] font-medium text-foreground border-t border-border pt-1 mt-1">
+                <span>Total</span>
+                <span className="font-mono">{fmt(entitlement)} days/yr</span>
+              </div>
+            )}
+          </div>
         )}
 
         {shifts.length === 0 && (
@@ -261,6 +292,7 @@ export default function TimeBank() {
   const [periods, setPeriods] = useState([]);
   const [timeBank, setTimeBank] = useState({});
   const [licenseType, setLicenseType] = useState('');
+  const [shiftLines, setShiftLines] = useState([]);
   const [loading, setLoading] = useState(true);
   const debounce = useRef(null);
 
@@ -287,6 +319,7 @@ export default function TimeBank() {
       setPeriods(periodsData);
       setTimeBank(settingsList[0]?.time_bank || {});
       setLicenseType(settingsList[0]?.nurse_profile?.license_type || '');
+      setShiftLines(settingsList[0]?.shift_lines || []);
     } finally {
       setLoading(false);
     }
@@ -342,13 +375,20 @@ export default function TimeBank() {
           )}
           {CATEGORIES.map(cat => {
             const catShifts = allShifts.filter(s => cat.types.includes(s.shift_type));
-            const entitlement = cat.entitlementKey ? (timeBank[cat.entitlementKey] || 0) : 0;
+            let entitlement = cat.entitlementKey ? (timeBank[cat.entitlementKey] || 0) : 0;
+            let sickInfo = null;
+            if (cat.key === 'sick' && shiftLines.length > 0) {
+              const calculated = calculateSickLeaveEntitlement(shiftLines);
+              entitlement = calculated;
+              sickInfo = sickLeaveBreakdown(shiftLines);
+            }
             return (
               <CategoryCard
                 key={cat.key}
                 category={cat}
                 shifts={catShifts}
                 entitlement={entitlement}
+                sickInfo={sickInfo}
               />
             );
           })}
