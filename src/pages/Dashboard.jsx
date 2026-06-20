@@ -4,7 +4,8 @@ import { Link } from 'react-router-dom';
 import PaySummaryPanel from '@/components/payroll/PaySummaryPanel';
 import PayBreakdownPie from '@/components/payroll/PayBreakdownPie';
 import EarningsTrendChart from '@/components/payroll/EarningsTrendChart';
-import { calculatePeriodBreakdown, getCurrentPayPeriodDates, getFirstPeriodsOfMonths } from '@/lib/premiumCalculator';
+import { calculatePeriodBreakdown, getCurrentPayPeriodDates, getFirstPeriodsOfMonths, shiftSpanHours } from '@/lib/premiumCalculator';
+import EditShiftDialog from '@/components/payroll/EditShiftDialog';
 import { Button } from '@/components/ui/button';
 import { CalendarPlus, ChevronLeft, ChevronRight, Clock, CalendarCheck, Stethoscope } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
@@ -88,6 +89,9 @@ export default function Dashboard() {
   // Trend chart view toggles
   const [trendMonthsView, setTrendMonthsView] = useState('past');
   const [trendPeriodsView, setTrendPeriodsView] = useState('past');
+
+  // Shift editing
+  const [editingShift, setEditingShift] = useState(null); // { data, _periodId, _shiftIdx }
 
   const loadingRef = useRef(false);
   const loadRef = useRef(null);
@@ -384,9 +388,45 @@ export default function Dashboard() {
     ? Math.round((new Date(nextPayDate + 'T12:00:00') - new Date(todayStr + 'T12:00:00')) / 86400000)
     : null;
 
+  // ── Shift edit handlers ──
+  const periodMap = Object.fromEntries(periods.map(p => [p.id, p]));
+  const firstPeriodsSet = firstPeriodsOfMonth;
+
+  const updateShift = async (shiftData) => {
+    if (!editingShift) return;
+    const period = periodMap[editingShift._periodId];
+    if (!period) return;
+    const updatedShifts = (period.shifts || []).map((s, i) =>
+      i === editingShift._shiftIdx ? { ...shiftData } : s
+    );
+    const breakdown = settings
+      ? calculatePeriodBreakdown(updatedShifts, settings, firstPeriodsSet.has(period.start_date))
+      : null;
+    await base44.entities.PayPeriod.update(period.id, {
+      shifts: updatedShifts,
+      ...(breakdown ? { breakdown } : {}),
+    });
+    setEditingShift(null);
+  };
+
+  const deleteShift = async () => {
+    if (!editingShift) return;
+    const period = periodMap[editingShift._periodId];
+    if (!period) return;
+    const updatedShifts = (period.shifts || []).filter((_, i) => i !== editingShift._shiftIdx);
+    const breakdown = settings
+      ? calculatePeriodBreakdown(updatedShifts, settings, firstPeriodsSet.has(period.start_date))
+      : null;
+    await base44.entities.PayPeriod.update(period.id, {
+      shifts: updatedShifts,
+      ...(breakdown ? { breakdown } : {}),
+    });
+    setEditingShift(null);
+  };
+
   // ── Upcoming shifts (next 4 across all periods) ──
   const upcomingShifts = periods
-    .flatMap(p => (p.shifts || []).map(s => ({ ...s, periodName: p.name })))
+    .flatMap(p => (p.shifts || []).map((s, idx) => ({ ...s, _periodId: p.id, _shiftIdx: idx, periodName: p.name })))
     .filter(s => s.date && s.date >= todayStr)
     .sort((a, b) => a.date.localeCompare(b.date) || (a.start_time || '').localeCompare(b.start_time || ''))
     .slice(0, 4);
@@ -496,8 +536,15 @@ export default function Dashboard() {
               <div className="divide-y divide-border">
                 {upcomingShifts.map((s, i) => {
                   const d = new Date(s.date + 'T12:00:00');
+                  const totalHours = s.start_time && s.end_time
+                    ? shiftSpanHours(s.start_time, s.end_time)
+                    : s.paid_hours;
                   return (
-                    <div key={i} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
+                    <button
+                      key={i}
+                      onClick={() => setEditingShift({ data: s, _periodId: s._periodId, _shiftIdx: s._shiftIdx })}
+                      className="w-full flex items-center gap-3 py-2.5 first:pt-0 last:pb-0 text-left hover:bg-muted/40 rounded-lg px-1 -mx-1 transition-colors"
+                    >
                       <div className="text-center shrink-0 w-10">
                         <p className="text-[10px] font-medium text-muted-foreground uppercase leading-none">
                           {d.toLocaleDateString('en-CA', { month: 'short' })}
@@ -517,17 +564,17 @@ export default function Dashboard() {
                           {[s.hospital, s.unit].filter(Boolean).join(' · ') || s.periodName || '—'}
                         </p>
                       </div>
-                      {(s.start_time || s.paid_hours) && (
+                      {(s.start_time || totalHours != null) && (
                         <div className="text-right shrink-0">
                           {s.start_time && (
                             <p className="text-xs font-mono text-muted-foreground">{s.start_time}</p>
                           )}
-                          {s.paid_hours != null && (
-                            <p className="text-xs font-mono text-muted-foreground">{s.paid_hours}h</p>
+                          {totalHours != null && (
+                            <p className="text-xs font-mono text-muted-foreground">{totalHours}h</p>
                           )}
                         </div>
                       )}
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -554,7 +601,7 @@ export default function Dashboard() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-xs text-muted-foreground mb-0.5">Shifts logged</p>
+                <p className="text-xs text-muted-foreground mb-0.5">Shifts total</p>
                 <p className="text-2xl font-mono font-bold text-foreground leading-tight">
                   {curPeriodShifts.length}
                   <span className="text-sm font-sans font-normal text-muted-foreground ml-1">
@@ -754,6 +801,14 @@ export default function Dashboard() {
           />
         </div>
       </div>
+
+      <EditShiftDialog
+        editingShift={editingShift}
+        settings={settings}
+        onSubmit={updateShift}
+        onClose={() => setEditingShift(null)}
+        onDelete={deleteShift}
+      />
     </div>
   );
 }
