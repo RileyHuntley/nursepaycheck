@@ -24,15 +24,15 @@ function countPendingVerification(periods) {
 }
 
 const links = [
-  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/shift-log', icon: List, label: 'Shifts' },
-  { to: '/shift-analytics', icon: BarChart3, label: 'Shift Analytics' },
-  { to: '/pay-period', icon: CalendarPlus, label: 'Current Pay Period' },
-  { to: '/last-pay-period', icon: ClipboardCheck, label: 'Last Pay Period' },
-  { to: '/pay-periods', icon: Clock, label: 'Pay Period History' },
-  { to: '/shift-configuration', icon: MapPin, label: 'Shift Configuration' },
-  { to: '/pay-configuration', icon: DollarSign, label: 'Pay Configuration' },
-  { to: '/settings', icon: Settings, label: 'Settings' },
+  { to: '/dashboard',           icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/shift-log',           icon: List,            label: 'Shifts' },
+  { to: '/pay-period',          icon: CalendarPlus,    label: 'Current Pay Period' },
+  { to: '/last-pay-period',     icon: ClipboardCheck,  label: 'Last Pay Period' },
+  { to: '/shift-analytics',     icon: BarChart3,       label: 'Shift Analytics' },
+  { to: '/pay-periods',         icon: Clock,           label: 'Pay Period History' },
+  { to: '/shift-configuration', icon: MapPin,          label: 'Shift Configuration' },
+  { to: '/pay-configuration',   icon: DollarSign,      label: 'Pay Configuration' },
+  { to: '/settings',            icon: Settings,        label: 'Settings' },
 ];
 
 export default function Sidebar() {
