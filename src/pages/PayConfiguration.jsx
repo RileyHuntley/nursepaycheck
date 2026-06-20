@@ -1,5 +1,9 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { calculateSickLeaveEntitlement, sickLeaveBreakdown, SICK_MAX_DAYS } from '@/lib/sickLeaveCalculator';
+import {
+  LEVELS, RECOGNITION_BANDS, INCREMENTS,
+  lookupWageGridRate, WAGE_GRID_EFFECTIVE_DATE, WAGE_GRID_EFFECTIVE_LABEL,
+} from '@/lib/wageGrid';
 import isEqual from 'lodash/isEqual';
 import cloneDeep from 'lodash/cloneDeep';
 import { useBlocker } from 'react-router-dom';
@@ -161,6 +165,10 @@ export default function PayConfiguration() {
   const [openInfo, setOpenInfo] = useState(null);
   const [newWageAmount, setNewWageAmount] = useState('');
   const [newWageDate, setNewWageDate] = useState('');
+  const [wageInputMode, setWageInputMode] = useState('manual'); // 'manual' | 'grid'
+  const [gridLevel, setGridLevel] = useState('');
+  const [gridBand, setGridBand] = useState('base');
+  const [gridIncrement, setGridIncrement] = useState('');
   const savedRef = useRef(null);
 
   const isDirty = useMemo(() => {
@@ -421,27 +429,31 @@ export default function PayConfiguration() {
       {/* Wage History */}
       <section className="bg-card border border-border rounded-xl p-5 space-y-4">
         <h3 className="text-sm font-semibold text-foreground">Wage &amp; Wage History</h3>
+
         {/* Existing entries */}
         {(settings.wage_history || []).length > 0 && (
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {[...(settings.wage_history || [])]
               .filter(e => e.wage > 0)
-              .sort((a, b) => (b.effective_date || '') > (a.effective_date || '') ? 1 : -1)
-              .reverse()
+              .sort((a, b) => (a.effective_date || '') > (b.effective_date || '') ? 1 : -1)
               .map((entry, idx, arr) => {
                 const origIdx = (settings.wage_history || []).indexOf(entry);
+                const isCurrent = idx === arr.length - 1;
                 return (
-                  <div key={origIdx} className="flex items-center gap-3">
-                    <span className="text-xs font-mono text-foreground w-28">
+                  <div key={origIdx} className="flex items-center gap-3 py-1">
+                    <span className="text-xs font-mono text-muted-foreground w-24 shrink-0">
                       {entry.effective_date || 'No date'}
                     </span>
-                    <span className="text-sm font-mono text-foreground">${entry.wage.toFixed(2)}/hr</span>
-                    {idx === 0 && (
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-chart-3/15 text-chart-3 border border-chart-3/20">Current</span>
+                    <span className="text-sm font-mono font-medium text-foreground">${entry.wage.toFixed(2)}/hr</span>
+                    {entry.grid_label && (
+                      <span className="text-[10px] text-muted-foreground truncate max-w-[180px]">{entry.grid_label}</span>
+                    )}
+                    {isCurrent && (
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-chart-3/15 text-chart-3 border border-chart-3/20 shrink-0">Current</span>
                     )}
                     <button
                       onClick={() => setSettings(s => ({ ...s, wage_history: (s.wage_history || []).filter((_, i) => i !== origIdx) }))}
-                      className="ml-auto text-muted-foreground hover:text-foreground"
+                      className="ml-auto text-muted-foreground hover:text-foreground shrink-0"
                       aria-label="Remove"
                     >
                       <X className="w-3.5 h-3.5" />
@@ -451,40 +463,162 @@ export default function PayConfiguration() {
               })}
           </div>
         )}
-        {/* Add new entry */}
-        <div className="flex items-center gap-2 pt-1">
-          <div className="relative">
-            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-mono">$</span>
-            <Input
-              type="number" step="0.01" min="0"
-              placeholder="45.00"
-              value={newWageAmount}
-              onChange={e => setNewWageAmount(e.target.value)}
-              className="h-9 w-28 text-sm font-mono pl-6"
-            />
-          </div>
-          <Input
-            type="date"
-            value={newWageDate}
-            onChange={e => setNewWageDate(e.target.value)}
-            className="h-9 w-40 text-sm font-mono"
-          />
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={!newWageAmount || !newWageDate || parseFloat(newWageAmount) <= 0}
-            onClick={() => {
-              setSettings(s => ({
-                ...s,
-                wage_history: [...(s.wage_history || []), { effective_date: newWageDate, wage: parseFloat(newWageAmount) }],
-              }));
-              setNewWageAmount('');
-              setNewWageDate('');
-            }}
+
+        {/* Mode toggle */}
+        <div className="flex gap-1 p-1 bg-muted/40 rounded-lg w-fit">
+          <button
+            onClick={() => setWageInputMode('manual')}
+            className={`text-xs px-3 py-1.5 rounded-md font-medium transition-colors ${wageInputMode === 'manual' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
           >
-            <Plus className="w-4 h-4 mr-1" />Add
-          </Button>
+            Manual Entry
+          </button>
+          <button
+            onClick={() => setWageInputMode('grid')}
+            className={`text-xs px-3 py-1.5 rounded-md font-medium transition-colors ${wageInputMode === 'grid' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+          >
+            NBA Wage Grid
+          </button>
         </div>
+
+        {wageInputMode === 'manual' ? (
+          /* Manual entry */
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-mono">$</span>
+              <Input
+                type="number" step="0.01" min="0"
+                placeholder="45.00"
+                value={newWageAmount}
+                onChange={e => setNewWageAmount(e.target.value)}
+                className="h-9 w-28 text-sm font-mono pl-6"
+              />
+            </div>
+            <Input
+              type="date"
+              value={newWageDate}
+              onChange={e => setNewWageDate(e.target.value)}
+              className="h-9 w-40 text-sm font-mono"
+            />
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={!newWageAmount || !newWageDate || parseFloat(newWageAmount) <= 0}
+              onClick={() => {
+                setSettings(s => ({
+                  ...s,
+                  wage_history: [...(s.wage_history || []), { effective_date: newWageDate, wage: parseFloat(newWageAmount) }],
+                }));
+                setNewWageAmount('');
+                setNewWageDate('');
+              }}
+            >
+              <Plus className="w-4 h-4 mr-1" />Add
+            </Button>
+          </div>
+        ) : (
+          /* NBA Wage Grid selector */
+          <div className="space-y-3 rounded-lg border border-border bg-muted/20 p-3">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">BCCNM · NBA</span>
+              <span className="text-xs text-muted-foreground">{WAGE_GRID_EFFECTIVE_LABEL} — 2022–2025 Collective Agreement</span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {/* Level */}
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Classification</Label>
+                <Select value={gridLevel} onValueChange={setGridLevel}>
+                  <SelectTrigger className="h-9 text-xs">
+                    <SelectValue placeholder="Select level…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {LEVELS.map(l => (
+                      <SelectItem key={l.key} value={l.key} className="text-xs">{l.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Increment */}
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Increment (Year of Service)</Label>
+                <Select value={gridIncrement} onValueChange={setGridIncrement}>
+                  <SelectTrigger className="h-9 text-xs">
+                    <SelectValue placeholder="Select increment…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {INCREMENTS.map(n => (
+                      <SelectItem key={n} value={String(n)} className="text-xs">Increment {n} — Year {n}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Recognition band */}
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Long-Service Recognition</Label>
+                <Select value={gridBand} onValueChange={setGridBand}>
+                  <SelectTrigger className="h-9 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {RECOGNITION_BANDS.map(b => (
+                      <SelectItem key={b.key} value={b.key} className="text-xs">{b.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Looked-up rate preview + effective date + add */}
+            {(() => {
+              const rate = gridLevel && gridIncrement
+                ? lookupWageGridRate(gridLevel, gridBand, parseInt(gridIncrement))
+                : null;
+              return (
+                <div className="flex items-end gap-2 flex-wrap pt-1">
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Effective Date</Label>
+                    <Input
+                      type="date"
+                      value={newWageDate || WAGE_GRID_EFFECTIVE_DATE}
+                      onChange={e => setNewWageDate(e.target.value)}
+                      className="h-9 w-40 text-sm font-mono"
+                    />
+                  </div>
+                  {rate != null && (
+                    <div className="pb-0.5">
+                      <span className="text-xl font-mono font-semibold text-foreground">${rate.toFixed(2)}</span>
+                      <span className="text-xs text-muted-foreground ml-1">/hr</span>
+                    </div>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={rate == null}
+                    onClick={() => {
+                      const effectiveDate = newWageDate || WAGE_GRID_EFFECTIVE_DATE;
+                      const level = LEVELS.find(l => l.key === gridLevel);
+                      const band = RECOGNITION_BANDS.find(b => b.key === gridBand);
+                      const label = `${level?.label}, Inc. ${gridIncrement}${band?.key !== 'base' ? `, ${band?.label}` : ''}`;
+                      setSettings(s => ({
+                        ...s,
+                        wage_history: [
+                          ...(s.wage_history || []),
+                          { effective_date: effectiveDate, wage: rate, grid_label: label },
+                        ],
+                      }));
+                      setNewWageDate('');
+                    }}
+                  >
+                    <Plus className="w-4 h-4 mr-1" />Add to History
+                  </Button>
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
         <p className="text-xs text-muted-foreground">Historical shifts use the wage in effect on their date.</p>
       </section>
 
