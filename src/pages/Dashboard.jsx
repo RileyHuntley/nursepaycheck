@@ -9,6 +9,7 @@ import EditShiftDialog from '@/components/payroll/EditShiftDialog';
 import { Button } from '@/components/ui/button';
 import { CalendarPlus, ChevronLeft, ChevronRight, Clock, CalendarCheck, Stethoscope } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
+import { usePrivacyMode } from '@/contexts/PrivacyModeContext';
 import SetupBanner from '@/components/payroll/SetupBanner';
 import { getVCHPeriodNumber, getVCHPayDate } from '@/lib/statHolidays';
 
@@ -67,6 +68,7 @@ function NavHeader({ label, onPrev, onNext, showPrev, setShowPrev, showNext, set
 }
 
 export default function Dashboard() {
+  const { privacyMode } = usePrivacyMode();
   const [settings, setSettings] = useState(null);
   const [periods, setPeriods] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -617,7 +619,7 @@ export default function Dashboard() {
                 <p className="text-xs text-muted-foreground mb-0.5">Gross so far</p>
                 {curPeriodGross > 0 ? (
                   <p className="text-2xl font-mono font-bold text-primary leading-tight">
-                    {formatCurrency(curPeriodGross)}
+                    {privacyMode ? '••••••' : formatCurrency(curPeriodGross)}
                   </p>
                 ) : (
                   <p className="text-sm text-muted-foreground mt-1">No shifts yet</p>

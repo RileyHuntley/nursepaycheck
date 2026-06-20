@@ -204,7 +204,7 @@ export default function PayBreakdown({ breakdown, wage, title = 'Pay Period Brea
     <div className="bg-card border border-border rounded-xl p-6 space-y-1" onClick={() => setOpenInfo(null)}>
       <div className="flex items-center justify-between pb-2 border-b border-border">
         <h3 className="text-base font-display font-semibold text-foreground">{title}</h3>
-        {wage && <span className="text-xs text-muted-foreground">Base wage: ${wage.toFixed(2)}/hr</span>}
+        {wage && <span className="text-xs text-muted-foreground">Base wage: {privacyMode ? '••••••' : `$${wage.toFixed(2)}/hr`}</span>}
       </div>
 
       <SectionHeader title="Base Pay" />

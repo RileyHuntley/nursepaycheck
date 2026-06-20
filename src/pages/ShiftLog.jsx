@@ -9,7 +9,7 @@ import { toast } from '@/components/ui/use-toast';
 import { formatCurrency } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Loader2, ArrowUpDown, Plus, CalendarPlus, List, CalendarDays, Filter, CheckSquare, X, Check, Trash2, Eye, EyeOff } from 'lucide-react';
-import { PrivacyModeProvider, usePrivacyMode } from '@/contexts/PrivacyModeContext';
+import { usePrivacyMode } from '@/contexts/PrivacyModeContext';
 import PrivacyAmount from '@/components/payroll/PrivacyAmount';
 import {
   Select,
@@ -24,14 +24,6 @@ import SetupBanner from '@/components/payroll/SetupBanner';
 import { Checkbox } from '@/components/ui/checkbox';
 
 export default function ShiftLog() {
-  return (
-    <PrivacyModeProvider>
-      <ShiftLogInner />
-    </PrivacyModeProvider>
-  );
-}
-
-function ShiftLogInner() {
   const [settings, setSettings] = useState(null);
   const [allShifts, setAllShifts] = useState([]);
   const [periodMap, setPeriodMap] = useState({}); // id -> period

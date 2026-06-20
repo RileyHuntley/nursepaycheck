@@ -1,6 +1,7 @@
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { estimateTaxes, estimateStatutoryDeductions } from '@/lib/taxCalculator';
 import { formatCurrency } from '@/lib/utils';
+import { usePrivacyMode } from '@/contexts/PrivacyModeContext';
 
 const PIE_COLORS = {
   net: '#14b8a6',
@@ -47,6 +48,7 @@ export default function PaySummaryPanel({ title, subtitle, breakdown, loading, t
     );
   }
 
+  const { privacyMode } = usePrivacyMode();
   const hasVerified = verifiedDeductions && Object.keys(verifiedDeductions).some(k => ['cpp', 'cpp2', 'ei', 'federal_tax', 'provincial_tax'].includes(k) && verifiedDeductions[k] > 0);
 
   const annualIncome = taxSettings
@@ -132,7 +134,7 @@ export default function PaySummaryPanel({ title, subtitle, breakdown, loading, t
           <div key={i} className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">{r.label}</span>
             <span className={`text-sm font-mono font-medium ${r.negative ? 'text-destructive' : 'text-foreground'}`}>
-              {r.negative ? '−' : ''}{formatCurrency(r.value)}
+              {privacyMode ? '••••••' : `${r.negative ? '−' : ''}${formatCurrency(r.value)}`}
             </span>
           </div>
         ))}
@@ -140,11 +142,11 @@ export default function PaySummaryPanel({ title, subtitle, breakdown, loading, t
 
       <div className="flex items-center justify-between pt-3 mt-2 border-t border-border">
         <span className="text-xs text-muted-foreground font-medium">Gross Pay</span>
-        <span className="text-sm font-mono font-semibold text-foreground">{formatCurrency(breakdown.gross_pay)}</span>
+        <span className="text-sm font-mono font-semibold text-foreground">{privacyMode ? '••••••' : formatCurrency(breakdown.gross_pay)}</span>
       </div>
       <div className="flex items-center justify-between pt-2 mt-1 border-t-2 border-primary/30">
         <span className="text-sm font-display font-bold text-foreground">{hasVerified ? 'Net Pay (verified)' : 'Net Pay'}</span>
-        <span className="text-2xl font-mono font-bold text-primary">{formatCurrency(netPay)}</span>
+        <span className="text-2xl font-mono font-bold text-primary">{privacyMode ? '••••••' : formatCurrency(netPay)}</span>
       </div>
 
       {showPie && (
@@ -178,7 +180,7 @@ export default function PaySummaryPanel({ title, subtitle, breakdown, loading, t
                   <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: entry.color }} />
                   <span className="text-xs text-muted-foreground truncate">{entry.name}</span>
                   <span className="text-xs font-mono font-medium text-foreground ml-auto pl-2 flex-shrink-0">
-                    {breakdown.gross_pay > 0 ? Math.round(entry.value / breakdown.gross_pay * 100) : 0}%
+                    {privacyMode ? '—' : `${breakdown.gross_pay > 0 ? Math.round(entry.value / breakdown.gross_pay * 100) : 0}%`}
                   </span>
                 </div>
               ))}
