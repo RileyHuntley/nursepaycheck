@@ -609,26 +609,29 @@ export default function Dashboard() {
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-xs text-muted-foreground mb-0.5">Shifts total</p>
-                <p className="text-2xl font-mono font-bold text-foreground leading-tight">
-                  {curPeriodShifts.length}
-                  <span className="text-sm font-sans font-normal text-muted-foreground ml-1">
-                    shift{curPeriodShifts.length !== 1 ? 's' : ''}
-                  </span>
+            {curPeriodShifts.length > 0 && (
+              <div className="mb-4">
+                <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
+                  <span>Shift {workedShifts.length} of {curPeriodShifts.length}</span>
+                  <span>{Math.round((workedShifts.length / curPeriodShifts.length) * 100)}%</span>
+                </div>
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-primary rounded-full transition-all duration-500"
+                    style={{ width: `${(workedShifts.length / curPeriodShifts.length) * 100}%` }}
+                  />
+                </div>
+              </div>
+            )}
+            <div>
+              <p className="text-xs text-muted-foreground mb-0.5">Gross so far</p>
+              {curPeriodGross > 0 ? (
+                <p className="text-2xl font-mono font-bold text-primary leading-tight">
+                  {privacyMode ? '••••••' : formatCurrency(curPeriodGross)}
                 </p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground mb-0.5">Gross so far</p>
-                {curPeriodGross > 0 ? (
-                  <p className="text-2xl font-mono font-bold text-primary leading-tight">
-                    {privacyMode ? '••••••' : formatCurrency(curPeriodGross)}
-                  </p>
-                ) : (
-                  <p className="text-sm text-muted-foreground mt-1">No shifts yet</p>
-                )}
-              </div>
+              ) : (
+                <p className="text-sm text-muted-foreground mt-1">No shifts yet</p>
+              )}
             </div>
           </div>
         </div>
