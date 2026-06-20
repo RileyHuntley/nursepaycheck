@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, CalendarPlus, Clock, Settings, PanelLeftClose, PanelLeftOpen, List, ClipboardCheck, DollarSign, MapPin, Shield, LogOut, BarChart3, ChevronDown, ChevronUp } from 'lucide-react';
+import { LayoutDashboard, CalendarPlus, Clock, Settings, PanelLeftClose, PanelLeftOpen, List, ClipboardCheck, DollarSign, MapPin, Shield, LogOut, BarChart3, ChevronDown, ChevronUp, Landmark } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { HA_PORTALS, getUserHealthAuthorities } from '@/lib/healthAuthorityPortals';
 // Theme toggle moved to Settings page
@@ -27,6 +27,7 @@ const links = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/shift-log', icon: List, label: 'Shifts' },
   { to: '/shift-analytics', icon: BarChart3, label: 'Shift Analytics' },
+  { to: '/time-bank', icon: Landmark, label: 'Time Bank' },
   { to: '/pay-period', icon: CalendarPlus, label: 'Current Pay Period' },
   { to: '/last-pay-period', icon: ClipboardCheck, label: 'Last Pay Period' },
   { to: '/pay-periods', icon: Clock, label: 'Pay Period History' },

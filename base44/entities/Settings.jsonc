@@ -332,6 +332,16 @@
       "type": "string",
       "description": "Email address to send pay period verification notifications to"
     },
+    "time_bank": {
+      "type": "object",
+      "description": "Annual leave entitlements for Time Bank tracking",
+      "properties": {
+        "vacation_entitlement": { "type": "number", "default": 0 },
+        "sick_entitlement": { "type": "number", "default": 0 },
+        "special_leave_entitlement": { "type": "number", "default": 0 },
+        "pdo_pst_entitlement": { "type": "number", "default": 0 }
+      }
+    },
     "nurse_profile": {
       "type": "object",
       "properties": {
