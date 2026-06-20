@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { getCurrentPayPeriodDates, parseTime, calculateShiftPremiums } from '@/lib/premiumCalculator';
 import { getStatType } from '@/lib/statHolidays';
-import { BarChart3, ChevronLeft, ChevronRight } from 'lucide-react';
+import { BarChart3, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
 
@@ -92,6 +92,7 @@ const PREMIUM_DEFS = [
   { key: 'night',        label: 'Night',          hoursKey: 'night_hours',         color: 'bg-indigo-500' },
   { key: 'weekend',      label: 'Weekend',        hoursKey: 'weekend_hours',       color: 'bg-violet-500' },
   { key: 'super_shift',  label: 'Super Shift',    hoursKey: 'super_shift_hours',   color: 'bg-rose-500' },
+  { key: 'regular_premium', label: 'Regular Premium', hoursKey: 'regular_premium_hours', color: 'bg-cyan-500' },
   { key: 'short_notice', label: 'Short Notice',   hoursKey: 'short_notice_hours',  color: 'bg-orange-500' },
   { key: 'responsibility', label: 'Responsibility', hoursKey: 'responsibility_hours', color: 'bg-amber-500' },
   { key: 'preceptor',    label: 'Preceptor',      hoursKey: 'preceptor_hours',     color: 'bg-teal-500' },
@@ -276,6 +277,7 @@ export default function ShiftAnalytics() {
   const [ppOffset, setPpOffset] = useState(0);
   // Shift pattern view: 0 = Last Year, 1 = Year to Date, 2 = This Year (all)
   const [patternView, setPatternView] = useState(1);
+  const [breakdownOpen, setBreakdownOpen] = useState(false);
   const loadingRef = useRef(false);
 
   const loadData = useCallback(async () => {
@@ -630,64 +632,6 @@ export default function ShiftAnalytics() {
         </div>
       </section>
 
-      {/* ── Full breakdown table ── */}
-      <section>
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Full Breakdown</h2>
-        <div className="bg-card border border-border rounded-xl overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-border bg-muted/40">
-                <th className="py-3 pl-5 pr-4 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Period</th>
-                <th className="py-3 pr-4 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  {hoursFilter === 'straight' ? 'Straight Time' : hoursFilter === 'overtime' ? 'OT / Stat' : 'Total'}
-                </th>
-                <th className="py-3 pr-4 text-right text-xs font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Straight</th>
-                <th className="py-3 pr-4 text-right text-xs font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400">OT / Stat</th>
-                <th className="py-3 pr-5 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Shifts</th>
-              </tr>
-            </thead>
-            <tbody>
-              {breakdownRows.map(row => (
-                <tr key={row.label} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
-                  <td className="py-3 pl-5 pr-4">
-                    <div className="text-sm font-medium text-foreground">{row.label}</div>
-                    {row.sublabel && <div className="text-xs text-muted-foreground">{row.sublabel}</div>}
-                  </td>
-                  <td className={`py-3 pr-4 text-right text-sm font-semibold tabular-nums ${
-                    hoursFilter === 'straight' ? 'text-emerald-700 dark:text-emerald-400'
-                    : hoursFilter === 'overtime' ? 'text-amber-700 dark:text-amber-400'
-                    : 'text-foreground'
-                  }`}>
-                    {fmtHours(hoursFilter === 'straight' ? row.hours.straight : hoursFilter === 'overtime' ? row.hours.overtime : row.hours.total)}
-                  </td>
-                  <td className="py-3 pr-4 text-right text-sm tabular-nums text-emerald-700 dark:text-emerald-400">
-                    {fmtHours(row.hours.straight)}
-                  </td>
-                  <td className="py-3 pr-4 text-right text-sm tabular-nums">
-                    {row.hours.overtime > 0
-                      ? <span className="text-amber-700 dark:text-amber-400">{fmtHours(row.hours.overtime)}</span>
-                      : <span className="text-muted-foreground">—</span>}
-                  </td>
-                  <td className="py-3 pr-5 text-right text-sm text-muted-foreground tabular-nums">
-                    {row.hours.shiftCount || '—'}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div className="mt-3 flex gap-4 flex-wrap">
-          <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" />
-            Straight time — all hours on regular, non-stat days
-          </span>
-          <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block" />
-            OT / stat — stat holidays and day-off shifts (worked on a scheduled day off)
-          </span>
-        </div>
-      </section>
-
       {/* ── Shift patterns ── */}
       <section>
           <div className="flex items-center justify-between mb-1">
@@ -904,6 +848,70 @@ export default function ShiftAnalytics() {
           </>
           )}
         </section>
+
+      {/* ── Full breakdown table (collapsible) ── */}
+      <section>
+        <button
+          onClick={() => setBreakdownOpen(o => !o)}
+          className="flex items-center gap-2 w-full text-left mb-3 group"
+        >
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Full Breakdown</h2>
+          <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${breakdownOpen ? 'rotate-180' : ''}`} />
+        </button>
+        {breakdownOpen && (
+          <div>
+            <div className="bg-card border border-border rounded-xl overflow-hidden">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border bg-muted/40">
+                    <th className="py-3 pl-5 pr-4 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Period</th>
+                    <th className="py-3 pr-4 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      {hoursFilter === 'straight' ? 'Straight Time' : hoursFilter === 'overtime' ? 'OT / Stat' : 'Total'}
+                    </th>
+                    <th className="py-3 pr-4 text-right text-xs font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Straight</th>
+                    <th className="py-3 pr-4 text-right text-xs font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400">OT / Stat</th>
+                    <th className="py-3 pr-5 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Shifts</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {breakdownRows.map(row => (
+                    <tr key={row.label} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
+                      <td className="py-3 pl-5 pr-4">
+                        <div className="text-sm font-medium text-foreground">{row.label}</div>
+                        {row.sublabel && <div className="text-xs text-muted-foreground">{row.sublabel}</div>}
+                      </td>
+                      <td className="py-3 pr-4 text-right text-sm font-semibold text-foreground tabular-nums">
+                        {fmtHours(hoursFilter === 'straight' ? row.hours.straight : hoursFilter === 'overtime' ? row.hours.overtime : row.hours.total)}
+                      </td>
+                      <td className="py-3 pr-4 text-right text-sm tabular-nums text-emerald-700 dark:text-emerald-400">
+                        {fmtHours(row.hours.straight)}
+                      </td>
+                      <td className="py-3 pr-4 text-right text-sm tabular-nums">
+                        {row.hours.overtime > 0
+                          ? <span className="text-amber-700 dark:text-amber-400">{fmtHours(row.hours.overtime)}</span>
+                          : <span className="text-muted-foreground">—</span>}
+                      </td>
+                      <td className="py-3 pr-5 text-right text-sm text-muted-foreground tabular-nums">
+                        {row.hours.shiftCount || '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="mt-3 flex gap-4 flex-wrap">
+              <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" />
+                Straight time — all hours on regular, non-stat days
+              </span>
+              <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block" />
+                OT / stat — stat holidays and day-off shifts (worked on a scheduled day off)
+              </span>
+            </div>
+          </div>
+        )}
+      </section>
 
     </div>
   );
