@@ -348,8 +348,20 @@ export default function ShiftForm({ onSubmit, onCancel, onDelete, initial, setti
         <Input value={shift.notes} onChange={(e) => set('notes', e.target.value)} placeholder="e.g. covered Jane's shift" className="h-9 text-sm" />
       </div>
 
+      {/* Student Practicum — unpaid notice */}
+      {shift.shift_type === 'student_practicum' && (
+        <div className="border border-border rounded-lg overflow-hidden">
+          <div className="w-full flex items-center justify-between px-4 py-2.5 bg-muted/40 text-left">
+            <span className="text-xs font-semibold text-foreground">Calculated Wage</span>
+          </div>
+          <div className="px-4 py-3 bg-card">
+            <p className="text-xs text-muted-foreground">Students do not get paid during their practicum experience.</p>
+          </div>
+        </div>
+      )}
+
       {/* Calculated Wage Breakdown */}
-      {shift.start_time && shift.end_time && paidHours > 0 && shift.date && (() => {
+      {shift.shift_type !== 'student_practicum' && shift.start_time && shift.end_time && paidHours > 0 && shift.date && (() => {
         const wage = getWageForDate(settings || DEFAULT_RATES, shift.date);
         const shiftWithHours = { ...shift, paid_hours: paidHours };
         const segments = splitOvernightShift(shiftWithHours);
