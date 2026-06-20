@@ -384,7 +384,7 @@ export default function LastPayPeriod() {
   if (!period) {
     return (
       <div className="space-y-6">
-        <h2 className="text-2xl font-display font-bold text-foreground tracking-tight">Last Pay Period</h2>
+        <h2 className="text-2xl font-display font-bold text-foreground tracking-tight">PayCheck</h2>
         <div className="bg-card border border-border rounded-xl p-8 text-center">
           <p className="text-muted-foreground">No completed pay periods found.</p>
         </div>
@@ -415,7 +415,7 @@ export default function LastPayPeriod() {
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-2xl font-display font-bold text-foreground tracking-tight">Last Pay Period</h2>
+            <h2 className="text-2xl font-display font-bold text-foreground tracking-tight">PayCheck</h2>
             <PrivacyToggle />
           </div>
           {period && (

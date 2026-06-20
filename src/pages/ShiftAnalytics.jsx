@@ -349,8 +349,8 @@ export default function ShiftAnalytics() {
   // ── Detail panel: navigable pay period ──
   const detailPPStart = addDays(curPPStart, ppOffset * 14);
   const detailPPEnd   = addDays(curPPEnd,   ppOffset * 14);
-  const detailPPLabel = ppOffset === 0 ? 'Current Pay Period'
-    : ppOffset === -1 ? 'Last Pay Period'
+  const detailPPLabel = ppOffset === 0 ? 'Pay Period'
+    : ppOffset === -1 ? 'PayCheck'
     : ppOffset === 1  ? 'Next Pay Period'
     : ppOffset < 0    ? `${Math.abs(ppOffset)} Pay Periods Ago`
     : `${ppOffset} Pay Periods Ahead`;

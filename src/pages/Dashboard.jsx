@@ -248,7 +248,7 @@ export default function Dashboard() {
 
   // ── Pay period data at offset ──
   const getPeriodTitle = (offset) => {
-    if (offset === 0) return 'Current Pay Period';
+    if (offset === 0) return 'Pay Period';
     if (offset === -1) return 'Previous Pay Period';
     if (offset === 1) return 'Next Pay Period';
     if (offset < 0) return `Pay Period (${Math.abs(offset)} back)`;
@@ -474,7 +474,7 @@ export default function Dashboard() {
         <Link to="/pay-period">
           <Button size="sm" className="bg-primary text-primary-foreground">
             <CalendarPlus className="w-4 h-4 mr-2" />
-            Current Pay Period
+            Pay Period
           </Button>
         </Link>
       </div>
