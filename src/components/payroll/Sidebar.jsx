@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, CalendarPlus, Clock, Settings, PanelLeftClose, PanelLeftOpen, ExternalLink, List, ClipboardCheck, DollarSign, MapPin, Shield, LogOut } from 'lucide-react';
+import { LayoutDashboard, CalendarPlus, Clock, Settings, PanelLeftClose, PanelLeftOpen, List, ClipboardCheck, DollarSign, MapPin, Shield, LogOut } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { HA_PORTALS, getUserHealthAuthorities } from '@/lib/healthAuthorityPortals';
 // Theme toggle moved to Settings page
@@ -180,7 +180,6 @@ export default function Sidebar() {
             collapsed ? 'justify-center px-0 py-2.5 w-full' : 'px-3 py-2.5'
           }`}
           >
-            <ExternalLink className="w-4 h-4 flex-shrink-0" />
             {!collapsed && <span className="truncate">Contact Your Steward</span>}
           </a>
           <a
@@ -192,7 +191,6 @@ export default function Sidebar() {
             collapsed ? 'justify-center px-0 py-2.5 w-full' : 'px-3 py-2.5'
           }`}
           >
-            <ExternalLink className="w-4 h-4 flex-shrink-0" />
             {!collapsed && <span className="truncate">Collective Agreement</span>}
           </a>
         </>
@@ -216,11 +214,10 @@ export default function Sidebar() {
                   collapsed ? 'justify-center px-0 py-2.5 w-full' : 'px-3 py-2.5'
                 }`}
               >
-                <ExternalLink className="w-4 h-4 flex-shrink-0" />
                 {!collapsed && (
                   <span className="truncate">
+                    <span className="text-[10px] text-muted-foreground font-normal mr-1.5">[{link.ha}]</span>
                     {link.label}
-                    <span className="text-[10px] text-muted-foreground font-normal ml-1.5">[{link.ha}]</span>
                   </span>
                 )}
               </a>
