@@ -995,6 +995,62 @@ export default function PayConfiguration() {
         </div>
       </section>
 
+      {/* Time Bank Entitlements */}
+      <section className="bg-card border border-border rounded-xl p-5 space-y-4">
+        <div>
+          <h3 className="text-sm font-semibold text-foreground">Time Bank Entitlements</h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            Enter your annual leave entitlements to track remaining days on the Time Bank page. Leave at 0 to show usage without a limit.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Vacation Days / Year</Label>
+            <Input
+              type="number"
+              min="0"
+              value={settings.time_bank?.vacation_entitlement ?? 0}
+              onChange={e => set('time_bank.vacation_entitlement', parseFloat(e.target.value) || 0)}
+              className="h-9 text-sm font-mono"
+              placeholder="0"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Sick Days / Year</Label>
+            <Input
+              type="number"
+              min="0"
+              value={settings.time_bank?.sick_entitlement ?? 0}
+              onChange={e => set('time_bank.sick_entitlement', parseFloat(e.target.value) || 0)}
+              className="h-9 text-sm font-mono"
+              placeholder="0"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Special Leave Days / Year</Label>
+            <Input
+              type="number"
+              min="0"
+              value={settings.time_bank?.special_leave_entitlement ?? 0}
+              onChange={e => set('time_bank.special_leave_entitlement', parseFloat(e.target.value) || 0)}
+              className="h-9 text-sm font-mono"
+              placeholder="0"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">PDO / PST Days / Year</Label>
+            <Input
+              type="number"
+              min="0"
+              value={settings.time_bank?.pdo_pst_entitlement ?? 0}
+              onChange={e => set('time_bank.pdo_pst_entitlement', parseFloat(e.target.value) || 0)}
+              className="h-9 text-sm font-mono"
+              placeholder="0"
+            />
+          </div>
+        </div>
+      </section>
+
       {/* Tax Estimation */}
       <section className="bg-card border border-border rounded-xl p-5 space-y-4">
         <div>

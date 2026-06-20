@@ -27,6 +27,7 @@ import ShiftLog from '@/pages/ShiftLog';
 import ShiftConfiguration from '@/pages/ShiftConfiguration';
 import SharedShifts from '@/pages/SharedShifts';
 import ShiftAnalytics from '@/pages/ShiftAnalytics';
+import TimeBank from '@/pages/TimeBank';
 
 const router = createBrowserRouter([
   {
@@ -54,6 +55,7 @@ const router = createBrowserRouter([
               { path: "/pay-configuration", element: <PayConfiguration /> },
               { path: "/shift-log", element: <ShiftLog /> },
               { path: "/shift-analytics", element: <ShiftAnalytics /> },
+              { path: "/time-bank", element: <TimeBank /> },
               { path: "/calendar", element: <ShiftCalendar /> },
               {
                 element: <AdminRoute />,
