@@ -18,6 +18,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { SHIFT_PATTERNS } from '@/lib/shiftPatterns';
+import { searchHospitals } from '@/lib/bcHospitals';
 import {
   Select,
   SelectContent,
@@ -116,6 +117,24 @@ export default function ShiftConfiguration() {
   const [newHospitalHA, setNewHospitalHA] = useState('');
   const [newUnitName, setNewUnitName] = useState('');
   const [newUnitCode, setNewUnitCode] = useState('');
+
+  const [hospitalSuggestions, setHospitalSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  const handleHospitalNameChange = (value) => {
+    setNewHospitalName(value);
+    const suggestions = searchHospitals(value);
+    setHospitalSuggestions(suggestions);
+    setShowSuggestions(suggestions.length > 0);
+  };
+
+  const selectHospitalSuggestion = (hospital) => {
+    setNewHospitalName(hospital.name);
+    setNewHospitalAcronym(hospital.acronym);
+    setNewHospitalHA(hospital.health_authority);
+    setShowSuggestions(false);
+    setHospitalSuggestions([]);
+  };
 
   const [editingHospital, setEditingHospital] = useState(null); // { originalName, name, acronym, health_authority }
   const [editingUnit, setEditingUnit] = useState(null); // { originalName, name, code }
@@ -235,7 +254,30 @@ export default function ShiftConfiguration() {
         <div className="space-y-3">
           <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Hospitals</h4>
           <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr] gap-2">
-            <Input value={newHospitalName} onChange={e => setNewHospitalName(e.target.value)} placeholder="Hospital name (e.g. Vancouver General)" className="h-9 text-sm" />
+            <div className="relative">
+              <Input
+                value={newHospitalName}
+                onChange={e => handleHospitalNameChange(e.target.value)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                onFocus={() => hospitalSuggestions.length > 0 && setShowSuggestions(true)}
+                placeholder="Hospital name (e.g. Vancouver General)"
+                className="h-9 text-sm"
+              />
+              {showSuggestions && (
+                <ul className="absolute z-50 top-full left-0 right-0 mt-1 bg-popover border border-border rounded-md shadow-md max-h-56 overflow-y-auto text-sm">
+                  {hospitalSuggestions.map(h => (
+                    <li
+                      key={h.name}
+                      onMouseDown={() => selectHospitalSuggestion(h)}
+                      className="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-accent hover:text-accent-foreground"
+                    >
+                      <span>{h.name}</span>
+                      <span className="text-xs text-muted-foreground ml-2">{h.acronym} · {h.health_authority}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
             <Input value={newHospitalAcronym} onChange={e => setNewHospitalAcronym(e.target.value)} placeholder="Abbreviation (e.g. VGH)" className="h-9 text-sm" />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-2">
