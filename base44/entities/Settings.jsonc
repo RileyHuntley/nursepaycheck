@@ -339,7 +339,8 @@
         "vacation_entitlement": { "type": "number", "default": 0 },
         "sick_entitlement": { "type": "number", "default": 0 },
         "special_leave_entitlement": { "type": "number", "default": 0 },
-        "pdo_pst_entitlement": { "type": "number", "default": 0 }
+        "pdo_pst_entitlement": { "type": "number", "default": 0 },
+        "esn_hour_entitlement": { "type": "number", "default": 400 }
       }
     },
     "nurse_profile": {
