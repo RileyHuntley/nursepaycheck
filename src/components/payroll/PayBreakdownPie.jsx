@@ -2,6 +2,7 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { estimateTaxes, estimateStatutoryDeductions } from '@/lib/taxCalculator';
 import { formatCurrency } from '@/lib/utils';
 import { Link } from 'react-router-dom';
+import { usePrivacyMode } from '@/contexts/PrivacyModeContext';
 
 const PIE_COLORS = {
   net: '#14b8a6',
@@ -29,6 +30,7 @@ export default function PayBreakdownPie({ breakdown, taxSettings, verifiedDeduct
     );
   }
 
+  const { privacyMode } = usePrivacyMode();
   const hasVerified = verifiedDeductions && Object.keys(verifiedDeductions).some(
     k => ['cpp', 'cpp2', 'ei', 'federal_tax', 'provincial_tax'].includes(k) && verifiedDeductions[k] > 0
   );
@@ -87,9 +89,9 @@ export default function PayBreakdownPie({ breakdown, taxSettings, verifiedDeduct
     <div className="bg-card border border-border rounded-xl p-6 flex flex-col">
       <p className="text-sm font-semibold text-foreground mb-1">Pay Breakdown</p>
       <p className="text-xs text-muted-foreground mb-4">
-        Gross: <span className="font-mono font-medium text-foreground">{formatCurrency(breakdown.gross_pay)}</span>
+        Gross: <span className="font-mono font-medium text-foreground">{privacyMode ? '••••••' : formatCurrency(breakdown.gross_pay)}</span>
         {' · '}
-        Net: <span className="font-mono font-medium text-primary">{formatCurrency(netPay)}</span>
+        Net: <span className="font-mono font-medium text-primary">{privacyMode ? '••••••' : formatCurrency(netPay)}</span>
       </p>
 
       {!hasPie ? (
@@ -131,7 +133,7 @@ export default function PayBreakdownPie({ breakdown, taxSettings, verifiedDeduct
               <div key={i} className="flex items-center gap-2.5">
                 <span className="w-3 h-3 rounded-sm flex-shrink-0" style={{ backgroundColor: entry.color }} />
                 <span className="text-sm text-muted-foreground flex-1">{entry.name}</span>
-                <span className="text-sm font-mono font-medium text-foreground">{formatCurrency(entry.value)}</span>
+                <span className="text-sm font-mono font-medium text-foreground">{privacyMode ? '••••••' : formatCurrency(entry.value)}</span>
                 <span className="text-xs text-muted-foreground w-9 text-right">
                   {breakdown.gross_pay > 0 ? Math.round(entry.value / breakdown.gross_pay * 100) : 0}%
                 </span>

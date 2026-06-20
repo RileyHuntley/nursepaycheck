@@ -13,6 +13,7 @@ import {
 import PayPeriodDialog from '@/components/payroll/PayPeriodDialog';
 import { getVCHPeriodNumber, getVCHPayDate } from '@/lib/statHolidays';
 import { formatCurrency } from '@/lib/utils';
+import { usePrivacyMode } from '@/contexts/PrivacyModeContext';
 import { calculatePeriodBreakdown, getPayPeriodName } from '@/lib/premiumCalculator';
 import {
   AlertDialog,
@@ -26,6 +27,7 @@ import {
 } from '@/components/ui/alert-dialog';
 
 export default function PayPeriodHistory() {
+  const { privacyMode } = usePrivacyMode();
   const [periods, setPeriods] = useState([]);
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -191,7 +193,7 @@ export default function PayPeriodHistory() {
                 {(settings && period.shifts?.length > 0) && (
                   <div className="text-right flex-shrink-0">
                     <span className="text-sm font-mono font-semibold text-primary">
-                      {formatCurrency(calculatePeriodBreakdown(period.shifts, settings).gross_pay)}
+                      {privacyMode ? '••••••' : formatCurrency(calculatePeriodBreakdown(period.shifts, settings).gross_pay)}
                     </span>
                     <p className="text-[10px] text-muted-foreground">
                       {period.verified_deductions ? 'gross' : 'estimated gross'}
