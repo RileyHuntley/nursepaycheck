@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
-import { getCurrentPayPeriodDates, parseTime } from '@/lib/premiumCalculator';
+import { getCurrentPayPeriodDates, parseTime, calculateShiftPremiums } from '@/lib/premiumCalculator';
 import { getStatType } from '@/lib/statHolidays';
 import { BarChart3, ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -87,6 +87,47 @@ function isWeekend(dateStr) {
 }
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+// Premium labels shown in the visualization
+const PREMIUM_DEFS = [
+  { key: 'evening',      label: 'Evening',       hoursKey: 'evening_hours',       color: 'bg-sky-500' },
+  { key: 'night',        label: 'Night',          hoursKey: 'night_hours',         color: 'bg-indigo-500' },
+  { key: 'weekend',      label: 'Weekend',        hoursKey: 'weekend_hours',       color: 'bg-violet-500' },
+  { key: 'super_shift',  label: 'Super Shift',    hoursKey: 'super_shift_hours',   color: 'bg-rose-500' },
+  { key: 'short_notice', label: 'Short Notice',   hoursKey: 'short_notice_hours',  color: 'bg-orange-500' },
+  { key: 'responsibility', label: 'Responsibility', hoursKey: 'responsibility_hours', color: 'bg-amber-500' },
+  { key: 'preceptor',    label: 'Preceptor',      hoursKey: 'preceptor_hours',     color: 'bg-teal-500' },
+  { key: 'specialty',    label: 'Specialty',      hoursKey: 'specialty_hours',     color: 'bg-emerald-500' },
+];
+
+function buildPremiumBreakdown(shifts, minDate, maxDate, settings) {
+  if (!settings) return null;
+  const filtered = shifts.filter(
+    s => (s.paid_hours || 0) > 0 &&
+      !UNPAID_TYPES.includes(s.shift_type) &&
+      (!minDate || s.date >= minDate) &&
+      (!maxDate || s.date <= maxDate)
+  );
+  if (filtered.length === 0) return null;
+
+  const totals = {};
+  PREMIUM_DEFS.forEach(p => { totals[p.key] = { hours: 0, pay: 0, shifts: 0 }; });
+
+  for (const s of filtered) {
+    const p = calculateShiftPremiums(s, settings);
+    for (const def of PREMIUM_DEFS) {
+      const hrs = p[def.hoursKey] || 0;
+      const pay = p[def.key] || 0;
+      if (hrs > 0 || pay > 0) {
+        totals[def.key].hours += hrs;
+        totals[def.key].pay   += pay;
+        totals[def.key].shifts++;
+      }
+    }
+  }
+
+  return totals;
+}
 
 function buildPatternBreakdown(shifts, minDate, maxDate) {
   const filtered = shifts.filter(
@@ -346,6 +387,7 @@ export default function ShiftAnalytics() {
   const patternYTD = buildPatternBreakdown(allShifts, activePatternView.minDate, activePatternView.maxDate);
   const totalPatternHours  = patternYTD.byDayOfWeek.reduce((s, d) => s + d.hours, 0);
   const totalPatternShifts = patternYTD.total;
+  const premiumBreakdown   = buildPremiumBreakdown(allShifts, activePatternView.minDate, activePatternView.maxDate, settings);
 
   if (loading) {
     return (
@@ -788,6 +830,61 @@ export default function ShiftAnalytics() {
             </div>
 
           </div>
+
+          {/* ── Premium breakdown ── */}
+          {premiumBreakdown && (
+            <div className="mt-4">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Premium Hours</h3>
+              <div className="bg-card border border-border rounded-xl overflow-hidden">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/40">
+                      <th className="py-2.5 pl-5 pr-4 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Premium</th>
+                      <th className="py-2.5 pr-4 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Hours</th>
+                      <th className="py-2.5 pr-4 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Shifts</th>
+                      <th className="py-2.5 pr-5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground w-1/3">Distribution</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(() => {
+                      const maxHours = Math.max(...PREMIUM_DEFS.map(d => premiumBreakdown[d.key].hours));
+                      return PREMIUM_DEFS
+                        .filter(def => premiumBreakdown[def.key].hours > 0 || premiumBreakdown[def.key].shifts > 0)
+                        .map(def => {
+                          const { hours, shifts } = premiumBreakdown[def.key];
+                          const pct = maxHours > 0 ? (hours / maxHours) * 100 : 0;
+                          return (
+                            <tr key={def.key} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
+                              <td className="py-2.5 pl-5 pr-4">
+                                <span className="inline-flex items-center gap-2 text-sm font-medium text-foreground">
+                                  <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${def.color}`} />
+                                  {def.label}
+                                </span>
+                              </td>
+                              <td className="py-2.5 pr-4 text-right text-sm font-semibold tabular-nums text-foreground">
+                                {fmtHours(hours)}
+                              </td>
+                              <td className="py-2.5 pr-4 text-right text-sm tabular-nums text-muted-foreground">
+                                {shifts}
+                              </td>
+                              <td className="py-2.5 pr-5">
+                                <div className="flex rounded-full overflow-hidden h-2 bg-muted">
+                                  <div className={`${def.color} transition-all`} style={{ width: `${pct}%` }} />
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        });
+                    })()}
+                  </tbody>
+                </table>
+                {PREMIUM_DEFS.every(d => premiumBreakdown[d.key].hours === 0) && (
+                  <p className="text-sm text-muted-foreground px-5 py-4">No premium hours recorded for this period.</p>
+                )}
+              </div>
+            </div>
+          )}
+
         </section>
       )}
 
