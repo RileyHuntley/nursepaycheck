@@ -9,7 +9,7 @@ import {
 import { Loader2 } from 'lucide-react';
 import ShiftRow from '@/components/payroll/ShiftRow';
 import PayBreakdown from '@/components/payroll/PayBreakdown';
-import { calculateShiftPremiums } from '@/lib/premiumCalculator';
+import { calculateShiftPremiums, calculatePeriodBreakdown } from '@/lib/premiumCalculator';
 import { getVCHPeriodNumber } from '@/lib/statHolidays';
 
 export default function PayPeriodDialog({ period, open, onClose }) {
@@ -71,9 +71,9 @@ export default function PayPeriodDialog({ period, open, onClose }) {
               </div>
             )}
 
-            {(period.breakdown || (settings && sorted.length > 0)) && (
+            {(settings && sorted.length > 0) && (
               <PayBreakdown
-                breakdown={period.breakdown}
+                breakdown={calculatePeriodBreakdown(sorted, settings, false)}
                 wage={settings?.hourly_wage}
                 taxSettings={settings?.tax_settings}
               />
