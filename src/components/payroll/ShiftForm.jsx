@@ -55,11 +55,11 @@ const getPresets = (settings) => {
   return [
     {
       label: '12h Day',
-      values: { start_time: pt.day_12h_start || '07:00', end_time: pt.day_12h_end || '19:00', unpaid_break: 1, paid_break: 0 },
+      values: { start_time: pt.day_12h_start || '07:00', end_time: pt.day_12h_end || '19:00', unpaid_break: 1, paid_break: 0.75 },
     },
     {
       label: '12h Night',
-      values: { start_time: pt.night_12h_start || '19:00', end_time: pt.night_12h_end || '07:00', unpaid_break: 1, paid_break: 0 },
+      values: { start_time: pt.night_12h_start || '19:00', end_time: pt.night_12h_end || '07:00', unpaid_break: 1, paid_break: 0.75 },
     },
     {
       label: '8h Day',
@@ -74,7 +74,7 @@ const emptyShift = {
   end_time: '',
   shift_type: 'regular',
   unpaid_break: 1,
-  paid_break: 0,
+  paid_break: 0.75,
   hospital: '',
   unit: '',
   short_notice: false,
@@ -107,7 +107,8 @@ export default function ShiftForm({ onSubmit, onCancel, onDelete, initial, setti
     if (end <= start) end += 24;
     return Math.round((end - start) * 100) / 100;
   })();
-  const paidHours = Math.max(0, totalHours - (shift.unpaid_break || 0) + (shift.paid_break || 0));
+  const entitlement = totalHours >= 10 ? 0.75 : 0;
+  const paidHours = Math.max(0, totalHours - (shift.unpaid_break || 0) + Math.max(0, entitlement - (shift.paid_break || 0)));
 
   const set = (field, value) => setShift((s) => ({ ...s, [field]: value }));
   const setOverride = (field, value) => setShift(s => ({
@@ -264,7 +265,7 @@ export default function ShiftForm({ onSubmit, onCancel, onDelete, initial, setti
           <Input type="number" step="0.25" min="0" value={shift.unpaid_break} onChange={(e) => set('unpaid_break', parseFloat(e.target.value) || 0)} className="h-9 text-sm" />
         </div>
         <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">Missed Paid Break (hrs)</Label>
+          <Label className="text-xs text-muted-foreground">Paid Break (hrs)</Label>
           <Input type="number" step="0.25" min="0" value={shift.paid_break} onChange={(e) => set('paid_break', parseFloat(e.target.value) || 0)} className="h-9 text-sm" />
         </div>
         <div className="space-y-1.5">

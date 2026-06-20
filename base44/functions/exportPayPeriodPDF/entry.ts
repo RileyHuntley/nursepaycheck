@@ -28,10 +28,10 @@ function splitOvernight(shift) {
   const startH = pt(shift.start_time); let endH = pt(shift.end_time);
   const ub = shift.unpaid_break || 0;
   const pb = shift.paid_break || 0;
-  if (endH > startH) { const h = shift.paid_hours || (endH - startH - ub + pb); return [{ date: shift.date, hours: r2(h) }]; }
-  endH += 24; const bc = 24 - startH, ac = endH - 24; let bp, ap;
-  if (ub > 0 && (bc + ac) >= 5) { const bs = startH + 5, be = bs + ub; bp = r2(bc - Math.max(0, Math.min(be,24) - bs)); ap = r2(ac - Math.max(0, be - Math.max(bs,24))); }
-  else { const ph = shift.paid_hours || (bc + ac - ub + pb); bp = r2((bc/(bc+ac))*ph); ap = r2((ac/(bc+ac))*ph); }
+  if (endH > startH) { const cl = endH - startH; const ent = cl >= 10 ? 0.75 : 0; const h = shift.paid_hours || (cl - ub + Math.max(0, ent - pb)); return [{ date: shift.date, hours: r2(h) }]; }
+  endH += 24; const bc = 24 - startH, ac = endH - 24; const cl2 = bc + ac; const ent2 = cl2 >= 10 ? 0.75 : 0; const bonus = Math.max(0, ent2 - pb); let bp, ap;
+  if (ub > 0 && cl2 >= 5) { const bs = startH + 5, be = bs + ub; const bw = bc - Math.max(0, Math.min(be,24) - bs); const aw = ac - Math.max(0, be - Math.max(bs,24)); const tw = bw + aw; bp = r2(bw + (tw > 0 ? (bw/tw)*bonus : 0)); ap = r2(aw + (tw > 0 ? (aw/tw)*bonus : 0)); }
+  else { const ph = shift.paid_hours || (cl2 - ub + bonus); bp = r2((bc/cl2)*ph); ap = r2((ac/cl2)*ph); }
   const next = new Date(shift.date + 'T12:00:00'); next.setDate(next.getDate()+1);
   return [{ date: shift.date, hours: bp }, { date: next.toISOString().slice(0,10), hours: ap }];
 }

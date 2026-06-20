@@ -356,7 +356,9 @@ export function splitOvernightShift(shift) {
 
   // Not overnight — single segment
   if (endH > startH) {
-    const hours = shift.paid_hours || (endH - startH - unpaidBreak + paidBreak);
+    const clockHours = endH - startH;
+    const entitlement = clockHours >= 10 ? 0.75 : 0;
+    const hours = shift.paid_hours || (clockHours - unpaidBreak + Math.max(0, entitlement - paidBreak));
     return [{ date: shift.date, hours: round2(hours), range: `${shift.start_time}–${shift.end_time}` }];
   }
 
@@ -364,10 +366,13 @@ export function splitOvernightShift(shift) {
   endH += 24;
   const beforeMidnightClock = 24 - startH;
   const afterMidnightClock = endH - 24;
+  const clockHoursTotal = beforeMidnightClock + afterMidnightClock;
+  const entitlement = clockHoursTotal >= 10 ? 0.75 : 0;
+  const paidBreakBonus = Math.max(0, entitlement - paidBreak);
 
   let beforePaid, afterPaid, seg1Range, seg2Range;
 
-  if (unpaidBreak > 0 && (beforeMidnightClock + afterMidnightClock) >= 5) {
+  if (unpaidBreak > 0 && clockHoursTotal >= 5) {
     // Break occurs at the 5-hour mark from shift start
     const breakStartH = startH + 5;
     const breakEndH = breakStartH + unpaidBreak;
@@ -376,8 +381,11 @@ export function splitOvernightShift(shift) {
     const breakBefore = Math.max(0, Math.min(breakEndH, 24) - breakStartH);
     const breakAfter = Math.max(0, breakEndH - Math.max(breakStartH, 24));
 
-    beforePaid = round2(beforeMidnightClock - breakBefore);
-    afterPaid = round2(afterMidnightClock - breakAfter);
+    const beforeWorked = beforeMidnightClock - breakBefore;
+    const afterWorked = afterMidnightClock - breakAfter;
+    const totalWorked = beforeWorked + afterWorked;
+    beforePaid = round2(beforeWorked + (totalWorked > 0 ? (beforeWorked / totalWorked) * paidBreakBonus : 0));
+    afterPaid = round2(afterWorked + (totalWorked > 0 ? (afterWorked / totalWorked) * paidBreakBonus : 0));
 
     // Paid time range for segment 1 (before midnight)
     seg1Range = breakBefore > 0
@@ -392,7 +400,7 @@ export function splitOvernightShift(shift) {
       : `00:00–${shift.end_time}`;
   } else {
     // No break (or shift <5h): proportional split of paid_hours
-    const paidHours = shift.paid_hours || (beforeMidnightClock + afterMidnightClock - unpaidBreak + paidBreak);
+    const paidHours = shift.paid_hours || (clockHoursTotal - unpaidBreak + paidBreakBonus);
     beforePaid = round2((beforeMidnightClock / (beforeMidnightClock + afterMidnightClock)) * paidHours);
     afterPaid = round2((afterMidnightClock / (beforeMidnightClock + afterMidnightClock)) * paidHours);
     seg1Range = `${shift.start_time}–00:00`;
