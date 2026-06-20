@@ -188,13 +188,10 @@ export default function PayPeriodHistory() {
                   </div>
                 </div>
 
-                {(period.breakdown || (settings && period.shifts?.length > 0)) && (
+                {(settings && period.shifts?.length > 0) && (
                   <div className="text-right flex-shrink-0">
                     <span className="text-sm font-mono font-semibold text-primary">
-                      {formatCurrency(
-                        period.breakdown?.gross_pay
-                        || (settings ? calculatePeriodBreakdown(period.shifts, settings).gross_pay : 0)
-                      )}
+                      {formatCurrency(calculatePeriodBreakdown(period.shifts, settings).gross_pay)}
                     </span>
                     <p className="text-[10px] text-muted-foreground">
                       {period.verified_deductions ? 'gross' : 'estimated gross'}
