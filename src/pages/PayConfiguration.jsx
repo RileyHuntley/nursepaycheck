@@ -615,13 +615,12 @@ export default function PayConfiguration() {
           </p>
         </div>
         <div className="space-y-3">
-          {OT_TYPES.map(({ type, multiplier, color, description, article }) => (
+          {OT_TYPES.map(({ type, multiplier, color, description }) => (
             <div key={type} className="flex gap-3 items-start p-3 rounded-lg border border-border bg-muted/20">
               <div className="flex-shrink-0 flex flex-col items-center gap-1 pt-0.5">
                 <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold ${color}`}>
                   {multiplier}
                 </span>
-                <span className="text-[10px] text-muted-foreground font-mono">{article}</span>
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-medium text-foreground">{type}</p>
