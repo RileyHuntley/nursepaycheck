@@ -352,10 +352,11 @@ export function splitOvernightShift(shift) {
   const startH = parseTime(shift.start_time);
   let endH = parseTime(shift.end_time);
   const unpaidBreak = shift.unpaid_break || 0;
+  const paidBreak = shift.paid_break || 0;
 
   // Not overnight — single segment
   if (endH > startH) {
-    const hours = shift.paid_hours || (endH - startH - unpaidBreak);
+    const hours = shift.paid_hours || (endH - startH - unpaidBreak + paidBreak);
     return [{ date: shift.date, hours: round2(hours), range: `${shift.start_time}–${shift.end_time}` }];
   }
 
@@ -391,7 +392,7 @@ export function splitOvernightShift(shift) {
       : `00:00–${shift.end_time}`;
   } else {
     // No break (or shift <5h): proportional split of paid_hours
-    const paidHours = shift.paid_hours || (beforeMidnightClock + afterMidnightClock);
+    const paidHours = shift.paid_hours || (beforeMidnightClock + afterMidnightClock - unpaidBreak + paidBreak);
     beforePaid = round2((beforeMidnightClock / (beforeMidnightClock + afterMidnightClock)) * paidHours);
     afterPaid = round2((afterMidnightClock / (beforeMidnightClock + afterMidnightClock)) * paidHours);
     seg1Range = `${shift.start_time}–00:00`;
