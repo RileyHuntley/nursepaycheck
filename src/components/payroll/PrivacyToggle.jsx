@@ -11,7 +11,7 @@ export default function PrivacyToggle() {
         <button
           onClick={togglePrivacyMode}
           className="text-muted-foreground hover:text-foreground transition-colors"
-          aria-label={privacyMode ? 'Show amounts' : 'Hide amounts'}
+          aria-label={privacyMode ? 'Untoggle privacy' : 'Toggle privacy'}
         >
           {privacyMode
             ? <EyeOff className="w-5 h-5" />
@@ -20,7 +20,7 @@ export default function PrivacyToggle() {
         </button>
       </TooltipTrigger>
       <TooltipContent side="bottom">
-        {privacyMode ? 'Show amounts' : 'Hide amounts'}
+        {privacyMode ? 'Untoggle privacy' : 'Toggle privacy'}
       </TooltipContent>
     </Tooltip>
   );
