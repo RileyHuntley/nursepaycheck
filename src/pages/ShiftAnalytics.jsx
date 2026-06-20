@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
-import { getCurrentPayPeriodDates, parseTime } from '@/lib/premiumCalculator';
+import { getCurrentPayPeriodDates, parseTime, calculateShiftPremiums } from '@/lib/premiumCalculator';
 import { getStatType } from '@/lib/statHolidays';
 import { BarChart3, ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -87,6 +87,47 @@ function isWeekend(dateStr) {
 }
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+// Premium labels shown in the visualization
+const PREMIUM_DEFS = [
+  { key: 'evening',      label: 'Evening',       hoursKey: 'evening_hours',       color: 'bg-sky-500' },
+  { key: 'night',        label: 'Night',          hoursKey: 'night_hours',         color: 'bg-indigo-500' },
+  { key: 'weekend',      label: 'Weekend',        hoursKey: 'weekend_hours',       color: 'bg-violet-500' },
+  { key: 'super_shift',  label: 'Super Shift',    hoursKey: 'super_shift_hours',   color: 'bg-rose-500' },
+  { key: 'short_notice', label: 'Short Notice',   hoursKey: 'short_notice_hours',  color: 'bg-orange-500' },
+  { key: 'responsibility', label: 'Responsibility', hoursKey: 'responsibility_hours', color: 'bg-amber-500' },
+  { key: 'preceptor',    label: 'Preceptor',      hoursKey: 'preceptor_hours',     color: 'bg-teal-500' },
+  { key: 'specialty',    label: 'Specialty',      hoursKey: 'specialty_hours',     color: 'bg-emerald-500' },
+];
+
+function buildPremiumBreakdown(shifts, minDate, maxDate, settings) {
+  if (!settings) return null;
+  const filtered = shifts.filter(
+    s => (s.paid_hours || 0) > 0 &&
+      !UNPAID_TYPES.includes(s.shift_type) &&
+      (!minDate || s.date >= minDate) &&
+      (!maxDate || s.date <= maxDate)
+  );
+  if (filtered.length === 0) return null;
+
+  const totals = {};
+  PREMIUM_DEFS.forEach(p => { totals[p.key] = { hours: 0, pay: 0, shifts: 0 }; });
+
+  for (const s of filtered) {
+    const p = calculateShiftPremiums(s, settings);
+    for (const def of PREMIUM_DEFS) {
+      const hrs = p[def.hoursKey] || 0;
+      const pay = p[def.key] || 0;
+      if (hrs > 0 || pay > 0) {
+        totals[def.key].hours += hrs;
+        totals[def.key].pay   += pay;
+        totals[def.key].shifts++;
+      }
+    }
+  }
+
+  return totals;
+}
 
 function buildPatternBreakdown(shifts, minDate, maxDate) {
   const filtered = shifts.filter(
@@ -231,6 +272,8 @@ export default function ShiftAnalytics() {
   const [monthOffset, setMonthOffset] = useState(0);
   // Pay period detail navigation: offset in pay periods from current (0 = this PP)
   const [ppOffset, setPpOffset] = useState(0);
+  // Shift pattern view: 0 = Last Year, 1 = Year to Date, 2 = This Year (all)
+  const [patternView, setPatternView] = useState(1);
   const loadingRef = useRef(false);
 
   const loadData = useCallback(async () => {
@@ -332,10 +375,19 @@ export default function ShiftAnalytics() {
     { label: `${now.getFullYear()} Total`, sublabel: 'Hours to be worked this year',        hours: thisYearHours },
   ];
 
-  // Shift-pattern breakdown — use YTD as the reference window for patterns
-  const patternYTD = buildPatternBreakdown(allShifts, yearStart, todayStr);
+  // Shift-pattern breakdown — window driven by patternView
+  const lastYearStart = `${now.getFullYear() - 1}-01-01`;
+  const lastYearEnd   = `${now.getFullYear() - 1}-12-31`;
+  const PATTERN_VIEWS = [
+    { label: `${now.getFullYear() - 1}`, sublabel: 'Last Year',         minDate: lastYearStart, maxDate: lastYearEnd },
+    { label: 'Year to Date',             sublabel: `Jan 1 – ${ppFmt(todayStr)}`, minDate: yearStart, maxDate: todayStr },
+    { label: `${now.getFullYear()}`,     sublabel: 'This Year (all shifts)', minDate: yearStart, maxDate: yearEnd },
+  ];
+  const activePatternView = PATTERN_VIEWS[patternView];
+  const patternYTD = buildPatternBreakdown(allShifts, activePatternView.minDate, activePatternView.maxDate);
   const totalPatternHours  = patternYTD.byDayOfWeek.reduce((s, d) => s + d.hours, 0);
   const totalPatternShifts = patternYTD.total;
+  const premiumBreakdown   = buildPremiumBreakdown(allShifts, activePatternView.minDate, activePatternView.maxDate, settings);
 
   if (loading) {
     return (
@@ -399,6 +451,16 @@ export default function ShiftAnalytics() {
             Month — Hours Detail
           </h2>
           <div className="flex items-center gap-1">
+            <div className="w-[52px] flex justify-start">
+              {monthOffset !== 0 && (
+                <button
+                  onClick={() => setMonthOffset(0)}
+                  className="px-2 py-1 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                >
+                  Current
+                </button>
+              )}
+            </div>
             <button
               onClick={() => setMonthOffset(o => o - 1)}
               className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
@@ -414,14 +476,6 @@ export default function ShiftAnalytics() {
             >
               <ChevronRight className="w-4 h-4" />
             </button>
-            {monthOffset !== 0 && (
-              <button
-                onClick={() => setMonthOffset(0)}
-                className="ml-1 px-2 py-1 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-              >
-                Today
-              </button>
-            )}
           </div>
         </div>
         <div className="bg-card border border-border rounded-xl p-5 space-y-4">
@@ -478,6 +532,16 @@ export default function ShiftAnalytics() {
             Pay Period — Hours Detail
           </h2>
           <div className="flex items-center gap-1">
+            <div className="w-[52px] flex justify-start">
+              {ppOffset !== 0 && (
+                <button
+                  onClick={() => setPpOffset(0)}
+                  className="px-2 py-1 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                >
+                  Current
+                </button>
+              )}
+            </div>
             <button
               onClick={() => setPpOffset(o => o - 1)}
               className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
@@ -495,14 +559,6 @@ export default function ShiftAnalytics() {
             >
               <ChevronRight className="w-4 h-4" />
             </button>
-            {ppOffset !== 0 && (
-              <button
-                onClick={() => setPpOffset(0)}
-                className="ml-1 px-2 py-1 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-              >
-                Current
-              </button>
-            )}
           </div>
         </div>
         <div className="bg-card border border-border rounded-xl p-5 space-y-4">
@@ -607,13 +663,36 @@ export default function ShiftAnalytics() {
         </div>
       </section>
 
-      {/* ── Shift patterns (YTD) ── */}
+      {/* ── Shift patterns ── */}
       {totalPatternShifts > 0 && (
         <section>
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
-            Shift Patterns — Year to Date
-          </h2>
-          <p className="text-xs text-muted-foreground mb-4">Jan 1 – {ppFmt(todayStr)}</p>
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Shift Patterns
+            </h2>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setPatternView(v => Math.max(0, v - 1))}
+                disabled={patternView === 0}
+                className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                title="Previous"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className="text-sm font-medium text-foreground min-w-[140px] text-center">
+                {activePatternView.label}
+              </span>
+              <button
+                onClick={() => setPatternView(v => Math.min(PATTERN_VIEWS.length - 1, v + 1))}
+                disabled={patternView === PATTERN_VIEWS.length - 1}
+                className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                title="Next"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground mb-4">{activePatternView.sublabel}</p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
@@ -751,6 +830,61 @@ export default function ShiftAnalytics() {
             </div>
 
           </div>
+
+          {/* ── Premium breakdown ── */}
+          {premiumBreakdown && (
+            <div className="mt-4">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Premium Hours</h3>
+              <div className="bg-card border border-border rounded-xl overflow-hidden">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/40">
+                      <th className="py-2.5 pl-5 pr-4 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Premium</th>
+                      <th className="py-2.5 pr-4 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Hours</th>
+                      <th className="py-2.5 pr-4 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Shifts</th>
+                      <th className="py-2.5 pr-5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground w-1/3">Distribution</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(() => {
+                      const maxHours = Math.max(...PREMIUM_DEFS.map(d => premiumBreakdown[d.key].hours));
+                      return PREMIUM_DEFS
+                        .filter(def => premiumBreakdown[def.key].hours > 0 || premiumBreakdown[def.key].shifts > 0)
+                        .map(def => {
+                          const { hours, shifts } = premiumBreakdown[def.key];
+                          const pct = maxHours > 0 ? (hours / maxHours) * 100 : 0;
+                          return (
+                            <tr key={def.key} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
+                              <td className="py-2.5 pl-5 pr-4">
+                                <span className="inline-flex items-center gap-2 text-sm font-medium text-foreground">
+                                  <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${def.color}`} />
+                                  {def.label}
+                                </span>
+                              </td>
+                              <td className="py-2.5 pr-4 text-right text-sm font-semibold tabular-nums text-foreground">
+                                {fmtHours(hours)}
+                              </td>
+                              <td className="py-2.5 pr-4 text-right text-sm tabular-nums text-muted-foreground">
+                                {shifts}
+                              </td>
+                              <td className="py-2.5 pr-5">
+                                <div className="flex rounded-full overflow-hidden h-2 bg-muted">
+                                  <div className={`${def.color} transition-all`} style={{ width: `${pct}%` }} />
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        });
+                    })()}
+                  </tbody>
+                </table>
+                {PREMIUM_DEFS.every(d => premiumBreakdown[d.key].hours === 0) && (
+                  <p className="text-sm text-muted-foreground px-5 py-4">No premium hours recorded for this period.</p>
+                )}
+              </div>
+            </div>
+          )}
+
         </section>
       )}
 
