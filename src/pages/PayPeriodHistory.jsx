@@ -14,6 +14,7 @@ import PayPeriodDialog from '@/components/payroll/PayPeriodDialog';
 import { getVCHPeriodNumber, getVCHPayDate } from '@/lib/statHolidays';
 import { formatCurrency } from '@/lib/utils';
 import { usePrivacyMode } from '@/contexts/PrivacyModeContext';
+import PrivacyToggle from '@/components/payroll/PrivacyToggle';
 import { calculatePeriodBreakdown, getPayPeriodName } from '@/lib/premiumCalculator';
 import {
   AlertDialog,
@@ -121,7 +122,10 @@ export default function PayPeriodHistory() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-display font-bold text-foreground tracking-tight">Pay Period History</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-2xl font-display font-bold text-foreground tracking-tight">Pay Period History</h2>
+            <PrivacyToggle />
+          </div>
           <p className="text-sm text-muted-foreground mt-1">{filteredPeriods.length} of {periods.length} pay periods</p>
         </div>
         <div className="flex items-center gap-2">

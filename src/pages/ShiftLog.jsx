@@ -8,9 +8,9 @@ import { calculatePeriodBreakdown, calculateShiftPremiums, getPayPeriodForDate, 
 import { toast } from '@/components/ui/use-toast';
 import { formatCurrency } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Loader2, ArrowUpDown, Plus, CalendarPlus, List, CalendarDays, Filter, CheckSquare, X, Check, Trash2, Eye, EyeOff } from 'lucide-react';
-import { usePrivacyMode } from '@/contexts/PrivacyModeContext';
+import { Loader2, ArrowUpDown, Plus, CalendarPlus, List, CalendarDays, Filter, CheckSquare, X, Check, Trash2 } from 'lucide-react';
 import PrivacyAmount from '@/components/payroll/PrivacyAmount';
+import PrivacyToggle from '@/components/payroll/PrivacyToggle';
 import {
   Select,
   SelectContent,
@@ -528,21 +528,13 @@ export default function ShiftLog() {
     }, {});
   }
 
-  const { privacyMode, togglePrivacyMode } = usePrivacyMode();
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <div className="flex items-center gap-2">
             <h2 className="text-2xl font-display font-bold text-foreground tracking-tight">Shifts</h2>
-            <button
-              onClick={togglePrivacyMode}
-              className="text-muted-foreground hover:text-foreground transition-colors"
-              aria-label={privacyMode ? 'Show amounts' : 'Hide amounts'}
-            >
-              {privacyMode ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-            </button>
+            <PrivacyToggle />
           </div>
           {viewMode === 'list' && (
             <p className="text-sm text-muted-foreground mt-1">
