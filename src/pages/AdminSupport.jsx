@@ -157,7 +157,7 @@ export default function AdminSupport() {
               verifiedDeductions={pastPeriod?.verified_deductions}
             />
             <PaySummaryPanel
-              title="Current Pay Period"
+              title="Pay Period"
               subtitle={currentPeriod ? currentPeriod.name : 'No pay period'}
               breakdown={currentPeriod?.computedBreakdown}
               taxSettings={settings?.tax_settings}
