@@ -38,7 +38,8 @@ const TYPE_COLORS = {
   student_practicum:  'bg-muted text-muted-foreground',
 };
 
-const todayStr = new Date().toISOString().slice(0, 10);
+const _todayD = new Date();
+const todayStr = `${_todayD.getFullYear()}-${String(_todayD.getMonth()+1).padStart(2,'0')}-${String(_todayD.getDate()).padStart(2,'0')}`;
 
 function resolveStatus(shift) {
   // Verified is persisted; otherwise compute from date vs today

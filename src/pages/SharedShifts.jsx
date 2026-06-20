@@ -84,7 +84,8 @@ export default function SharedShifts() {
   const sortedPeriods = [...payPeriods].sort((a, b) => (a.start_date || '').localeCompare(b.start_date || ''));
 
   // Find current pay period (where today falls)
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const _today = new Date();
+  const todayStr = `${_today.getFullYear()}-${String(_today.getMonth()+1).padStart(2,'0')}-${String(_today.getDate()).padStart(2,'0')}`;
   const currentPd = getPayPeriodForDate(todayStr);
   const currentPeriod = sortedPeriods.find(p => p.start_date === currentPd.start_date && p.end_date === currentPd.end_date);
   const currentBreakdown = currentPeriod && settings

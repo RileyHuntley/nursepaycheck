@@ -5,7 +5,8 @@ import { base44 } from '@/api/base44Client';
 import { HA_PORTALS, getUserHealthAuthorities } from '@/lib/healthAuthorityPortals';
 // Theme toggle moved to Settings page
 
-const todayStr = new Date().toISOString().slice(0, 10);
+const _todayD = new Date();
+const todayStr = `${_todayD.getFullYear()}-${String(_todayD.getMonth()+1).padStart(2,'0')}-${String(_todayD.getDate()).padStart(2,'0')}`;
 
 function countPendingVerification(periods) {
   let count = 0;

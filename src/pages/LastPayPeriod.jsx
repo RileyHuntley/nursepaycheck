@@ -28,7 +28,8 @@ export default function LastPayPeriod() {
   const [savingDeductions, setSavingDeductions] = useState(false);
   const [deductionsForm, setDeductionsForm] = useState(null); // local copy when editing
 
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const _today = new Date();
+  const todayStr = `${_today.getFullYear()}-${String(_today.getMonth()+1).padStart(2,'0')}-${String(_today.getDate()).padStart(2,'0')}`;
 
   const loadingRef = useRef(false);
   const loadRef = useRef(null);
