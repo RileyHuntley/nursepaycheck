@@ -448,7 +448,7 @@ export default function ShiftAnalytics() {
 
       {/* ── Month detail panel (navigable) ── */}
       <section>
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-2">
           <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Month — Hours Detail
           </h2>
@@ -479,6 +479,25 @@ export default function ShiftAnalytics() {
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
+        </div>
+        <div className="flex gap-1.5 mb-3 flex-wrap">
+          {[
+            { label: 'Last Month', offset: -1 },
+            { label: 'Current Month', offset: 0 },
+            { label: '3 Months Ahead', offset: 3 },
+          ].map(({ label, offset }) => (
+            <button
+              key={label}
+              onClick={() => setMonthOffset(offset)}
+              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors border ${
+                monthOffset === offset
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'bg-muted text-muted-foreground hover:text-foreground border-transparent hover:border-border'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
         </div>
         <div className="bg-card border border-border rounded-xl p-5 space-y-4">
           <div className="flex gap-6 flex-wrap">
