@@ -42,7 +42,7 @@ const TYPE_SHORT = {
   regular: 'Reg', day_off: 'DO', work_stat: 'Stat', work_super_stat: 'Super',
   ot_stat: 'OT×Stat', overtime: 'OT', isn: 'ISN', vacation: 'Vac',
   sick: 'Sick', pdo_pst: 'PDO', other_leave: 'Off',
-  orientation: 'Orient', education: 'Edu',
+  orientation: 'Orient', education: 'Edu', student_practicum: 'Practicum',
 };
 
 const HA_FULL_NAMES = {
