@@ -5,7 +5,7 @@ import PaySummaryPanel from '@/components/payroll/PaySummaryPanel';
 import EarningsTrendChart from '@/components/payroll/EarningsTrendChart';
 import { calculatePeriodBreakdown, getCurrentPayPeriodDates, getFirstPeriodsOfMonths } from '@/lib/premiumCalculator';
 import { Button } from '@/components/ui/button';
-import { CalendarPlus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { CalendarPlus, ChevronLeft, ChevronRight, Clock, CalendarCheck } from 'lucide-react';
 import SetupBanner from '@/components/payroll/SetupBanner';
 import { getVCHPeriodNumber, getVCHPayDate } from '@/lib/statHolidays';
 
@@ -354,6 +354,30 @@ export default function Dashboard() {
     showNextYear ? nextYearData : null,
   ].filter(Boolean);
 
+  // ── Quick stats ──
+  const pendingShiftCount = periods.reduce((sum, p) => {
+    return sum + (p.shifts || []).filter(s => {
+      if (s.status === 'verified') return false;
+      if (!s.date || s.date > todayStr) return false;
+      return true;
+    }).length;
+  }, 0);
+
+  // Next pay date: earliest VCH pay date that is in the future
+  const nextPayDate = (() => {
+    // Check pay date for current period, then next
+    const candidates = [curStart, addDays(curStart, 14)];
+    for (const start of candidates) {
+      const pd = getVCHPayDate(start);
+      if (pd && pd >= todayStr) return pd;
+    }
+    return null;
+  })();
+
+  const daysUntilPay = nextPayDate
+    ? Math.round((new Date(nextPayDate + 'T12:00:00') - new Date(todayStr + 'T12:00:00')) / 86400000)
+    : null;
+
   const gridClass = (n) => {
     if (n === 1) return 'grid-cols-1 max-w-sm';
     if (n === 2) return 'grid-cols-1 md:grid-cols-2';
@@ -382,6 +406,49 @@ export default function Dashboard() {
           hasTaxSettings={hasTaxSettings}
           hasHospitals={hasHospitals}
         />
+      )}
+
+      {/* ── Quick Stats Bar ── */}
+      {!loading && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Link to="/shift-log" className="flex items-center gap-4 bg-card border border-border rounded-xl px-5 py-4 hover:border-primary/40 transition-colors group">
+            <div className={`p-2.5 rounded-lg ${pendingShiftCount > 0 ? 'bg-amber-500/10' : 'bg-muted'}`}>
+              <Clock className={`w-5 h-5 ${pendingShiftCount > 0 ? 'text-amber-500' : 'text-muted-foreground'}`} />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs text-muted-foreground font-medium">Shifts Pending Verification</p>
+              {pendingShiftCount > 0 ? (
+                <p className="text-2xl font-mono font-bold text-amber-500 leading-tight">
+                  {pendingShiftCount}
+                  <span className="text-sm font-sans font-normal text-muted-foreground ml-1.5">
+                    shift{pendingShiftCount !== 1 ? 's' : ''}
+                  </span>
+                </p>
+              ) : (
+                <p className="text-sm font-medium text-muted-foreground mt-0.5">All caught up</p>
+              )}
+            </div>
+          </Link>
+
+          <div className="flex items-center gap-4 bg-card border border-border rounded-xl px-5 py-4">
+            <div className="p-2.5 rounded-lg bg-primary/10">
+              <CalendarCheck className="w-5 h-5 text-primary" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs text-muted-foreground font-medium">Next Pay Date</p>
+              {nextPayDate ? (
+                <p className="text-2xl font-mono font-bold text-primary leading-tight">
+                  {new Date(nextPayDate + 'T12:00:00').toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}
+                  <span className="text-sm font-sans font-normal text-muted-foreground ml-1.5">
+                    {daysUntilPay === 0 ? 'today' : daysUntilPay === 1 ? 'tomorrow' : `in ${daysUntilPay} days`}
+                  </span>
+                </p>
+              ) : (
+                <p className="text-sm font-medium text-muted-foreground mt-0.5">Not scheduled</p>
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ── Pay Periods ── */}
