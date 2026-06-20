@@ -405,7 +405,7 @@ export default function ShiftAnalytics() {
                   onClick={() => setMonthOffset(0)}
                   className="px-2 py-1 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                 >
-                  Reset
+                  Current
                 </button>
               )}
             </div>
@@ -486,7 +486,7 @@ export default function ShiftAnalytics() {
                   onClick={() => setPpOffset(0)}
                   className="px-2 py-1 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                 >
-                  Reset
+                  Current
                 </button>
               )}
             </div>
