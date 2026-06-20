@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { calculateSickLeaveEntitlement, sickLeaveBreakdown, SICK_MAX_DAYS } from '@/lib/sickLeaveCalculator';
 import isEqual from 'lodash/isEqual';
 import cloneDeep from 'lodash/cloneDeep';
 import { useBlocker } from 'react-router-dom';
@@ -1017,14 +1018,48 @@ export default function PayConfiguration() {
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">Sick Days / Year</Label>
-            <Input
-              type="number"
-              min="0"
-              value={settings.time_bank?.sick_entitlement ?? 0}
-              onChange={e => set('time_bank.sick_entitlement', parseFloat(e.target.value) || 0)}
-              className="h-9 text-sm font-mono"
-              placeholder="0"
-            />
+            {(() => {
+              const lines = settings.shift_lines || [];
+              const total = calculateSickLeaveEntitlement(lines);
+              const breakdown = sickLeaveBreakdown(lines);
+              const STATUS_LABELS = { full_time: 'Full Time', part_time: 'Part Time', casual: 'Casual' };
+              if (lines.length === 0) {
+                return (
+                  <div className="h-9 flex items-center px-3 rounded-md border border-border bg-muted/40 text-sm text-muted-foreground">
+                    Set employment type above
+                  </div>
+                );
+              }
+              return (
+                <div className="rounded-md border border-border bg-muted/40 px-3 py-2 space-y-1">
+                  {breakdown.map((line, i) => (
+                    <div key={i} className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>
+                        {STATUS_LABELS[line.status] ?? line.status}
+                        {line.status === 'part_time' && line.fte != null ? ` (FTE ${line.fte.toFixed(2)})` : ''}
+                        {line.status === 'casual' ? ' — not eligible' : ''}
+                      </span>
+                      {line.status !== 'casual' && (
+                        <span className="font-mono">{line.days % 1 === 0 ? line.days : line.days.toFixed(1)} days</span>
+                      )}
+                    </div>
+                  ))}
+                  {breakdown.length > 1 && (
+                    <div className="flex items-center justify-between text-xs font-semibold text-foreground border-t border-border pt-1">
+                      <span>Total</span>
+                      <span className="font-mono">{total % 1 === 0 ? total : total.toFixed(1)} days/yr</span>
+                    </div>
+                  )}
+                  {breakdown.length === 1 && (
+                    <div className="flex items-center justify-between text-xs font-semibold text-foreground">
+                      <span className="text-muted-foreground">Art. 42 · 1.5 days/month</span>
+                      <span className="font-mono">{total % 1 === 0 ? total : total.toFixed(1)} days/yr</span>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+            <p className="text-[11px] text-muted-foreground">Auto-calculated from employment type (Art. 42). Max accumulation: {SICK_MAX_DAYS} days.</p>
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">Special Leave Days / Year</Label>
