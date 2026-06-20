@@ -1,5 +1,23 @@
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { estimateTaxes, estimateStatutoryDeductions } from '@/lib/taxCalculator';
 import { formatCurrency } from '@/lib/utils';
+
+const PIE_COLORS = {
+  net: '#14b8a6',
+  taxes: '#ef4444',
+  statutory: '#6366f1',
+  union: '#f59e0b',
+};
+
+const CustomPieTooltip = ({ active, payload }) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="bg-popover border border-border rounded-lg px-3 py-2 shadow-lg text-xs">
+      <p className="font-semibold text-foreground">{payload[0].name}</p>
+      <p className="font-mono text-muted-foreground">{formatCurrency(payload[0].value)}</p>
+    </div>
+  );
+};
 
 export default function PaySummaryPanel({ title, subtitle, breakdown, loading, taxSettings, shiftCount, verifiedDeductions }) {
   if (loading) {
@@ -35,7 +53,6 @@ export default function PaySummaryPanel({ title, subtitle, breakdown, loading, t
     ? (taxSettings.annual_federal_income || taxSettings.annual_provincial_income || 0)
     : 0;
 
-  // Use verified deductions when available, otherwise estimate
   let taxes, statutory;
   if (hasVerified) {
     taxes = {
@@ -61,12 +78,13 @@ export default function PaySummaryPanel({ title, subtitle, breakdown, loading, t
   const hasStatutory = statutory && statutory.total > 0;
 
   const unionDues = hasVerified && verifiedDeductions.union_dues > 0 ? verifiedDeductions.union_dues : (breakdown.union_dues || 0);
+  const otherDeductions = hasVerified && verifiedDeductions.other_deductions ? verifiedDeductions.other_deductions : 0;
 
   const netPay = breakdown.gross_pay
     - unionDues
     - (hasTaxes ? taxes.total : 0)
     - (hasStatutory ? statutory.total : 0)
-    - (hasVerified && verifiedDeductions.other_deductions ? verifiedDeductions.other_deductions : 0);
+    - otherDeductions;
 
   const rows = [
     { label: 'Straight-Time Pay', value: breakdown.straight_time_pay },
@@ -83,10 +101,23 @@ export default function PaySummaryPanel({ title, subtitle, breakdown, loading, t
       { label: 'Provincial Tax' + (hasVerified ? ' (verified)' : ' (estimated)'), value: taxes.provincial, negative: true },
       { label: 'Federal Tax' + (hasVerified ? ' (verified)' : ' (estimated)'), value: taxes.federal, negative: true },
     ] : []),
-    ...(hasVerified && verifiedDeductions.other_deductions > 0 ? [
-      { label: verifiedDeductions.other_label || 'Other Deductions', value: verifiedDeductions.other_deductions, negative: true },
+    ...(otherDeductions > 0 ? [
+      { label: verifiedDeductions?.other_label || 'Other Deductions', value: otherDeductions, negative: true },
     ] : []),
   ].filter(r => r.value !== 0 && r.value != null);
+
+  // Pie chart data
+  const taxTotal = hasTaxes ? taxes.total : 0;
+  const statutoryTotal = hasStatutory ? statutory.total : 0;
+  const pieData = [
+    netPay > 0 && { name: 'Net Pay', value: Math.round(netPay * 100) / 100, color: PIE_COLORS.net },
+    taxTotal > 0 && { name: 'Income Tax', value: Math.round(taxTotal * 100) / 100, color: PIE_COLORS.taxes },
+    statutoryTotal > 0 && { name: 'CPP / EI', value: Math.round(statutoryTotal * 100) / 100, color: PIE_COLORS.statutory },
+    unionDues > 0 && { name: 'Union Dues', value: Math.round(unionDues * 100) / 100, color: PIE_COLORS.union },
+    otherDeductions > 0 && { name: 'Other', value: Math.round(otherDeductions * 100) / 100, color: '#94a3b8' },
+  ].filter(Boolean);
+
+  const showPie = pieData.length >= 2;
 
   return (
     <div className="bg-card border border-border rounded-xl p-6">
@@ -115,6 +146,46 @@ export default function PaySummaryPanel({ title, subtitle, breakdown, loading, t
         <span className="text-sm font-display font-bold text-foreground">{hasVerified ? 'Net Pay (verified)' : 'Net Pay'}</span>
         <span className="text-2xl font-mono font-bold text-primary">{formatCurrency(netPay)}</span>
       </div>
+
+      {showPie && (
+        <div className="mt-4 pt-4 border-t border-border">
+          <p className="text-xs text-muted-foreground font-medium mb-2">Pay Breakdown</p>
+          <div className="flex items-center gap-4">
+            <div className="w-24 h-24 flex-shrink-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={pieData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={26}
+                    outerRadius={42}
+                    paddingAngle={2}
+                    dataKey="value"
+                    strokeWidth={0}
+                  >
+                    {pieData.map((entry, i) => (
+                      <Cell key={i} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip content={<CustomPieTooltip />} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex flex-col gap-1.5 min-w-0">
+              {pieData.map((entry, i) => (
+                <div key={i} className="flex items-center gap-2 min-w-0">
+                  <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: entry.color }} />
+                  <span className="text-xs text-muted-foreground truncate">{entry.name}</span>
+                  <span className="text-xs font-mono font-medium text-foreground ml-auto pl-2 flex-shrink-0">
+                    {breakdown.gross_pay > 0 ? Math.round(entry.value / breakdown.gross_pay * 100) : 0}%
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
