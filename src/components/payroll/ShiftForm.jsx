@@ -107,7 +107,7 @@ export default function ShiftForm({ onSubmit, onCancel, onDelete, initial, setti
     if (end <= start) end += 24;
     return Math.round((end - start) * 100) / 100;
   })();
-  const paidHours = Math.max(0, totalHours - (shift.unpaid_break || 0) + (shift.paid_break || 0));
+  const paidHours = Math.max(0, totalHours - (shift.unpaid_break || 0) - (shift.paid_break || 0));
 
   const set = (field, value) => setShift((s) => ({ ...s, [field]: value }));
   const setOverride = (field, value) => setShift(s => ({
