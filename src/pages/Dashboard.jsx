@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { CalendarPlus, ChevronLeft, ChevronRight, Clock, CalendarCheck, Stethoscope } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { usePrivacyMode } from '@/contexts/PrivacyModeContext';
+import PrivacyToggle from '@/components/payroll/PrivacyToggle';
 import SetupBanner from '@/components/payroll/SetupBanner';
 import { getVCHPeriodNumber, getVCHPayDate } from '@/lib/statHolidays';
 
@@ -464,7 +465,10 @@ export default function Dashboard() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-display font-bold text-foreground tracking-tight">Dashboard</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-2xl font-display font-bold text-foreground tracking-tight">Dashboard</h2>
+            <PrivacyToggle />
+          </div>
           <p className="text-sm text-muted-foreground mt-1">Pay period summaries at a glance</p>
         </div>
         <Link to="/pay-period">

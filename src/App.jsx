@@ -6,6 +6,7 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider } from '@/lib/AuthContext';
 import AppShell from '@/components/AppShell';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { TooltipProvider } from '@/components/ui/tooltip';
 // Add page imports here
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
@@ -77,8 +78,10 @@ function App() {
   return (
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
-        <RouterProvider router={router} />
-        <Toaster />
+        <TooltipProvider>
+          <RouterProvider router={router} />
+          <Toaster />
+        </TooltipProvider>
       </QueryClientProvider>
     </AuthProvider>
   )

@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
+import PrivacyToggle from '@/components/payroll/PrivacyToggle';
 import ShiftForm from '@/components/payroll/ShiftForm';
 import BulkAddShift from '@/components/payroll/BulkAddShift';
 import ShiftCalendarGrid from '@/components/payroll/ShiftCalendarGrid';
@@ -220,7 +221,10 @@ export default function PayPeriodDetail() {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h2 className="text-2xl font-display font-bold text-foreground tracking-tight">Current Pay Period</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-2xl font-display font-bold text-foreground tracking-tight">Current Pay Period</h2>
+            <PrivacyToggle />
+          </div>
           {period && (
             <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
               {getVCHPeriodNumber(period.start_date) && (
