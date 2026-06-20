@@ -267,6 +267,7 @@ export default function ShiftForm({ onSubmit, onCancel, onDelete, initial, setti
           <Label className="text-xs text-muted-foreground">Paid Break (hrs)</Label>
           <Input type="number" step="0.25" min="0" value={shift.paid_break} onChange={(e) => set('paid_break', parseFloat(e.target.value) || 0)} className="h-9 text-sm" />
         </div>
+        {shift.shift_type !== 'student_practicum' && (
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">Responsibility Pay</Label>
           <Select value={shift.responsibility_pay} onValueChange={(v) => set('responsibility_pay', v)}>
@@ -280,6 +281,7 @@ export default function ShiftForm({ onSubmit, onCancel, onDelete, initial, setti
             </SelectContent>
           </Select>
         </div>
+        )}
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
@@ -314,6 +316,7 @@ export default function ShiftForm({ onSubmit, onCancel, onDelete, initial, setti
       </div>
 
       <div className="flex flex-wrap items-center gap-6">
+        {shift.shift_type !== 'student_practicum' && (<>
         <div className="flex items-center gap-2">
           <Switch checked={shift.short_notice} onCheckedChange={(v) => set('short_notice', v)} />
           <Label className="text-xs text-muted-foreground cursor-pointer">Short Notice</Label>
@@ -326,14 +329,17 @@ export default function ShiftForm({ onSubmit, onCancel, onDelete, initial, setti
           <Switch checked={shift.preceptor} onCheckedChange={(v) => set('preceptor', v)} />
           <Label className="text-xs text-muted-foreground cursor-pointer">Preceptor</Label>
         </div>
+        </>)}
         <div className="flex items-center gap-2">
           <Switch checked={shift.extended_shift} onCheckedChange={(v) => set('extended_shift', v)} />
           <Label className="text-xs text-muted-foreground cursor-pointer">Extended Shift</Label>
         </div>
+        {shift.shift_type !== 'student_practicum' && (
         <div className="flex items-center gap-3">
           <Label className="text-xs text-muted-foreground">On-Call Hours</Label>
           <Input type="number" step="0.5" min="0" value={shift.on_call_hours} onChange={(e) => set('on_call_hours', parseFloat(e.target.value) || 0)} className="h-9 w-20 text-sm" />
         </div>
+        )}
       </div>
 
       <div className="space-y-1.5">
@@ -448,7 +454,7 @@ export default function ShiftForm({ onSubmit, onCancel, onDelete, initial, setti
       })()}
 
       {/* Premium Preview & Override */}
-      {shift.start_time && shift.end_time && paidHours > 0 && (() => {
+      {shift.shift_type !== 'student_practicum' && shift.start_time && shift.end_time && paidHours > 0 && (() => {
         const calcSettings = settings || DEFAULT_RATES;
         const shiftWithHours = { ...shift, paid_hours: paidHours };
         const premiums = calculateShiftPremiums(shiftWithHours, calcSettings);
