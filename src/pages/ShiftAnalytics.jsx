@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { getCurrentPayPeriodDates, parseTime } from '@/lib/premiumCalculator';
 import { getStatType } from '@/lib/statHolidays';
-import { BarChart3 } from 'lucide-react';
+import { BarChart3, ChevronLeft, ChevronRight } from 'lucide-react';
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
 
@@ -227,6 +227,10 @@ export default function ShiftAnalytics() {
   const [periods,  setPeriods]  = useState([]);
   const [loading,  setLoading]  = useState(true);
   const [hoursFilter, setHoursFilter] = useState('all');
+  // Month detail navigation: offset in months from current (0 = this month)
+  const [monthOffset, setMonthOffset] = useState(0);
+  // Pay period detail navigation: offset in pay periods from current (0 = this PP)
+  const [ppOffset, setPpOffset] = useState(0);
   const loadingRef = useRef(false);
 
   const loadData = useCallback(async () => {
@@ -285,6 +289,25 @@ export default function ShiftAnalytics() {
   // ── Year ──
   const yearStart = `${now.getFullYear()}-01-01`;
   const yearEnd   = `${now.getFullYear()}-12-31`;
+
+  // ── Detail panel: navigable month ──
+  const detailMonthDate = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
+  const detailMonthY = detailMonthDate.getFullYear();
+  const detailMonthM = detailMonthDate.getMonth();
+  const detailMonthS = monthStart(detailMonthY, detailMonthM);
+  const detailMonthE = monthEnd(detailMonthY, detailMonthM);
+  const detailMonthLabel = detailMonthDate.toLocaleDateString('en-CA', { month: 'long', year: 'numeric' });
+  const detailMonthHours = getHoursForShifts(allShifts, detailMonthS, detailMonthE);
+
+  // ── Detail panel: navigable pay period ──
+  const detailPPStart = addDays(curPPStart, ppOffset * 14);
+  const detailPPEnd   = addDays(curPPEnd,   ppOffset * 14);
+  const detailPPLabel = ppOffset === 0 ? 'Current Pay Period'
+    : ppOffset === -1 ? 'Last Pay Period'
+    : ppOffset === 1  ? 'Next Pay Period'
+    : ppOffset < 0    ? `${Math.abs(ppOffset)} Pay Periods Ago`
+    : `${ppOffset} Pay Periods Ahead`;
+  const detailPPHours = getHoursForShifts(allShifts, detailPPStart, detailPPEnd);
 
   // Hours buckets
   const thisWeekHours  = getHoursForShifts(allShifts, weekStart,  weekEnd);
@@ -369,52 +392,163 @@ export default function ShiftAnalytics() {
         </div>
       </section>
 
-      {/* ── This Month detail + proportion bar ── */}
+      {/* ── Month detail panel (navigable) ── */}
       <section>
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-          {thisMonthLabel} — Hours Detail
-        </h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Month — Hours Detail
+          </h2>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setMonthOffset(o => o - 1)}
+              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              title="Previous month"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="text-sm font-medium text-foreground min-w-[140px] text-center">{detailMonthLabel}</span>
+            <button
+              onClick={() => setMonthOffset(o => o + 1)}
+              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              title="Next month"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+            {monthOffset !== 0 && (
+              <button
+                onClick={() => setMonthOffset(0)}
+                className="ml-1 px-2 py-1 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              >
+                Today
+              </button>
+            )}
+          </div>
+        </div>
         <div className="bg-card border border-border rounded-xl p-5 space-y-4">
           <div className="flex gap-6 flex-wrap">
             <div className="flex-1 min-w-[120px]">
               <div className="text-xs text-muted-foreground mb-1">Total Hours</div>
               <div className="text-2xl font-bold">{fmtHours(
-                hoursFilter === 'straight' ? thisMonthHours.straight
-                  : hoursFilter === 'overtime' ? thisMonthHours.overtime
-                  : thisMonthHours.total
+                hoursFilter === 'straight' ? detailMonthHours.straight
+                  : hoursFilter === 'overtime' ? detailMonthHours.overtime
+                  : detailMonthHours.total
               )}</div>
             </div>
             <div className="flex-1 min-w-[120px]">
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" /> Straight Time
               </div>
-              <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">{fmtHours(thisMonthHours.straight)}</div>
+              <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">{fmtHours(detailMonthHours.straight)}</div>
             </div>
             <div className="flex-1 min-w-[120px]">
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
                 <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block" /> OT / Stat Hours
               </div>
-              <div className="text-2xl font-bold text-amber-700 dark:text-amber-400">{fmtHours(thisMonthHours.overtime)}</div>
+              <div className="text-2xl font-bold text-amber-700 dark:text-amber-400">{fmtHours(detailMonthHours.overtime)}</div>
             </div>
             <div className="flex-1 min-w-[120px]">
               <div className="text-xs text-muted-foreground mb-1">Shifts</div>
-              <div className="text-2xl font-bold">{thisMonthHours.shiftCount}</div>
+              <div className="text-2xl font-bold">{detailMonthHours.shiftCount}</div>
             </div>
           </div>
-          {thisMonthHours.total > 0 && (
+          {detailMonthHours.total > 0 ? (
             <div>
-              <ProportionBar a={thisMonthHours.straight} b={thisMonthHours.overtime} />
+              <ProportionBar a={detailMonthHours.straight} b={detailMonthHours.overtime} />
               <div className="flex gap-4 mt-2">
                 <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
-                  Straight time ({Math.round((thisMonthHours.straight / thisMonthHours.total) * 100)}%)
+                  Straight time ({Math.round((detailMonthHours.straight / detailMonthHours.total) * 100)}%)
                 </span>
                 <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                   <span className="w-2 h-2 rounded-full bg-amber-500 inline-block" />
-                  OT / stat ({Math.round((thisMonthHours.overtime / thisMonthHours.total) * 100)}%)
+                  OT / stat ({Math.round((detailMonthHours.overtime / detailMonthHours.total) * 100)}%)
                 </span>
               </div>
             </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">No shifts recorded for {detailMonthLabel}.</p>
+          )}
+        </div>
+      </section>
+
+      {/* ── Pay period detail panel (navigable) ── */}
+      <section>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Pay Period — Hours Detail
+          </h2>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setPpOffset(o => o - 1)}
+              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              title="Previous pay period"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="text-sm font-medium text-foreground min-w-[180px] text-center">
+              {ppFmt(detailPPStart)} – {ppFmt(detailPPEnd)}
+            </span>
+            <button
+              onClick={() => setPpOffset(o => o + 1)}
+              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              title="Next pay period"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+            {ppOffset !== 0 && (
+              <button
+                onClick={() => setPpOffset(0)}
+                className="ml-1 px-2 py-1 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              >
+                Current
+              </button>
+            )}
+          </div>
+        </div>
+        <div className="bg-card border border-border rounded-xl p-5 space-y-4">
+          <div className="text-xs text-muted-foreground -mt-1 mb-1">{detailPPLabel}</div>
+          <div className="flex gap-6 flex-wrap">
+            <div className="flex-1 min-w-[120px]">
+              <div className="text-xs text-muted-foreground mb-1">Total Hours</div>
+              <div className="text-2xl font-bold">{fmtHours(
+                hoursFilter === 'straight' ? detailPPHours.straight
+                  : hoursFilter === 'overtime' ? detailPPHours.overtime
+                  : detailPPHours.total
+              )}</div>
+            </div>
+            <div className="flex-1 min-w-[120px]">
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" /> Straight Time
+              </div>
+              <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">{fmtHours(detailPPHours.straight)}</div>
+            </div>
+            <div className="flex-1 min-w-[120px]">
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block" /> OT / Stat Hours
+              </div>
+              <div className="text-2xl font-bold text-amber-700 dark:text-amber-400">{fmtHours(detailPPHours.overtime)}</div>
+            </div>
+            <div className="flex-1 min-w-[120px]">
+              <div className="text-xs text-muted-foreground mb-1">Shifts</div>
+              <div className="text-2xl font-bold">{detailPPHours.shiftCount}</div>
+            </div>
+          </div>
+          {detailPPHours.total > 0 ? (
+            <div>
+              <ProportionBar a={detailPPHours.straight} b={detailPPHours.overtime} />
+              <div className="flex gap-4 mt-2">
+                <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+                  Straight time ({Math.round((detailPPHours.straight / detailPPHours.total) * 100)}%)
+                </span>
+                <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                  <span className="w-2 h-2 rounded-full bg-amber-500 inline-block" />
+                  OT / stat ({Math.round((detailPPHours.overtime / detailPPHours.total) * 100)}%)
+                </span>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">No shifts recorded for this pay period.</p>
           )}
         </div>
       </section>
