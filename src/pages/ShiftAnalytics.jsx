@@ -723,6 +723,7 @@ export default function ShiftAnalytics() {
               No shifts recorded for {activePatternView.label}.
             </div>
           ) : (
+          <>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
             {/* Weekday vs Weekend */}
@@ -900,6 +901,7 @@ export default function ShiftAnalytics() {
             </div>
           )}
 
+          </>
           )}
         </section>
 
