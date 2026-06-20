@@ -508,6 +508,7 @@ export function getVCHPayPeriod(dateStr) {
  * Get current VCH pay period
  */
 export function getCurrentVCHPayPeriod() {
-  const today = new Date().toISOString().split('T')[0];
+  const _t = new Date();
+  const today = `${_t.getFullYear()}-${String(_t.getMonth()+1).padStart(2,'0')}-${String(_t.getDate()).padStart(2,'0')}`;
   return getVCHPayPeriod(today);
 }

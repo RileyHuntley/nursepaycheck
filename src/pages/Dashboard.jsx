@@ -102,7 +102,7 @@ export default function Dashboard() {
   const hasHospitals = (settings?.hospitals?.length || 0) > 0 && (settings?.units?.length || 0) > 0;
 
   const now = new Date();
-  const todayStr = now.toISOString().split('T')[0];
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
 
   // ── Pay Periods ──
   const { start_date: curStart, end_date: curEnd } = getCurrentPayPeriodDates();

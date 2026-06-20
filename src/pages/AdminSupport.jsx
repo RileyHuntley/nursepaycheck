@@ -109,7 +109,8 @@ export default function AdminSupport() {
 
   const totalShifts = periods.reduce((sum, p) => sum + (p.shifts?.length || 0), 0);
   const { start_date: curStart, end_date: curEnd } = getCurrentPayPeriodDates();
-  const todayStr = new Date().toISOString().split('T')[0];
+  const _today = new Date();
+  const todayStr = `${_today.getFullYear()}-${String(_today.getMonth()+1).padStart(2,'0')}-${String(_today.getDate()).padStart(2,'0')}`;
 
   const currentPeriod = computedPeriods.find(p => p.start_date === curStart && p.end_date === curEnd);
   const pastPeriod = computedPeriods.filter(p => p.end_date < todayStr).sort((a, b) => b.end_date.localeCompare(a.end_date))[0] || null;

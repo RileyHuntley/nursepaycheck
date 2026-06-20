@@ -36,7 +36,8 @@ export default function ShiftLog() {
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedKeys, setSelectedKeys] = useState(new Set()); // Set of "${_periodId}-${_shiftIdx}"
 
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const _today = new Date();
+  const todayStr = `${_today.getFullYear()}-${String(_today.getMonth()+1).padStart(2,'0')}-${String(_today.getDate()).padStart(2,'0')}`;
   const resolveStatus = (shift) => {
     if (shift.status === 'verified') return 'verified';
     if (!shift.date) return 'upcoming';
@@ -398,7 +399,7 @@ export default function ShiftLog() {
     return created;
   };
 
-  const getDefaultStatus = (date) => date > new Date().toISOString().slice(0, 10) ? 'upcoming' : 'pending';
+  const getDefaultStatus = (date) => { const _n = new Date(); const _s = `${_n.getFullYear()}-${String(_n.getMonth()+1).padStart(2,'0')}-${String(_n.getDate()).padStart(2,'0')}`; return date > _s ? 'upcoming' : 'pending'; };
 
   const addShift = async (shiftData) => {
     const period = await findOrCreatePeriodForDate(shiftData.date);
