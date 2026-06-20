@@ -44,10 +44,8 @@ function classifyShiftHours(shift) {
   if (getStatType(shift.date)) {
     return { straight: 0, overtime: hours };
   }
-  // Regular shift: first 7.5 h straight, anything beyond is OT
-  const straight  = Math.min(hours, 7.5);
-  const overtime  = Math.max(0, hours - 7.5);
-  return { straight, overtime };
+  // All other shifts (including 12 h regular/orientation shifts) are straight time
+  return { straight: hours, overtime: 0 };
 }
 
 function getHoursForShifts(shifts, minDate, maxDate) {
@@ -408,7 +406,7 @@ export default function ShiftAnalytics() {
             Shift Analytics
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Hours worked across all time periods · overtime = hours beyond 7.5 h/shift or worked on stat days
+            Hours worked across all time periods · OT = stat holidays and day-off shifts
           </p>
         </div>
         <div className="flex items-center gap-1 bg-muted rounded-lg p-1 flex-shrink-0">
@@ -654,11 +652,11 @@ export default function ShiftAnalytics() {
         <div className="mt-3 flex gap-4 flex-wrap">
           <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" />
-            Straight time — first 7.5 h of each shift on a regular day
+            Straight time — all hours on regular, non-stat days
           </span>
           <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block" />
-            OT / stat — hours beyond 7.5 h/shift, stat holidays, and day-off shifts
+            OT / stat — stat holidays and day-off shifts (worked on a scheduled day off)
           </span>
         </div>
       </section>
