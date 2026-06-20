@@ -18,6 +18,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { SHIFT_PATTERNS } from '@/lib/shiftPatterns';
+import { searchHospitals } from '@/lib/bcHospitals';
 import {
   Select,
   SelectContent,
@@ -117,6 +118,24 @@ export default function ShiftConfiguration() {
   const [newUnitName, setNewUnitName] = useState('');
   const [newUnitCode, setNewUnitCode] = useState('');
 
+  const [hospitalSuggestions, setHospitalSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  const handleHospitalNameChange = (value) => {
+    setNewHospitalName(value);
+    const suggestions = searchHospitals(value);
+    setHospitalSuggestions(suggestions);
+    setShowSuggestions(suggestions.length > 0);
+  };
+
+  const selectHospitalSuggestion = (hospital) => {
+    setNewHospitalName(hospital.name);
+    setNewHospitalAcronym(hospital.acronym);
+    setNewHospitalHA(hospital.health_authority);
+    setShowSuggestions(false);
+    setHospitalSuggestions([]);
+  };
+
   const [editingHospital, setEditingHospital] = useState(null); // { originalName, name, acronym, health_authority }
   const [editingUnit, setEditingUnit] = useState(null); // { originalName, name, code }
 
@@ -127,7 +146,7 @@ export default function ShiftConfiguration() {
     const { originalName, name, acronym, health_authority } = editingHospital;
     const trimmedName = name.trim();
     const trimmedAcronym = acronym.trim();
-    if (!trimmedName || !trimmedAcronym || !health_authority) return;
+    if (!trimmedName || !health_authority) return;
     setSettings(s => ({
       ...s,
       hospitals: (s.hospitals || []).map(h => h.name === originalName ? { name: trimmedName, acronym: trimmedAcronym, health_authority } : h),
@@ -158,7 +177,7 @@ export default function ShiftConfiguration() {
     const name = newHospitalName.trim();
     const acronym = newHospitalAcronym.trim();
     const ha = newHospitalHA;
-    if (!name || !acronym || !ha) return;
+    if (!name || !ha) return;
     if ((settings.hospitals || []).some(h => h.name === name)) return;
     setSettings(s => ({ ...s, hospitals: [...(s.hospitals || []), { name, acronym, health_authority: ha }] }));
     setNewHospitalName('');
@@ -235,15 +254,38 @@ export default function ShiftConfiguration() {
         <div className="space-y-3">
           <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Hospitals</h4>
           <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr] gap-2">
-            <Input value={newHospitalName} onChange={e => setNewHospitalName(e.target.value)} placeholder="Hospital name (e.g. Vancouver General)" className="h-9 text-sm" />
-            <Input value={newHospitalAcronym} onChange={e => setNewHospitalAcronym(e.target.value)} placeholder="Abbreviation (e.g. VGH)" className="h-9 text-sm" />
+            <div className="relative">
+              <Input
+                value={newHospitalName}
+                onChange={e => handleHospitalNameChange(e.target.value)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                onFocus={() => hospitalSuggestions.length > 0 && setShowSuggestions(true)}
+                placeholder="Hospital name (e.g. Vancouver General)"
+                className="h-9 text-sm"
+              />
+              {showSuggestions && (
+                <ul className="absolute z-50 top-full left-0 right-0 mt-1 bg-popover border border-border rounded-md shadow-md max-h-56 overflow-y-auto text-sm">
+                  {hospitalSuggestions.map(h => (
+                    <li
+                      key={h.name}
+                      onMouseDown={() => selectHospitalSuggestion(h)}
+                      className="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-accent hover:text-accent-foreground"
+                    >
+                      <span>{h.name}</span>
+                      <span className="text-xs text-muted-foreground ml-2">{h.acronym} · {h.health_authority}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <Input value={newHospitalAcronym} onChange={e => setNewHospitalAcronym(e.target.value)} placeholder="Abbreviation e.g. VGH (optional)" className="h-9 text-sm" />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-2">
             <Select value={newHospitalHA} onValueChange={v => setNewHospitalHA(v)}>
               <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Health authority" /></SelectTrigger>
               <SelectContent>{HEALTH_AUTHORITIES.map(ha => <SelectItem key={ha.value} value={ha.value}>{ha.label}</SelectItem>)}</SelectContent>
             </Select>
-            <Button size="sm" variant="outline" onClick={addHospital} disabled={!newHospitalName.trim() || !newHospitalAcronym.trim() || !newHospitalHA} className="flex-shrink-0">
+            <Button size="sm" variant="outline" onClick={addHospital} disabled={!newHospitalName.trim() || !newHospitalHA} className="flex-shrink-0">
               <Plus className="w-4 h-4 mr-1" /> Add
             </Button>
           </div>
@@ -261,7 +303,7 @@ export default function ShiftConfiguration() {
                         <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Health authority" /></SelectTrigger>
                         <SelectContent>{HEALTH_AUTHORITIES.map(ha => <SelectItem key={ha.value} value={ha.value}>{ha.label}</SelectItem>)}</SelectContent>
                       </Select>
-                      <Button size="sm" variant="outline" onClick={saveEditHospital} disabled={!editingHospital.name.trim() || !editingHospital.acronym.trim() || !editingHospital.health_authority} className="flex-shrink-0 h-8">
+                      <Button size="sm" variant="outline" onClick={saveEditHospital} disabled={!editingHospital.name.trim() || !editingHospital.health_authority} className="flex-shrink-0 h-8">
                         <Check className="w-3 h-3 mr-1" /> Save
                       </Button>
                       <Button size="sm" variant="ghost" onClick={cancelEditHospital} className="flex-shrink-0 h-8 text-muted-foreground">
