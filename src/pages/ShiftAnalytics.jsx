@@ -200,7 +200,11 @@ function HoursCard({ label, sublabel, hours, filter }) {
     <div className="bg-card border border-border rounded-xl p-5 flex flex-col gap-2">
       <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</div>
       {sublabel && <div className="text-[11px] text-muted-foreground -mt-1">{sublabel}</div>}
-      <div className="text-3xl font-bold text-foreground mt-1">{fmtHours(display)}</div>
+      <div className={`text-3xl font-bold mt-1 ${
+        filter === 'straight' ? 'text-emerald-700 dark:text-emerald-400'
+        : filter === 'overtime' ? 'text-amber-700 dark:text-amber-400'
+        : 'text-foreground'
+      }`}>{fmtHours(display)}</div>
       {total > 0 && (
         <div className="flex gap-2 mt-1 flex-wrap">
           <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950 px-2 py-0.5 rounded-full">
@@ -241,7 +245,7 @@ function StatRow({ label, shifts, hours, totalShifts, maxHours, colorClass }) {
       <div className="flex-1 min-w-0">
         <div className="text-sm font-medium text-foreground truncate">{label}</div>
         <div className="mt-1">
-          <div className="flex rounded-full overflow-hidden h-1.5 bg-muted">
+          <div className="flex rounded-full overflow-hidden h-1.5 bg-muted w-full">
             <div className={`${colorClass} transition-all`} style={{ width: `${barWidth}%` }} />
           </div>
         </div>
@@ -630,7 +634,11 @@ export default function ShiftAnalytics() {
                     <div className="text-sm font-medium text-foreground">{row.label}</div>
                     {row.sublabel && <div className="text-xs text-muted-foreground">{row.sublabel}</div>}
                   </td>
-                  <td className="py-3 pr-4 text-right text-sm font-semibold text-foreground tabular-nums">
+                  <td className={`py-3 pr-4 text-right text-sm font-semibold tabular-nums ${
+                    hoursFilter === 'straight' ? 'text-emerald-700 dark:text-emerald-400'
+                    : hoursFilter === 'overtime' ? 'text-amber-700 dark:text-amber-400'
+                    : 'text-foreground'
+                  }`}>
                     {fmtHours(hoursFilter === 'straight' ? row.hours.straight : hoursFilter === 'overtime' ? row.hours.overtime : row.hours.total)}
                   </td>
                   <td className="py-3 pr-4 text-right text-sm tabular-nums text-emerald-700 dark:text-emerald-400">
