@@ -446,7 +446,11 @@ export default function Dashboard() {
   ));
   const curPeriodRecord = computedPeriods.find(p => p.start_date === curStart && p.end_date === curEnd);
   const curPeriodShifts = curPeriodRecord?.shifts || [];
-  const curPeriodGross = curPeriodRecord?.computedBreakdown?.gross_pay || 0;
+  const workedShifts = curPeriodShifts.filter(s => s.date && s.date <= todayStr);
+  const workedBreakdown = workedShifts.length > 0 && settings
+    ? calculatePeriodBreakdown(workedShifts, settings, firstPeriodsSet.has(curStart))
+    : null;
+  const curPeriodGross = workedBreakdown?.gross_pay || 0;
 
   const gridClass = (n) => {
     if (n === 1) return 'grid-cols-1 md:grid-cols-2';
