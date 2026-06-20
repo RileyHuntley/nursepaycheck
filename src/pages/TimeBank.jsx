@@ -1,13 +1,19 @@
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Landmark, ChevronDown, ChevronUp } from 'lucide-react';
+import { Landmark, History } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 const HOURS_PER_DAY = 7.5;
 
 const CATEGORIES = [
   {
     key: 'vacation',
-    label: 'Vacation',
+    label: 'Paid Vacation',
     entitlementKey: 'vacation_entitlement',
     types: ['vacation', 'unpaid_vacation'],
     color: 'bg-blue-500',
@@ -16,7 +22,7 @@ const CATEGORIES = [
   },
   {
     key: 'sick',
-    label: 'Sick Leave',
+    label: 'Paid Sick Leave',
     entitlementKey: 'sick_entitlement',
     types: ['sick', 'unpaid_sick'],
     color: 'bg-amber-500',
@@ -56,8 +62,47 @@ function fmt(days) {
   return Number.isInteger(days) ? String(days) : days.toFixed(1);
 }
 
+function ShiftLogDialog({ open, onClose, category, shifts }) {
+  const sorted = [...shifts].sort((a, b) => a.date.localeCompare(b.date));
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{category.label} — Shift Log</DialogTitle>
+        </DialogHeader>
+        {sorted.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-4 text-center">No shifts recorded.</p>
+        ) : (
+          <div className="rounded-lg border border-border overflow-hidden">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="bg-muted/50 text-muted-foreground">
+                  <th className="text-left px-3 py-2 font-medium">Date</th>
+                  <th className="text-left px-3 py-2 font-medium">Type</th>
+                  <th className="text-right px-3 py-2 font-medium">Hours</th>
+                  <th className="text-right px-3 py-2 font-medium">Days</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sorted.map((s, i) => (
+                  <tr key={i} className="border-t border-border">
+                    <td className="px-3 py-2 font-mono">{s.date}</td>
+                    <td className="px-3 py-2 text-muted-foreground capitalize">{s.shift_type.replace(/_/g, ' ')}</td>
+                    <td className="px-3 py-2 text-right font-mono">{s.paid_hours}h</td>
+                    <td className="px-3 py-2 text-right font-mono">{fmt(s.paid_hours / HOURS_PER_DAY)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function CategoryCard({ category, shifts, entitlement }) {
-  const [open, setOpen] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   const usedHours = shifts.reduce((sum, s) => sum + (s.paid_hours || 0), 0);
   const usedDays = usedHours / HOURS_PER_DAY;
@@ -67,75 +112,58 @@ function CategoryCard({ category, shifts, entitlement }) {
   const pct = hasLimit ? Math.min(100, (usedDays / entitlement) * 100) : 0;
 
   return (
-    <div className="bg-card border border-border rounded-xl p-5 space-y-3">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-foreground">{category.label}</h3>
-        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${category.lightColor} ${category.textColor}`}>
-          {fmt(usedDays)} {usedDays === 1 ? 'day' : 'days'} used
-        </span>
+    <>
+      <div className="bg-card border border-border rounded-xl p-5 space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-foreground">{category.label}</h3>
+          <div className="flex items-center gap-2">
+            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${category.lightColor} ${category.textColor}`}>
+              {fmt(usedDays)} {usedDays === 1 ? 'day' : 'days'} used
+            </span>
+            <button
+              onClick={() => setDialogOpen(true)}
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              title="View shift log"
+            >
+              <History className="w-3.5 h-3.5" />
+              <span>Log</span>
+            </button>
+          </div>
+        </div>
+
+        {hasLimit && (
+          <>
+            <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+              <div
+                className={`h-2 rounded-full transition-all duration-500 ${overLimit ? 'bg-destructive' : category.color}`}
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>{fmt(usedDays)} of {fmt(entitlement)} days used</span>
+              <span className={overLimit ? 'text-destructive font-medium' : ''}>
+                {overLimit ? `${fmt(usedDays - entitlement)} days over` : `${fmt(remaining)} days remaining`}
+              </span>
+            </div>
+          </>
+        )}
+
+        {!hasLimit && (
+          <p className="text-xs text-muted-foreground">No annual limit set — configure in Pay Configuration.</p>
+        )}
+
+        {shifts.length === 0 && (
+          <p className="text-xs text-muted-foreground">No {category.label.toLowerCase()} shifts recorded this year.</p>
+        )}
       </div>
 
-      {hasLimit && (
-        <>
-          <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
-            <div
-              className={`h-2 rounded-full transition-all duration-500 ${overLimit ? 'bg-destructive' : category.color}`}
-              style={{ width: `${pct}%` }}
-            />
-          </div>
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>{fmt(usedDays)} of {fmt(entitlement)} days used</span>
-            <span className={overLimit ? 'text-destructive font-medium' : ''}>
-              {overLimit ? `${fmt(usedDays - entitlement)} days over` : `${fmt(remaining)} days remaining`}
-            </span>
-          </div>
-        </>
-      )}
-
-      {!hasLimit && (
-        <p className="text-xs text-muted-foreground">No annual limit set — configure in Pay Configuration.</p>
-      )}
-
-      {shifts.length > 0 && (
-        <div>
-          <button
-            onClick={() => setOpen(o => !o)}
-            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-          >
-            {open ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-            {open ? 'Hide' : 'Show'} {shifts.length} {shifts.length === 1 ? 'shift' : 'shifts'}
-          </button>
-          {open && (
-            <div className="mt-2 rounded-lg border border-border overflow-hidden">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="bg-muted/50 text-muted-foreground">
-                    <th className="text-left px-3 py-2 font-medium">Date</th>
-                    <th className="text-left px-3 py-2 font-medium">Type</th>
-                    <th className="text-right px-3 py-2 font-medium">Hours</th>
-                    <th className="text-right px-3 py-2 font-medium">Days</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {shifts.sort((a, b) => a.date.localeCompare(b.date)).map((s, i) => (
-                    <tr key={i} className="border-t border-border">
-                      <td className="px-3 py-2 font-mono">{s.date}</td>
-                      <td className="px-3 py-2 text-muted-foreground capitalize">{s.shift_type.replace(/_/g, ' ')}</td>
-                      <td className="px-3 py-2 text-right font-mono">{s.paid_hours}h</td>
-                      <td className="px-3 py-2 text-right font-mono">{fmt(s.paid_hours / HOURS_PER_DAY)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
-
-      {shifts.length === 0 && (
-        <p className="text-xs text-muted-foreground">No {category.label.toLowerCase()} shifts recorded this year.</p>
-      )}
-    </div>
+      <ShiftLogDialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        category={category}
+        shifts={shifts}
+      />
+    </>
   );
 }
 
@@ -143,49 +171,64 @@ function CategoryCard({ category, shifts, entitlement }) {
 const ESN_EXCLUDED_TYPES = ['day_off', 'unpaid_vacation', 'unpaid_sick'];
 
 function EsnCard({ shifts, entitlement }) {
-  const [open, setOpen] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   const usedHours = shifts.reduce((sum, s) => sum + (s.paid_hours || 0), 0);
   const remaining = Math.max(0, entitlement - usedHours);
   const overLimit = usedHours > entitlement;
   const pct = entitlement > 0 ? Math.min(100, (usedHours / entitlement) * 100) : 0;
+  const sorted = [...shifts].sort((a, b) => a.date.localeCompare(b.date));
 
   return (
-    <div className="bg-card border border-border rounded-xl p-5 space-y-3">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-sm font-semibold text-foreground">ESN Hours</h3>
-          <p className="text-xs text-muted-foreground">Employed Student Nurse clinical hours</p>
+    <>
+      <div className="bg-card border border-border rounded-xl p-5 space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-semibold text-foreground">ESN Hours</h3>
+            <p className="text-xs text-muted-foreground">Employed Student Nurse clinical hours</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950 text-rose-700 dark:text-rose-300">
+              {fmt(usedHours)}h used
+            </span>
+            <button
+              onClick={() => setDialogOpen(true)}
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              title="View shift log"
+            >
+              <History className="w-3.5 h-3.5" />
+              <span>Log</span>
+            </button>
+          </div>
         </div>
-        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950 text-rose-700 dark:text-rose-300">
-          {fmt(usedHours)}h used
-        </span>
+
+        <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+          <div
+            className={`h-2 rounded-full transition-all duration-500 ${overLimit ? 'bg-destructive' : 'bg-rose-500'}`}
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span>{fmt(usedHours)} of {fmt(entitlement)} hours used</span>
+          <span className={overLimit ? 'text-destructive font-medium' : ''}>
+            {overLimit ? `${fmt(usedHours - entitlement)}h over limit` : `${fmt(remaining)}h remaining`}
+          </span>
+        </div>
+
+        {shifts.length === 0 && (
+          <p className="text-xs text-muted-foreground">No worked shifts recorded this year.</p>
+        )}
       </div>
 
-      <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
-        <div
-          className={`h-2 rounded-full transition-all duration-500 ${overLimit ? 'bg-destructive' : 'bg-rose-500'}`}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <span>{fmt(usedHours)} of {fmt(entitlement)} hours used</span>
-        <span className={overLimit ? 'text-destructive font-medium' : ''}>
-          {overLimit ? `${fmt(usedHours - entitlement)}h over limit` : `${fmt(remaining)}h remaining`}
-        </span>
-      </div>
-
-      {shifts.length > 0 && (
-        <div>
-          <button
-            onClick={() => setOpen(o => !o)}
-            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-          >
-            {open ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-            {open ? 'Hide' : 'Show'} {shifts.length} {shifts.length === 1 ? 'shift' : 'shifts'}
-          </button>
-          {open && (
-            <div className="mt-2 rounded-lg border border-border overflow-hidden">
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>ESN Hours — Shift Log</DialogTitle>
+          </DialogHeader>
+          {sorted.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-4 text-center">No shifts recorded.</p>
+          ) : (
+            <div className="rounded-lg border border-border overflow-hidden">
               <table className="w-full text-xs">
                 <thead>
                   <tr className="bg-muted/50 text-muted-foreground">
@@ -195,7 +238,7 @@ function EsnCard({ shifts, entitlement }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {shifts.sort((a, b) => a.date.localeCompare(b.date)).map((s, i) => (
+                  {sorted.map((s, i) => (
                     <tr key={i} className="border-t border-border">
                       <td className="px-3 py-2 font-mono">{s.date}</td>
                       <td className="px-3 py-2 text-muted-foreground capitalize">{s.shift_type.replace(/_/g, ' ')}</td>
@@ -206,13 +249,9 @@ function EsnCard({ shifts, entitlement }) {
               </table>
             </div>
           )}
-        </div>
-      )}
-
-      {shifts.length === 0 && (
-        <p className="text-xs text-muted-foreground">No worked shifts recorded this year.</p>
-      )}
-    </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
