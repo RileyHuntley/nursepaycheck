@@ -662,8 +662,7 @@ export default function ShiftAnalytics() {
       </section>
 
       {/* ── Shift patterns ── */}
-      {totalPatternShifts > 0 && (
-        <section>
+      <section>
           <div className="flex items-center justify-between mb-1">
             <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Shift Patterns
@@ -692,6 +691,11 @@ export default function ShiftAnalytics() {
           </div>
           <p className="text-xs text-muted-foreground mb-4">{activePatternView.sublabel}</p>
 
+          {totalPatternShifts === 0 ? (
+            <div className="bg-card border border-border rounded-xl px-5 py-8 text-center text-sm text-muted-foreground">
+              No shifts recorded for {activePatternView.label}.
+            </div>
+          ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
             {/* Weekday vs Weekend */}
@@ -869,8 +873,8 @@ export default function ShiftAnalytics() {
             </div>
           )}
 
+          )}
         </section>
-      )}
 
     </div>
   );
