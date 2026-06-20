@@ -146,7 +146,7 @@ export default function ShiftConfiguration() {
     const { originalName, name, acronym, health_authority } = editingHospital;
     const trimmedName = name.trim();
     const trimmedAcronym = acronym.trim();
-    if (!trimmedName || !trimmedAcronym || !health_authority) return;
+    if (!trimmedName || !health_authority) return;
     setSettings(s => ({
       ...s,
       hospitals: (s.hospitals || []).map(h => h.name === originalName ? { name: trimmedName, acronym: trimmedAcronym, health_authority } : h),
@@ -177,7 +177,7 @@ export default function ShiftConfiguration() {
     const name = newHospitalName.trim();
     const acronym = newHospitalAcronym.trim();
     const ha = newHospitalHA;
-    if (!name || !acronym || !ha) return;
+    if (!name || !ha) return;
     if ((settings.hospitals || []).some(h => h.name === name)) return;
     setSettings(s => ({ ...s, hospitals: [...(s.hospitals || []), { name, acronym, health_authority: ha }] }));
     setNewHospitalName('');
@@ -278,14 +278,14 @@ export default function ShiftConfiguration() {
                 </ul>
               )}
             </div>
-            <Input value={newHospitalAcronym} onChange={e => setNewHospitalAcronym(e.target.value)} placeholder="Abbreviation (e.g. VGH)" className="h-9 text-sm" />
+            <Input value={newHospitalAcronym} onChange={e => setNewHospitalAcronym(e.target.value)} placeholder="Abbreviation e.g. VGH (optional)" className="h-9 text-sm" />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-2">
             <Select value={newHospitalHA} onValueChange={v => setNewHospitalHA(v)}>
               <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Health authority" /></SelectTrigger>
               <SelectContent>{HEALTH_AUTHORITIES.map(ha => <SelectItem key={ha.value} value={ha.value}>{ha.label}</SelectItem>)}</SelectContent>
             </Select>
-            <Button size="sm" variant="outline" onClick={addHospital} disabled={!newHospitalName.trim() || !newHospitalAcronym.trim() || !newHospitalHA} className="flex-shrink-0">
+            <Button size="sm" variant="outline" onClick={addHospital} disabled={!newHospitalName.trim() || !newHospitalHA} className="flex-shrink-0">
               <Plus className="w-4 h-4 mr-1" /> Add
             </Button>
           </div>
@@ -303,7 +303,7 @@ export default function ShiftConfiguration() {
                         <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Health authority" /></SelectTrigger>
                         <SelectContent>{HEALTH_AUTHORITIES.map(ha => <SelectItem key={ha.value} value={ha.value}>{ha.label}</SelectItem>)}</SelectContent>
                       </Select>
-                      <Button size="sm" variant="outline" onClick={saveEditHospital} disabled={!editingHospital.name.trim() || !editingHospital.acronym.trim() || !editingHospital.health_authority} className="flex-shrink-0 h-8">
+                      <Button size="sm" variant="outline" onClick={saveEditHospital} disabled={!editingHospital.name.trim() || !editingHospital.health_authority} className="flex-shrink-0 h-8">
                         <Check className="w-3 h-3 mr-1" /> Save
                       </Button>
                       <Button size="sm" variant="ghost" onClick={cancelEditHospital} className="flex-shrink-0 h-8 text-muted-foreground">
