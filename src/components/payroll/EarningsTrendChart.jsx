@@ -62,7 +62,7 @@ const STACK_CONFIG = [
  *  'periods_past'    – last 6 completed pay periods
  *  'periods_future'  – next 6 pay periods (including current/upcoming)
  */
-export default function EarningsTrendChart({ periods, settings, chartType, title }) {
+export default function EarningsTrendChart({ periods, settings, chartType, title, bare }) {
   if (!periods?.length || !settings) return null;
 
   const now = new Date();
@@ -169,10 +169,8 @@ export default function EarningsTrendChart({ periods, settings, chartType, title
   hasData = data.some(d => STACK_KEYS.some(k => d[k] > 0));
   if (!hasData) return null;
 
-  return (
-    <div className="bg-card border border-border rounded-xl p-5">
-      <h3 className="text-sm font-semibold text-foreground mb-4">{title || 'Earnings Trend'}</h3>
-      <ResponsiveContainer width="100%" height={220}>
+  const chart = (
+    <ResponsiveContainer width="100%" height={220}>
         <BarChart data={data} margin={{ top: 4, right: 8, left: 8, bottom: 4 }}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
           <XAxis
@@ -200,7 +198,15 @@ export default function EarningsTrendChart({ periods, settings, chartType, title
             />
           ))}
         </BarChart>
-      </ResponsiveContainer>
+    </ResponsiveContainer>
+  );
+
+  if (bare) return chart;
+
+  return (
+    <div className="bg-card border border-border rounded-xl p-5">
+      <h3 className="text-sm font-semibold text-foreground mb-4">{title || 'Earnings Trend'}</h3>
+      {chart}
     </div>
   );
 }

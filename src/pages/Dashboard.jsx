@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
 import PaySummaryPanel from '@/components/payroll/PaySummaryPanel';
+import PayBreakdownPie from '@/components/payroll/PayBreakdownPie';
 import EarningsTrendChart from '@/components/payroll/EarningsTrendChart';
 import { calculatePeriodBreakdown, getCurrentPayPeriodDates, getFirstPeriodsOfMonths } from '@/lib/premiumCalculator';
 import { Button } from '@/components/ui/button';
@@ -82,6 +83,10 @@ export default function Dashboard() {
   const [yearOffset, setYearOffset] = useState(0);
   const [showPrevYear, setShowPrevYear] = useState(false);
   const [showNextYear, setShowNextYear] = useState(false);
+
+  // Trend chart view toggles
+  const [trendMonthsView, setTrendMonthsView] = useState('past');
+  const [trendPeriodsView, setTrendPeriodsView] = useState('past');
 
   const loadingRef = useRef(false);
   const loadRef = useRef(null);
@@ -366,7 +371,7 @@ export default function Dashboard() {
   // Next pay date: earliest VCH pay date that is in the future
   const nextPayDate = (() => {
     // Check pay date for current period, then next
-    const candidates = [curStart, addDays(curStart, 14)];
+    const candidates = [addDays(curStart, -14), curStart, addDays(curStart, 14)];
     for (const start of candidates) {
       const pd = getVCHPayDate(start);
       if (pd && pd >= todayStr) return pd;
@@ -379,7 +384,7 @@ export default function Dashboard() {
     : null;
 
   const gridClass = (n) => {
-    if (n === 1) return 'grid-cols-1 max-w-sm';
+    if (n === 1) return 'grid-cols-1 md:grid-cols-2';
     if (n === 2) return 'grid-cols-1 md:grid-cols-2';
     return 'grid-cols-1 md:grid-cols-3';
   };
@@ -461,8 +466,8 @@ export default function Dashboard() {
           setShowPrev={setShowPrevPeriod}
           showNext={showNextPeriod}
           setShowNext={setShowNextPeriod}
-          prevLabel="Previous Period"
-          nextLabel="Next Period"
+          prevLabel="Compare Back"
+          nextLabel="Compare Forward"
         />
         <div className={`grid gap-6 ${gridClass(periodPanels.length)}`}>
           {periodPanels.map((p, i) => (
@@ -475,8 +480,16 @@ export default function Dashboard() {
               taxSettings={settings?.tax_settings}
               shiftCount={p.shiftCount}
               verifiedDeductions={p.verifiedDeductions}
+              hidePie={periodPanels.length === 1}
             />
           ))}
+          {periodPanels.length === 1 && (
+            <PayBreakdownPie
+              breakdown={mainPeriod.breakdown}
+              taxSettings={settings?.tax_settings}
+              verifiedDeductions={mainPeriod.verifiedDeductions}
+            />
+          )}
         </div>
       </div>
 
@@ -490,8 +503,8 @@ export default function Dashboard() {
           setShowPrev={setShowPrevMonth}
           showNext={showNextMonth}
           setShowNext={setShowNextMonth}
-          prevLabel="Previous Month"
-          nextLabel="Next Month"
+          prevLabel="Compare Back"
+          nextLabel="Compare Forward"
         />
         <div className={`grid gap-6 ${gridClass(monthPanels.length)}`}>
           {monthPanels.map((p, i) => (
@@ -503,8 +516,15 @@ export default function Dashboard() {
               loading={loading}
               taxSettings={settings?.tax_settings}
               shiftCount={p.shiftCount}
+              hidePie={monthPanels.length === 1}
             />
           ))}
+          {monthPanels.length === 1 && (
+            <PayBreakdownPie
+              breakdown={mainMonth.breakdown}
+              taxSettings={settings?.tax_settings}
+            />
+          )}
         </div>
       </div>
 
@@ -531,41 +551,87 @@ export default function Dashboard() {
               loading={loading}
               taxSettings={settings?.tax_settings}
               shiftCount={p.shiftCount}
+              hidePie={yearPanels.length === 1}
             />
           ))}
+          {yearPanels.length === 1 && (
+            <PayBreakdownPie
+              breakdown={mainYear.breakdown}
+              taxSettings={settings?.tax_settings}
+            />
+          )}
         </div>
       </div>
 
-      {/* ── Past Trend Charts ── */}
+      {/* ── Trend Charts ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <EarningsTrendChart
-          periods={computedPeriods}
-          settings={settings}
-          chartType="months_past"
-          title="Earnings Trend — Last 6 Months"
-        />
-        <EarningsTrendChart
-          periods={computedPeriods}
-          settings={settings}
-          chartType="periods_past"
-          title="Earnings Trend — Last 6 Pay Periods"
-        />
-      </div>
+        {/* Monthly trend */}
+        <div className="bg-card border border-border rounded-xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-foreground">
+              Earnings Trend — {trendMonthsView === 'past' ? 'Last' : 'Next'} 6 Months
+            </h3>
+            <div className="flex items-center gap-0.5">
+              <button
+                onClick={() => setTrendMonthsView('past')}
+                className={`p-1.5 rounded-lg transition-colors ${trendMonthsView === 'past' ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:bg-muted'}`}
+                aria-label="Past months"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className="text-xs text-muted-foreground w-10 text-center">
+                {trendMonthsView === 'past' ? 'Past' : 'Future'}
+              </span>
+              <button
+                onClick={() => setTrendMonthsView('future')}
+                className={`p-1.5 rounded-lg transition-colors ${trendMonthsView === 'future' ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:bg-muted'}`}
+                aria-label="Future months"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+          <EarningsTrendChart
+            periods={computedPeriods}
+            settings={settings}
+            chartType={trendMonthsView === 'past' ? 'months_past' : 'months_future'}
+            bare
+          />
+        </div>
 
-      {/* ── Future Trend Charts ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <EarningsTrendChart
-          periods={computedPeriods}
-          settings={settings}
-          chartType="months_future"
-          title="Earnings Trend — Next 6 Months"
-        />
-        <EarningsTrendChart
-          periods={computedPeriods}
-          settings={settings}
-          chartType="periods_future"
-          title="Earnings Trend — Next 6 Pay Periods"
-        />
+        {/* Pay period trend */}
+        <div className="bg-card border border-border rounded-xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-foreground">
+              Earnings Trend — {trendPeriodsView === 'past' ? 'Last' : 'Next'} 6 Pay Periods
+            </h3>
+            <div className="flex items-center gap-0.5">
+              <button
+                onClick={() => setTrendPeriodsView('past')}
+                className={`p-1.5 rounded-lg transition-colors ${trendPeriodsView === 'past' ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:bg-muted'}`}
+                aria-label="Past periods"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className="text-xs text-muted-foreground w-10 text-center">
+                {trendPeriodsView === 'past' ? 'Past' : 'Future'}
+              </span>
+              <button
+                onClick={() => setTrendPeriodsView('future')}
+                className={`p-1.5 rounded-lg transition-colors ${trendPeriodsView === 'future' ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:bg-muted'}`}
+                aria-label="Future periods"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+          <EarningsTrendChart
+            periods={computedPeriods}
+            settings={settings}
+            chartType={trendPeriodsView === 'past' ? 'periods_past' : 'periods_future'}
+            bare
+          />
+        </div>
       </div>
     </div>
   );

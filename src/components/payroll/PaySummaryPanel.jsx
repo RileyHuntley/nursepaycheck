@@ -19,7 +19,7 @@ const CustomPieTooltip = ({ active, payload }) => {
   );
 };
 
-export default function PaySummaryPanel({ title, subtitle, breakdown, loading, taxSettings, shiftCount, verifiedDeductions }) {
+export default function PaySummaryPanel({ title, subtitle, breakdown, loading, taxSettings, shiftCount, verifiedDeductions, hidePie }) {
   if (loading) {
     return (
       <div className="bg-card border border-border rounded-xl p-6 animate-pulse">
@@ -117,7 +117,7 @@ export default function PaySummaryPanel({ title, subtitle, breakdown, loading, t
     otherDeductions > 0 && { name: 'Other', value: Math.round(otherDeductions * 100) / 100, color: '#94a3b8' },
   ].filter(Boolean);
 
-  const showPie = pieData.length >= 2;
+  const showPie = !hidePie && pieData.length >= 2;
 
   return (
     <div className="bg-card border border-border rounded-xl p-6">
