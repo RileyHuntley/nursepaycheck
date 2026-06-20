@@ -231,6 +231,8 @@ export default function ShiftAnalytics() {
   const [monthOffset, setMonthOffset] = useState(0);
   // Pay period detail navigation: offset in pay periods from current (0 = this PP)
   const [ppOffset, setPpOffset] = useState(0);
+  // Shift pattern view: 0 = Last Year, 1 = Year to Date, 2 = This Year (all)
+  const [patternView, setPatternView] = useState(1);
   const loadingRef = useRef(false);
 
   const loadData = useCallback(async () => {
@@ -332,8 +334,16 @@ export default function ShiftAnalytics() {
     { label: `${now.getFullYear()} Total`, sublabel: 'Hours to be worked this year',        hours: thisYearHours },
   ];
 
-  // Shift-pattern breakdown — use YTD as the reference window for patterns
-  const patternYTD = buildPatternBreakdown(allShifts, yearStart, todayStr);
+  // Shift-pattern breakdown — window driven by patternView
+  const lastYearStart = `${now.getFullYear() - 1}-01-01`;
+  const lastYearEnd   = `${now.getFullYear() - 1}-12-31`;
+  const PATTERN_VIEWS = [
+    { label: `${now.getFullYear() - 1}`, sublabel: 'Last Year',         minDate: lastYearStart, maxDate: lastYearEnd },
+    { label: 'Year to Date',             sublabel: `Jan 1 – ${ppFmt(todayStr)}`, minDate: yearStart, maxDate: todayStr },
+    { label: `${now.getFullYear()}`,     sublabel: 'This Year (all shifts)', minDate: yearStart, maxDate: yearEnd },
+  ];
+  const activePatternView = PATTERN_VIEWS[patternView];
+  const patternYTD = buildPatternBreakdown(allShifts, activePatternView.minDate, activePatternView.maxDate);
   const totalPatternHours  = patternYTD.byDayOfWeek.reduce((s, d) => s + d.hours, 0);
   const totalPatternShifts = patternYTD.total;
 
@@ -611,13 +621,36 @@ export default function ShiftAnalytics() {
         </div>
       </section>
 
-      {/* ── Shift patterns (YTD) ── */}
+      {/* ── Shift patterns ── */}
       {totalPatternShifts > 0 && (
         <section>
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
-            Shift Patterns — Year to Date
-          </h2>
-          <p className="text-xs text-muted-foreground mb-4">Jan 1 – {ppFmt(todayStr)}</p>
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Shift Patterns
+            </h2>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setPatternView(v => Math.max(0, v - 1))}
+                disabled={patternView === 0}
+                className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                title="Previous"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className="text-sm font-medium text-foreground min-w-[140px] text-center">
+                {activePatternView.label}
+              </span>
+              <button
+                onClick={() => setPatternView(v => Math.min(PATTERN_VIEWS.length - 1, v + 1))}
+                disabled={patternView === PATTERN_VIEWS.length - 1}
+                className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                title="Next"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground mb-4">{activePatternView.sublabel}</p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
