@@ -17,7 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { SHIFT_PATTERNS } from '@/lib/shiftPatterns';
+import { SHIFT_PATTERNS, getAllPatterns, describeCustomSequence } from '@/lib/shiftPatterns';
 import { searchHospitals } from '@/lib/bcHospitals';
 import {
   Select,
@@ -136,6 +136,7 @@ export default function ShiftConfiguration() {
     setHospitalSuggestions([]);
   };
 
+  const [patternForm, setPatternForm] = useState(null); // null = closed, { name, sequence, editIndex }
   const [editingHospital, setEditingHospital] = useState(null); // { originalName, name, acronym, health_authority }
   const [editingUnit, setEditingUnit] = useState(null); // { originalName, name, code }
 
@@ -396,7 +397,7 @@ export default function ShiftConfiguration() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {SHIFT_PATTERNS.map(p => (
+              {getAllPatterns(settings).map(p => (
                 <SelectItem key={p.name} value={p.name}>{p.name} — {p.description}</SelectItem>
               ))}
             </SelectContent>
@@ -428,6 +429,157 @@ export default function ShiftConfiguration() {
               </div>
             ))}
           </div>
+        </div>
+
+        {/* Custom Shift Patterns */}
+        <div className="space-y-3 pt-1">
+          <div className="flex items-center justify-between">
+            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Custom Shift Patterns</h4>
+            {!patternForm && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs"
+                onClick={() => setPatternForm({ name: '', sequence: ['D', 'D', 'N', 'N', null, null, null, null], editIndex: null })}
+              >
+                <Plus className="w-3 h-3 mr-1" /> Add Pattern
+              </Button>
+            )}
+          </div>
+
+          {(settings.custom_shift_patterns || []).length === 0 && !patternForm && (
+            <p className="text-xs text-muted-foreground">No custom patterns yet. Add one to define your own shift rotation.</p>
+          )}
+
+          {(settings.custom_shift_patterns || []).map((cp, idx) => (
+            patternForm?.editIndex === idx ? null : (
+              <div key={idx} className="flex items-center justify-between rounded-lg border border-border px-3 py-2 bg-background">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-sm font-semibold font-mono">{cp.name}</span>
+                  <span className="text-xs text-muted-foreground truncate">— {cp.description}</span>
+                </div>
+                <div className="flex gap-1 flex-shrink-0 ml-2">
+                  <Button
+                    size="icon" variant="ghost" className="h-7 w-7"
+                    onClick={() => setPatternForm({ name: cp.name, sequence: [...cp.sequence], editIndex: idx })}
+                  >
+                    <Pencil className="w-3 h-3" />
+                  </Button>
+                  <Button
+                    size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive"
+                    onClick={() => {
+                      const updated = (settings.custom_shift_patterns || []).filter((_, i) => i !== idx);
+                      set('custom_shift_patterns', updated);
+                    }}
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
+                </div>
+              </div>
+            )
+          ))}
+
+          {patternForm && (
+            <div className="rounded-lg border border-primary/30 bg-muted/30 p-4 space-y-4">
+              <p className="text-xs font-semibold text-foreground">{patternForm.editIndex !== null ? 'Edit Pattern' : 'New Pattern'}</p>
+
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Pattern Name</Label>
+                  <Input
+                    value={patternForm.name}
+                    onChange={e => setPatternForm(f => ({ ...f, name: e.target.value.toUpperCase().replace(/\s/g, '').slice(0, 8) }))}
+                    placeholder="e.g. DDN"
+                    className="h-8 w-24 text-sm font-mono"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Description (auto)</Label>
+                  <div className="h-8 flex items-center px-2 text-xs text-muted-foreground border border-border rounded-md bg-background min-w-[180px]">
+                    {patternForm.name ? `${patternForm.name} — ${describeCustomSequence(patternForm.sequence)}` : describeCustomSequence(patternForm.sequence)}
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Shift Sequence — click a day to cycle its type</Label>
+                <div className="flex flex-wrap gap-1.5 items-center">
+                  {patternForm.sequence.map((step, i) => {
+                    const label = step === 'D' ? 'D' : step === 'N' ? 'N' : step === '8' ? '8h' : '—';
+                    const colors = step === 'D'
+                      ? 'bg-chart-2/15 text-chart-2 border-chart-2/30 hover:bg-chart-2/25'
+                      : step === 'N'
+                      ? 'bg-chart-5/15 text-chart-5 border-chart-5/30 hover:bg-chart-5/25'
+                      : step === '8'
+                      ? 'bg-chart-1/15 text-chart-1 border-chart-1/30 hover:bg-chart-1/25'
+                      : 'bg-muted text-muted-foreground border-border hover:bg-muted/80';
+                    const cycleMap = { D: 'N', N: '8', '8': null, null: 'D' };
+                    return (
+                      <button
+                        key={i}
+                        type="button"
+                        title={`Day ${i + 1}: click to change`}
+                        className={`w-9 h-9 rounded-md border text-xs font-semibold font-mono transition-colors ${colors}`}
+                        onClick={() => setPatternForm(f => {
+                          const seq = [...f.sequence];
+                          seq[i] = cycleMap[seq[i]];
+                          return { ...f, sequence: seq };
+                        })}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                  <button
+                    type="button"
+                    className="w-9 h-9 rounded-md border border-dashed border-border text-muted-foreground text-lg hover:bg-muted transition-colors flex items-center justify-center"
+                    onClick={() => setPatternForm(f => ({ ...f, sequence: [...f.sequence, null] }))}
+                    title="Add day"
+                  >+</button>
+                  {patternForm.sequence.length > 1 && (
+                    <button
+                      type="button"
+                      className="w-9 h-9 rounded-md border border-dashed border-border text-muted-foreground text-lg hover:bg-muted transition-colors flex items-center justify-center"
+                      onClick={() => setPatternForm(f => ({ ...f, sequence: f.sequence.slice(0, -1) }))}
+                      title="Remove last day"
+                    >−</button>
+                  )}
+                </div>
+                <div className="flex gap-3 text-xs text-muted-foreground pt-1">
+                  <span><span className="font-semibold text-chart-2">D</span> = 12h Day</span>
+                  <span><span className="font-semibold text-chart-5">N</span> = 12h Night</span>
+                  <span><span className="font-semibold text-chart-1">8h</span> = 8h Day</span>
+                  <span><span className="font-semibold">—</span> = Off</span>
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-1">
+                <Button
+                  size="sm"
+                  className="h-8 text-xs"
+                  disabled={!patternForm.name.trim() || patternForm.sequence.every(s => s === null)}
+                  onClick={() => {
+                    const entry = {
+                      name: patternForm.name.trim(),
+                      description: describeCustomSequence(patternForm.sequence),
+                      sequence: patternForm.sequence,
+                    };
+                    const existing = settings.custom_shift_patterns || [];
+                    const updated = patternForm.editIndex !== null
+                      ? existing.map((cp, i) => i === patternForm.editIndex ? entry : cp)
+                      : [...existing, entry];
+                    set('custom_shift_patterns', updated);
+                    setPatternForm(null);
+                  }}
+                >
+                  <Check className="w-3 h-3 mr-1" /> Save Pattern
+                </Button>
+                <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setPatternForm(null)}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
