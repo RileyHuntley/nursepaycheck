@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, CalendarPlus, Clock, Settings, PanelLeftClose, PanelLeftOpen, List, ClipboardCheck, DollarSign, MapPin, Shield, LogOut, BarChart3 } from 'lucide-react';
+import { LayoutDashboard, CalendarPlus, Clock, Settings, PanelLeftClose, PanelLeftOpen, List, ClipboardCheck, DollarSign, MapPin, Shield, LogOut, BarChart3, ChevronDown, ChevronRight } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { HA_PORTALS, getUserHealthAuthorities } from '@/lib/healthAuthorityPortals';
 // Theme toggle moved to Settings page
@@ -37,6 +37,8 @@ const links = [
 
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('sidebar-collapsed') === 'true');
+  const [bcnuOpen, setBcnuOpen] = useState(() => localStorage.getItem('sidebar-bcnu-open') !== 'false');
+  const [externalOpen, setExternalOpen] = useState(() => localStorage.getItem('sidebar-external-open') !== 'false');
   const [healthAuthorities, setHealthAuthorities] = useState([]);
   const [pendingCount, setPendingCount] = useState(0);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -167,44 +169,60 @@ export default function Sidebar() {
 
         {/* BCNU Union Resources */}
         <>
-          <div className={`pt-4 pb-1 ${collapsed ? 'px-0' : 'px-3'}`}>
+          <div className={`pt-4 pb-1 ${collapsed ? 'px-0' : 'px-1'}`}>
             {!collapsed && (
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">BCNU Resources</p>
+              <button
+                onClick={() => { const next = !bcnuOpen; setBcnuOpen(next); localStorage.setItem('sidebar-bcnu-open', next); }}
+                className="flex items-center gap-1 w-full text-left group"
+              >
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-0 flex-1">BCNU Resources</p>
+                {bcnuOpen ? <ChevronDown className="w-3 h-3 text-muted-foreground" /> : <ChevronRight className="w-3 h-3 text-muted-foreground" />}
+              </button>
             )}
           </div>
-          <a
-          href="https://memberportal.bcnu.org/"
-          target="_blank"
-          rel="noopener noreferrer"
-          title={collapsed ? 'Contact Your Steward' : undefined}
-          className={`flex items-center gap-3 rounded-lg text-sm font-medium transition-colors duration-150 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground ${
-            collapsed ? 'justify-center px-0 py-2.5 w-full' : 'px-3 py-2.5'
-          }`}
-          >
-            {!collapsed && <span className="truncate">Contact Your Steward</span>}
-          </a>
-          <a
-          href="https://www.bcnu.org/Contracts-Bargaining/Documents/nba-pca_2022_2025.pdf"
-          target="_blank"
-          rel="noopener noreferrer"
-          title={collapsed ? 'Collective Agreement' : undefined}
-          className={`flex items-center gap-3 rounded-lg text-sm font-medium transition-colors duration-150 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground ${
-            collapsed ? 'justify-center px-0 py-2.5 w-full' : 'px-3 py-2.5'
-          }`}
-          >
-            {!collapsed && <span className="truncate">Collective Agreement</span>}
-          </a>
+          {(!collapsed ? bcnuOpen : true) && (
+            <>
+              <a
+                href="https://memberportal.bcnu.org/"
+                target="_blank"
+                rel="noopener noreferrer"
+                title={collapsed ? 'Contact Your Steward' : undefined}
+                className={`flex items-center gap-3 rounded-lg text-sm font-medium transition-colors duration-150 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground ${
+                  collapsed ? 'justify-center px-0 py-2.5 w-full' : 'px-3 py-2.5'
+                }`}
+              >
+                {!collapsed && <span className="truncate">Contact Your Steward</span>}
+              </a>
+              <a
+                href="https://www.bcnu.org/Contracts-Bargaining/Documents/nba-pca_2022_2025.pdf"
+                target="_blank"
+                rel="noopener noreferrer"
+                title={collapsed ? 'Collective Agreement' : undefined}
+                className={`flex items-center gap-3 rounded-lg text-sm font-medium transition-colors duration-150 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground ${
+                  collapsed ? 'justify-center px-0 py-2.5 w-full' : 'px-3 py-2.5'
+                }`}
+              >
+                {!collapsed && <span className="truncate">Collective Agreement</span>}
+              </a>
+            </>
+          )}
         </>
 
         {/* External health authority links */}
         {haLinks.length > 0 && (
           <>
-            <div className={`pt-4 pb-1 ${collapsed ? 'px-0' : 'px-3'}`}>
+            <div className={`pt-4 pb-1 ${collapsed ? 'px-0' : 'px-1'}`}>
               {!collapsed && (
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">External Links</p>
+                <button
+                  onClick={() => { const next = !externalOpen; setExternalOpen(next); localStorage.setItem('sidebar-external-open', next); }}
+                  className="flex items-center gap-1 w-full text-left group"
+                >
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-0 flex-1">External Links</p>
+                  {externalOpen ? <ChevronDown className="w-3 h-3 text-muted-foreground" /> : <ChevronRight className="w-3 h-3 text-muted-foreground" />}
+                </button>
               )}
             </div>
-            {haLinks.map((link) => (
+            {(!collapsed ? externalOpen : true) && haLinks.map((link) => (
               <a
                 key={`${link.ha}-${link.type}`}
                 href={link.url}
