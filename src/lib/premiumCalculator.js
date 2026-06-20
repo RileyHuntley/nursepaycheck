@@ -221,22 +221,25 @@ function getShiftStatus(shift, settings) {
  * If shift.premium_overrides exists, those values are used instead of calculated ones.
  */
 export function calculateShiftPremiums(shift, settings) {
-  if (shift.shift_type === 'student_practicum') {
-    return {
-      evening: 0, evening_hours: 0, night: 0, night_hours: 0,
-      weekend: 0, weekend_hours: 0, super_shift: 0, super_shift_hours: 0,
-      regular_premium: 0, regular_premium_hours: 0,
-      short_notice: 0, short_notice_hours: 0,
-      responsibility: 0, responsibility_hours: 0,
-      preceptor: 0, preceptor_hours: 0,
-      specialty: 0, specialty_hours: 0,
-      _overridden: [],
-    };
-  }
+  const ZERO_PREMIUM = {
+    evening: 0, evening_hours: 0, night: 0, night_hours: 0,
+    weekend: 0, weekend_hours: 0, super_shift: 0, super_shift_hours: 0,
+    regular_premium: 0, regular_premium_hours: 0,
+    short_notice: 0, short_notice_hours: 0,
+    responsibility: 0, responsibility_hours: 0,
+    preceptor: 0, preceptor_hours: 0,
+    specialty: 0, specialty_hours: 0,
+    _overridden: [],
+  };
+
+  if (shift.shift_type === 'student_practicum') return ZERO_PREMIUM;
+
+  // Leave/absence types are paid at straight time only — no premiums
+  const LEAVE_TYPES = ['vacation', 'sick', 'unpaid_vacation', 'unpaid_sick', 'special_leave', 'pdo_pst', 'other_leave', 'day_off'];
+  if (LEAVE_TYPES.includes(shift.shift_type)) return ZERO_PREMIUM;
 
   const rates = settings.premium_rates;
   const paidHours = shift.paid_hours || 0;
-  const isStraight = ['regular', 'isn', 'vacation', 'paid_vacation', 'sick', 'paid_sick', 'special_leave', 'pdo_pst', 'other_leave', 'orientation', 'education'].includes(shift.shift_type);
   const status = getShiftStatus(shift, settings);
   const isNonCasual = status === 'full_time' || status === 'part_time';
   const eligibleForRegularPremium = ['regular', 'isn'].includes(shift.shift_type)
