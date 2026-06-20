@@ -201,7 +201,11 @@ function HoursCard({ label, sublabel, hours, filter }) {
     <div className="bg-card border border-border rounded-xl p-5 flex flex-col gap-2">
       <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</div>
       {sublabel && <div className="text-[11px] text-muted-foreground -mt-1">{sublabel}</div>}
-      <div className="text-3xl font-bold text-foreground mt-1">{fmtHours(display)}</div>
+      <div className={`text-3xl font-bold mt-1 ${
+        filter === 'straight' ? 'text-emerald-700 dark:text-emerald-400'
+        : filter === 'overtime' ? 'text-amber-700 dark:text-amber-400'
+        : 'text-foreground'
+      }`}>{fmtHours(display)}</div>
       {total > 0 && (
         <div className="flex gap-2 mt-1 flex-wrap">
           <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950 px-2 py-0.5 rounded-full">
@@ -242,7 +246,7 @@ function StatRow({ label, shifts, hours, totalShifts, maxHours, colorClass }) {
       <div className="flex-1 min-w-0">
         <div className="text-sm font-medium text-foreground truncate">{label}</div>
         <div className="mt-1">
-          <div className="flex rounded-full overflow-hidden h-1.5 bg-muted">
+          <div className="flex rounded-full overflow-hidden h-1.5 bg-muted w-full">
             <div className={`${colorClass} transition-all`} style={{ width: `${barWidth}%` }} />
           </div>
         </div>
@@ -446,7 +450,7 @@ export default function ShiftAnalytics() {
 
       {/* ── Month detail panel (navigable) ── */}
       <section>
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-2">
           <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Month — Hours Detail
           </h2>
@@ -477,6 +481,25 @@ export default function ShiftAnalytics() {
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
+        </div>
+        <div className="flex gap-1.5 mb-3 flex-wrap">
+          {[
+            { label: 'Last Month', offset: -1 },
+            { label: 'Current Month', offset: 0 },
+            { label: '3 Months Ahead', offset: 3 },
+          ].map(({ label, offset }) => (
+            <button
+              key={label}
+              onClick={() => setMonthOffset(offset)}
+              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors border ${
+                monthOffset === offset
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'bg-muted text-muted-foreground hover:text-foreground border-transparent hover:border-border'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
         </div>
         <div className="bg-card border border-border rounded-xl p-5 space-y-4">
           <div className="flex gap-6 flex-wrap">
@@ -610,8 +633,7 @@ export default function ShiftAnalytics() {
       </section>
 
       {/* ── Shift patterns ── */}
-      {totalPatternShifts > 0 && (
-        <section>
+      <section>
           <div className="flex items-center justify-between mb-1">
             <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Shift Patterns
@@ -640,6 +662,12 @@ export default function ShiftAnalytics() {
           </div>
           <p className="text-xs text-muted-foreground mb-4">{activePatternView.sublabel}</p>
 
+          {totalPatternShifts === 0 ? (
+            <div className="bg-card border border-border rounded-xl px-5 py-8 text-center text-sm text-muted-foreground">
+              No shifts recorded for {activePatternView.label}.
+            </div>
+          ) : (
+          <>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
             {/* Weekday vs Weekend */}
@@ -817,8 +845,9 @@ export default function ShiftAnalytics() {
             </div>
           )}
 
+          </>
+          )}
         </section>
-      )}
 
       {/* ── Full breakdown table (collapsible) ── */}
       <section>
