@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Info, X } from 'lucide-react';
 import { estimateTaxes, estimateStatutoryDeductions } from '@/lib/taxCalculator';
 import { formatCurrency } from '@/lib/utils';
+import { usePrivacyMode } from '@/contexts/PrivacyModeContext';
 
 const PREMIUM_INFO = {
   evening: {
@@ -122,6 +123,7 @@ function LineItem({ label, amount, sublabel, negative, infoKey, openInfo, onTogg
   if (amount === 0 || amount == null) return null;
   const info = infoKey ? PREMIUM_INFO[infoKey] : null;
   const isOpen = openInfo === infoKey;
+  const { privacyMode } = usePrivacyMode();
 
   return (
     <div className="flex items-center justify-between py-1.5">
@@ -141,7 +143,7 @@ function LineItem({ label, amount, sublabel, negative, infoKey, openInfo, onTogg
         )}
       </div>
       <span className={`text-sm font-mono font-medium flex-shrink-0 ml-2 ${negative ? 'text-destructive' : 'text-foreground'}`}>
-        {negative ? '−' : ''}{formatCurrency(amount)}
+        {privacyMode ? '••••••' : `${negative ? '−' : ''}${formatCurrency(amount)}`}
       </span>
     </div>
   );
@@ -153,6 +155,7 @@ function SectionHeader({ title }) {
 
 export default function PayBreakdown({ breakdown, wage, title = 'Pay Period Breakdown', taxSettings, verifiedDeductions }) {
   const [openInfo, setOpenInfo] = useState(null);
+  const { privacyMode } = usePrivacyMode();
   if (!breakdown) return null;
 
   const toggle = (key) => setOpenInfo(prev => prev === key ? null : key);
@@ -310,11 +313,11 @@ export default function PayBreakdown({ breakdown, wage, title = 'Pay Period Brea
 
       <div className="flex items-center justify-between pt-3 mt-2 border-t border-border">
         <span className="text-sm font-semibold text-foreground">Expected Gross Pay</span>
-        <span className="text-base font-mono font-semibold text-foreground">{formatCurrency(breakdown.gross_pay)}</span>
+        <span className="text-base font-mono font-semibold text-foreground">{privacyMode ? '••••••' : formatCurrency(breakdown.gross_pay)}</span>
       </div>
       <div className="flex items-center justify-between pt-2 mt-1 border-t-2 border-primary/30">
         <span className="text-base font-display font-bold text-foreground">{hasVerified ? 'Verified Net Pay' : 'Estimated Net Pay'}</span>
-        <span className="text-xl font-mono font-bold text-primary">{formatCurrency(netPay)}</span>
+        <span className="text-xl font-mono font-bold text-primary">{privacyMode ? '••••••' : formatCurrency(netPay)}</span>
       </div>
     </div>
   );
