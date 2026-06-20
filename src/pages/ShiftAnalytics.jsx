@@ -232,9 +232,9 @@ function ProportionBar({ a, b, colorA = 'bg-emerald-500', colorB = 'bg-amber-500
   );
 }
 
-function StatRow({ label, shifts, hours, totalShifts, totalHours, colorClass }) {
-  const pctShifts = totalShifts > 0 ? Math.round((shifts / totalShifts) * 100) : 0;
-  const pctHours  = totalHours  > 0 ? Math.round((hours  / totalHours)  * 100) : 0;
+function StatRow({ label, shifts, hours, totalShifts, maxHours, colorClass }) {
+  const pctOfTotal = totalShifts > 0 ? Math.round((shifts / totalShifts) * 100) : 0;
+  const barWidth   = maxHours   > 0 ? (hours / maxHours) * 100 : 0;
   return (
     <div className="flex items-center gap-3 py-2.5 border-b border-border last:border-0">
       <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${colorClass}`} />
@@ -242,13 +242,13 @@ function StatRow({ label, shifts, hours, totalShifts, totalHours, colorClass }) 
         <div className="text-sm font-medium text-foreground truncate">{label}</div>
         <div className="mt-1">
           <div className="flex rounded-full overflow-hidden h-1.5 bg-muted">
-            <div className={`${colorClass} transition-all`} style={{ width: `${pctHours}%` }} />
+            <div className={`${colorClass} transition-all`} style={{ width: `${barWidth}%` }} />
           </div>
         </div>
       </div>
       <div className="text-right flex-shrink-0">
         <div className="text-sm font-semibold tabular-nums text-foreground">{fmtHours(hours)}</div>
-        <div className="text-[11px] text-muted-foreground">{shifts} shift{shifts !== 1 ? 's' : ''} · {pctHours}%</div>
+        <div className="text-[11px] text-muted-foreground">{shifts} shift{shifts !== 1 ? 's' : ''} · {pctOfTotal}%</div>
       </div>
     </div>
   );
@@ -698,20 +698,17 @@ export default function ShiftAnalytics() {
             <div className="bg-card border border-border rounded-xl p-5">
               <h3 className="text-sm font-semibold text-foreground mb-3">Weekday vs Weekend</h3>
               <div className="space-y-1">
-                {[
-                  { label: 'Weekday',  color: 'bg-blue-500',  data: patternYTD.weekdayVsWeekend.weekday },
-                  { label: 'Weekend',  color: 'bg-violet-500', data: patternYTD.weekdayVsWeekend.weekend },
-                ].map(({ label, color, data }) => (
-                  <StatRow
-                    key={label}
-                    label={label}
-                    shifts={data.shifts}
-                    hours={data.hours}
-                    totalShifts={totalPatternShifts}
-                    totalHours={totalPatternHours}
-                    colorClass={color}
-                  />
-                ))}
+                {(() => {
+                  const rows = [
+                    { label: 'Weekday', color: 'bg-blue-500',   data: patternYTD.weekdayVsWeekend.weekday },
+                    { label: 'Weekend', color: 'bg-violet-500', data: patternYTD.weekdayVsWeekend.weekend },
+                  ];
+                  const max = Math.max(...rows.map(r => r.data.hours));
+                  return rows.map(({ label, color, data }) => (
+                    <StatRow key={label} label={label} shifts={data.shifts} hours={data.hours}
+                      totalShifts={totalPatternShifts} maxHours={max} colorClass={color} />
+                  ));
+                })()}
               </div>
               <div className="mt-3">
                 <ProportionBar
@@ -735,20 +732,17 @@ export default function ShiftAnalytics() {
             <div className="bg-card border border-border rounded-xl p-5">
               <h3 className="text-sm font-semibold text-foreground mb-3">Day vs Night Shift</h3>
               <div className="space-y-1">
-                {[
-                  { label: 'Day (starts before 15:30)',   color: 'bg-amber-500',  data: patternYTD.dayVsNight.day },
-                  { label: 'Night (starts 15:30 or later)', color: 'bg-indigo-500', data: patternYTD.dayVsNight.night },
-                ].map(({ label, color, data }) => (
-                  <StatRow
-                    key={label}
-                    label={label}
-                    shifts={data.shifts}
-                    hours={data.hours}
-                    totalShifts={totalPatternShifts}
-                    totalHours={totalPatternHours}
-                    colorClass={color}
-                  />
-                ))}
+                {(() => {
+                  const rows = [
+                    { label: 'Day (starts before 15:30)',     color: 'bg-amber-500',  data: patternYTD.dayVsNight.day },
+                    { label: 'Night (starts 15:30 or later)', color: 'bg-indigo-500', data: patternYTD.dayVsNight.night },
+                  ];
+                  const max = Math.max(...rows.map(r => r.data.hours));
+                  return rows.map(({ label, color, data }) => (
+                    <StatRow key={label} label={label} shifts={data.shifts} hours={data.hours}
+                      totalShifts={totalPatternShifts} maxHours={max} colorClass={color} />
+                  ));
+                })()}
               </div>
               <div className="mt-3">
                 <ProportionBar
@@ -772,17 +766,13 @@ export default function ShiftAnalytics() {
             <div className="bg-card border border-border rounded-xl p-5">
               <h3 className="text-sm font-semibold text-foreground mb-3">By Day of Week</h3>
               <div className="space-y-1">
-                {patternYTD.byDayOfWeek.map((d, i) => (
-                  <StatRow
-                    key={d.label}
-                    label={d.label}
-                    shifts={d.shifts}
-                    hours={d.hours}
-                    totalShifts={totalPatternShifts}
-                    totalHours={totalPatternHours}
-                    colorClass={CHART_COLORS[i % CHART_COLORS.length]}
-                  />
-                ))}
+                {(() => {
+                  const max = Math.max(...patternYTD.byDayOfWeek.map(d => d.hours));
+                  return patternYTD.byDayOfWeek.map((d, i) => (
+                    <StatRow key={d.label} label={d.label} shifts={d.shifts} hours={d.hours}
+                      totalShifts={totalPatternShifts} maxHours={max} colorClass={CHART_COLORS[i % CHART_COLORS.length]} />
+                  ));
+                })()}
               </div>
             </div>
 
@@ -792,17 +782,13 @@ export default function ShiftAnalytics() {
                 <div className="bg-card border border-border rounded-xl p-5">
                   <h3 className="text-sm font-semibold text-foreground mb-3">By Hospital</h3>
                   <div className="space-y-1">
-                    {patternYTD.byHospital.map(([hosp, data], i) => (
-                      <StatRow
-                        key={hosp}
-                        label={hosp}
-                        shifts={data.shifts}
-                        hours={data.hours}
-                        totalShifts={totalPatternShifts}
-                        totalHours={totalPatternHours}
-                        colorClass={CHART_COLORS[i % CHART_COLORS.length]}
-                      />
-                    ))}
+                    {(() => {
+                      const max = Math.max(...patternYTD.byHospital.map(([, d]) => d.hours));
+                      return patternYTD.byHospital.map(([hosp, data], i) => (
+                        <StatRow key={hosp} label={hosp} shifts={data.shifts} hours={data.hours}
+                          totalShifts={totalPatternShifts} maxHours={max} colorClass={CHART_COLORS[i % CHART_COLORS.length]} />
+                      ));
+                    })()}
                   </div>
                 </div>
               )}
@@ -811,17 +797,13 @@ export default function ShiftAnalytics() {
                 <div className="bg-card border border-border rounded-xl p-5">
                   <h3 className="text-sm font-semibold text-foreground mb-3">By Unit</h3>
                   <div className="space-y-1">
-                    {patternYTD.byUnit.map(([unit, data], i) => (
-                      <StatRow
-                        key={unit}
-                        label={unit}
-                        shifts={data.shifts}
-                        hours={data.hours}
-                        totalShifts={totalPatternShifts}
-                        totalHours={totalPatternHours}
-                        colorClass={CHART_COLORS[i % CHART_COLORS.length]}
-                      />
-                    ))}
+                    {(() => {
+                      const max = Math.max(...patternYTD.byUnit.map(([, d]) => d.hours));
+                      return patternYTD.byUnit.map(([unit, data], i) => (
+                        <StatRow key={unit} label={unit} shifts={data.shifts} hours={data.hours}
+                          totalShifts={totalPatternShifts} maxHours={max} colorClass={CHART_COLORS[i % CHART_COLORS.length]} />
+                      ));
+                    })()}
                   </div>
                 </div>
               )}
@@ -839,6 +821,7 @@ export default function ShiftAnalytics() {
                     <tr className="border-b border-border bg-muted/40">
                       <th className="py-2.5 pl-5 pr-4 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Premium</th>
                       <th className="py-2.5 pr-4 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Hours</th>
+                      <th className="py-2.5 pr-4 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Pay</th>
                       <th className="py-2.5 pr-4 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Shifts</th>
                       <th className="py-2.5 pr-5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground w-1/3">Distribution</th>
                     </tr>
@@ -849,7 +832,7 @@ export default function ShiftAnalytics() {
                       return PREMIUM_DEFS
                         .filter(def => premiumBreakdown[def.key].hours > 0 || premiumBreakdown[def.key].shifts > 0)
                         .map(def => {
-                          const { hours, shifts } = premiumBreakdown[def.key];
+                          const { hours, pay, shifts } = premiumBreakdown[def.key];
                           const pct = maxHours > 0 ? (hours / maxHours) * 100 : 0;
                           return (
                             <tr key={def.key} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
@@ -861,6 +844,9 @@ export default function ShiftAnalytics() {
                               </td>
                               <td className="py-2.5 pr-4 text-right text-sm font-semibold tabular-nums text-foreground">
                                 {fmtHours(hours)}
+                              </td>
+                              <td className="py-2.5 pr-4 text-right text-sm tabular-nums text-foreground">
+                                ${pay.toLocaleString('en-CA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                               </td>
                               <td className="py-2.5 pr-4 text-right text-sm tabular-nums text-muted-foreground">
                                 {shifts}
