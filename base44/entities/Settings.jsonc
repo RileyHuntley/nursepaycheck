@@ -261,6 +261,18 @@
       "type": "string",
       "default": "DDNN"
     },
+    "custom_shift_patterns": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "sequence": { "type": "array", "items": { "type": ["string", "null"] } }
+        }
+      },
+      "default": []
+    },
     "tax_settings": {
       "type": "object",
       "description": "Estimated annual taxable income thresholds for tax bracket estimation",

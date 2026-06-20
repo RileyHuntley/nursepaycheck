@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/select';
 import { X, CalendarPlus } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
-import { SHIFT_PATTERNS, generateShiftsFromPattern } from '@/lib/shiftPatterns';
+import { getAllPatterns, generateShiftsFromPattern } from '@/lib/shiftPatterns';
 
 export default function BulkAddShift({ onSubmit, onCancel, settings }) {
   const [startDate, setStartDate] = useState('');
@@ -24,7 +24,8 @@ export default function BulkAddShift({ onSubmit, onCancel, settings }) {
   const [specialtyPremium, setSpecialtyPremium] = useState(false);
   const [preceptor, setPreceptor] = useState(false);
 
-  const pattern = SHIFT_PATTERNS.find(p => p.name === patternName) || SHIFT_PATTERNS[0];
+  const allPatterns = getAllPatterns(settings);
+  const pattern = allPatterns.find(p => p.name === patternName) || allPatterns[0];
 
   const updatePreview = (date, pat, occ, hosp, unt, spec, prec) => {
     if (!date || !pat || !occ || occ < 1) {
@@ -52,7 +53,7 @@ export default function BulkAddShift({ onSubmit, onCancel, settings }) {
   };
 
   const handleStartDateChange = (d) => { setStartDate(d); setSubmitting(false); refreshPreview({ date: d }); };
-  const handlePatternChange = (p) => { setPatternName(p); refreshPreview({ pattern: SHIFT_PATTERNS.find(pt => pt.name === p) }); };
+  const handlePatternChange = (p) => { setPatternName(p); refreshPreview({ pattern: allPatterns.find(pt => pt.name === p) }); };
   const handleOccurrencesChange = (o) => { setOccurrences(o); refreshPreview({ occurrences: o }); };
   const handleHospitalChange = (h) => { setHospital(h === '_none' ? '' : h); refreshPreview({ hospital: h === '_none' ? '' : h }); };
   const handleUnitChange = (u) => { setUnit(u === '_none' ? '' : u); refreshPreview({ unit: u === '_none' ? '' : u }); };
@@ -103,7 +104,7 @@ export default function BulkAddShift({ onSubmit, onCancel, settings }) {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {SHIFT_PATTERNS.map((p) => (
+              {allPatterns.map((p) => (
                 <SelectItem key={p.name} value={p.name}>
                   {p.name} — {p.description}
                 </SelectItem>
