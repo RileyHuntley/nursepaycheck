@@ -399,6 +399,16 @@ export default function ShiftAnalytics() {
             Month — Hours Detail
           </h2>
           <div className="flex items-center gap-1">
+            <div className="w-[52px] flex justify-start">
+              {monthOffset !== 0 && (
+                <button
+                  onClick={() => setMonthOffset(0)}
+                  className="px-2 py-1 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                >
+                  Reset
+                </button>
+              )}
+            </div>
             <button
               onClick={() => setMonthOffset(o => o - 1)}
               className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
@@ -414,14 +424,6 @@ export default function ShiftAnalytics() {
             >
               <ChevronRight className="w-4 h-4" />
             </button>
-            {monthOffset !== 0 && (
-              <button
-                onClick={() => setMonthOffset(0)}
-                className="ml-1 px-2 py-1 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-              >
-                Today
-              </button>
-            )}
           </div>
         </div>
         <div className="bg-card border border-border rounded-xl p-5 space-y-4">
@@ -478,6 +480,16 @@ export default function ShiftAnalytics() {
             Pay Period — Hours Detail
           </h2>
           <div className="flex items-center gap-1">
+            <div className="w-[52px] flex justify-start">
+              {ppOffset !== 0 && (
+                <button
+                  onClick={() => setPpOffset(0)}
+                  className="px-2 py-1 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                >
+                  Reset
+                </button>
+              )}
+            </div>
             <button
               onClick={() => setPpOffset(o => o - 1)}
               className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
@@ -495,14 +507,6 @@ export default function ShiftAnalytics() {
             >
               <ChevronRight className="w-4 h-4" />
             </button>
-            {ppOffset !== 0 && (
-              <button
-                onClick={() => setPpOffset(0)}
-                className="ml-1 px-2 py-1 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-              >
-                Current
-              </button>
-            )}
           </div>
         </div>
         <div className="bg-card border border-border rounded-xl p-5 space-y-4">
